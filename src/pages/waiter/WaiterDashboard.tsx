@@ -1,0 +1,348 @@
+import { useEffect, useState, useRef } from 'react';
+import Header from '../../components/layout/Header';
+import { useStore } from '../../store/useStore';
+import { useToast } from '../../store/useToast';
+import { playOrderReadySound } from '../../lib/sounds';
+import type { Table, Order } from '../../types';
+import {
+  ClipboardList, Clock, X, Users, ReceiptText, CheckCircle,
+  ChevronRight, UtensilsCrossed, CreditCard, Timer,
+} from 'lucide-react';
+
+export default function WaiterDashboard() {
+  const { tables, orders, currentUser, updateTableStatus, completePayment } = useStore();
+  const { addToast } = useToast();
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [, forceUpdate] = useState(0);
+  const prevReadyCount = useRef(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const readyCount = orders.filter((o) => o.status === 'ready').length;
+    if (prevReadyCount.current > 0 && readyCount > prevReadyCount.current) {
+      playOrderReadySound();
+      addToast('Sifariş hazır! Təhvil almağa gedin.', 'success', 5000);
+    }
+    prevReadyCount.current = readyCount;
+  }, [orders, addToast]);
+
+  const activeOrders = orders.filter((o) => !['completed', 'cancelled'].includes(o.status));
+  const availableCount = tables.filter((t) => t.status === 'available').length;
+  const occupiedCount = tables.filter((t) => t.status === 'occupied').length;
+  const totalRevenue = orders.filter((o) => o.paymentStatus === 'paid').reduce((s, o) => s + o.totalAmount, 0);
+
+  const getTableOrder = (table: Table): Order | undefined => {
+    if (!table.currentOrderId) return undefined;
+    return orders.find((o) => o.id === table.currentOrderId && !['completed', 'cancelled'].includes(o.status));
+  };
+
+  const getTableStatusLabel = (table: Table, order?: Order): string => {
+    if (table.status === 'available') return 'Boş';
+    if (table.status === 'cleaning') return 'Təmizlənir';
+    if (table.status === 'reserved') return 'Rezervasiya';
+    if (!order) return 'Məşğul';
+    if (order.status === 'pending') return 'Sifariş gözləyir';
+    if (order.status === 'confirmed' || order.status === 'preparing') return 'Hazırlanır';
+    if (order.status === 'ready') return 'Hesab istəyir';
+    if (order.status === 'served') return 'Verilib';
+    return 'Məşğul';
+  };
+
+  const getTableStatusColor = (table: Table, order?: Order): string => {
+    if (table.status === 'available') return 'bg-success-50 border-success-200 hover:border-success-400';
+    if (table.status === 'cleaning') return 'bg-surface-secondary border-border opacity-60';
+    if (table.status === 'reserved') return 'bg-warning-50 border-warning-200 hover:border-warning-400';
+    if (!order) return 'bg-danger-50 border-danger-200 hover:border-danger-400';
+    if (order.status === 'pending') return 'bg-warning-50 border-warning-300 hover:border-warning-500 ring-1 ring-warning-200';
+    if (order.status === 'confirmed' || order.status === 'preparing') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
+    if (order.status === 'ready') return 'bg-danger-50 border-danger-300 hover:border-danger-500 ring-1 ring-danger-200';
+    if (order.status === 'served') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
+    return 'bg-danger-50 border-danger-200';
+  };
+
+  const getTableBadgeColor = (table: Table, order?: Order): string => {
+    if (table.status === 'available') return 'bg-success-500 text-white';
+    if (table.status === 'cleaning') return 'bg-text-muted text-white';
+    if (table.status === 'reserved') return 'bg-warning-500 text-white';
+    if (!order) return 'bg-danger-500 text-white';
+    if (order.status === 'pending') return 'bg-warning-500 text-white animate-pulse';
+    if (order.status === 'confirmed' || order.status === 'preparing') return 'bg-primary-500 text-white';
+    if (order.status === 'ready') return 'bg-danger-500 text-white animate-pulse';
+    return 'bg-primary-500 text-white';
+  };
+
+  const getElapsed = (createdAt: string) => {
+    const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+    const m = Math.floor(diff / 60);
+    return `${m} dəq`;
+  };
+
+  const sections = [...new Set(tables.map((t) => t.section))];
+
+  const itemStatusLabels: Record<string, { label: string; color: string }> = {
+    pending: { label: 'Gözləyir', color: 'bg-warning-50 text-warning-600' },
+    confirmed: { label: 'Təsdiqlənib', color: 'bg-primary-50 text-primary-600' },
+    preparing: { label: 'Hazırlanır', color: 'bg-primary-50 text-primary-700' },
+    ready: { label: 'Hazırdır', color: 'bg-success-50 text-success-600' },
+    served: { label: 'Verilib', color: 'bg-success-50 text-success-600' },
+    completed: { label: 'Tamam', color: 'bg-surface-secondary text-text-muted' },
+    cancelled: { label: 'Ləğv', color: 'bg-danger-50 text-danger-600' },
+  };
+
+  return (
+    <div>
+      <Header title="Ofisant Paneli" subtitle={`Xoş gəlmisiniz, ${currentUser?.name}`} />
+
+      <div className="p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-2xl p-5 border border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <ClipboardList className="w-5 h-5 text-primary-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-text-primary">{activeOrders.length}</p>
+                <p className="text-xs text-text-secondary">Aktiv Sifariş</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-success-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-text-primary">{availableCount}</p>
+                <p className="text-xs text-text-secondary">Boş Masa</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center">
+                <Users className="w-5 h-5 text-danger-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-text-primary">{occupiedCount}</p>
+                <p className="text-xs text-text-secondary">Məşğul</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center">
+                <ReceiptText className="w-5 h-5 text-warning-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
+                <p className="text-xs text-text-secondary">Gəlir</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {sections.map((section) => (
+          <div key={section} className="mb-8">
+            <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-4">{section}</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {tables.filter((t) => t.section === section).map((table) => {
+                const order = getTableOrder(table);
+                const label = getTableStatusLabel(table, order);
+                const bg = getTableStatusColor(table, order);
+                const badge = getTableBadgeColor(table, order);
+                const isSelected = selectedTable?.id === table.id;
+
+                return (
+                  <button
+                    key={table.id}
+                    onClick={() => setSelectedTable(isSelected ? null : table)}
+                    className={`rounded-2xl border-2 p-5 text-left transition-all hover:shadow-lg ${bg} ${
+                      isSelected ? 'ring-2 ring-primary-500 shadow-lg' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-2xl font-bold text-text-primary">#{table.number}</span>
+                      <span className="text-xs font-medium text-text-muted flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {table.capacity}
+                      </span>
+                    </div>
+                    <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
+                      {label}
+                    </span>
+                    {order && (
+                      <div className="mt-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-text-primary">{order.totalAmount} ₼</span>
+                          <span className="text-[10px] text-text-muted flex items-center gap-0.5">
+                            <Timer className="w-2.5 h-2.5" />
+                            {getElapsed(order.createdAt)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[10px] text-text-muted">
+                            {order.items.length} məhsul
+                          </span>
+                          <ChevronRight className="w-3 h-3 text-text-muted" />
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selectedTable && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50" onClick={() => setSelectedTable(null)}>
+          <div
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-text-primary">Masa #{selectedTable.number}</h3>
+                <p className="text-xs text-text-muted">{selectedTable.section} • {selectedTable.capacity} nəfər</p>
+              </div>
+              <button onClick={() => setSelectedTable(null)} className="p-2 hover:bg-surface-secondary rounded-xl transition-colors">
+                <X className="w-5 h-5 text-text-muted" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {(() => {
+                const order = getTableOrder(selectedTable);
+
+                if (selectedTable.status === 'available') {
+                  return (
+                    <div className="text-center py-8">
+                      <CheckCircle className="w-12 h-12 mx-auto text-success-500 mb-3" />
+                      <p className="text-lg font-semibold text-text-primary">Masa Boşdur</p>
+                      <p className="text-sm text-text-muted mt-1">Bu masada aktiv sifariş yoxdur</p>
+                    </div>
+                  );
+                }
+
+                if (selectedTable.status === 'cleaning') {
+                  return (
+                    <div className="text-center py-8">
+                      <UtensilsCrossed className="w-12 h-12 mx-auto text-text-muted mb-3 opacity-40" />
+                      <p className="text-lg font-semibold text-text-primary">Təmizlənir</p>
+                      <p className="text-sm text-text-muted mt-1">Masa təmizlənir, hazırlanır</p>
+                      <button
+                        onClick={() => { updateTableStatus(selectedTable.id, 'available'); setSelectedTable(null); }}
+                        className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
+                      >
+                        Təmizləndi
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (selectedTable.status === 'reserved') {
+                  return (
+                    <div className="text-center py-8">
+                      <Clock className="w-12 h-12 mx-auto text-warning-500 mb-3" />
+                      <p className="text-lg font-semibold text-text-primary">Rezervasiya</p>
+                      <p className="text-sm text-text-muted mt-1">Masa rezervasiya olunub</p>
+                    </div>
+                  );
+                }
+
+                if (!order) {
+                  return (
+                    <div className="text-center py-8">
+                      <ClipboardList className="w-12 h-12 mx-auto text-text-muted mb-3 opacity-40" />
+                      <p className="text-lg font-semibold text-text-primary">Sifariş Tapılmadı</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <ReceiptText className="w-4 h-4 text-text-muted" />
+                        <span className="text-sm font-medium text-text-secondary">
+                          Sifariş #{order.id.slice(0, 6).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-xs text-text-muted flex items-center gap-1">
+                        <Timer className="w-3 h-3" />
+                        {getElapsed(order.createdAt)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Məhsullar</p>
+                      <div className="space-y-2">
+                        {order.items.map((item) => {
+                          const statusInfo = itemStatusLabels[item.status] || itemStatusLabels.pending;
+                          return (
+                            <div key={item.id} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-text-primary truncate">{item.menuItemName}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-xs text-text-muted">×{item.quantity}</span>
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${statusInfo.color}`}>
+                                    {statusInfo.label}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-sm font-semibold text-text-primary ml-3">
+                                {item.price * item.quantity} ₼
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-primary-50 rounded-xl border border-primary-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-primary-700">Cəmi</span>
+                        <span className="text-xl font-bold text-primary-700">{order.totalAmount} ₼</span>
+                      </div>
+                    </div>
+
+                    {order.status === 'ready' && (
+                      <button
+                        onClick={() => {
+                          completePayment(order.id);
+                          updateTableStatus(selectedTable.id, 'available');
+                          setSelectedTable(null);
+                        }}
+                        className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <CreditCard className="w-5 h-5" />
+                        Hesabı Bağla
+                      </button>
+                    )}
+
+                    {order.status === 'pending' && (
+                      <button
+                        onClick={() => {
+                          updateTableStatus(selectedTable.id, 'cleaning');
+                          setSelectedTable(null);
+                        }}
+                        className="w-full bg-danger-500 hover:bg-danger-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        Ləğv Et
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
