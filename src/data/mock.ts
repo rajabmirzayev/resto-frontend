@@ -16,12 +16,13 @@ const allPermissions = [
   'staff.view', 'staff.create', 'staff.edit', 'staff.delete',
   'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
   'kitchen.view', 'kitchen.manage',
+  'settings.view', 'settings.edit',
 ] as const;
 
 export const initialData: AppState = {
   roles: [
     { id: 'r1', name: 'Süper Admin', permissions: [...allPermissions], isSystem: true },
-    { id: 'r2', name: 'Menecer', permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'tables.view', 'tables.manage', 'tables.status', 'orders.view', 'orders.manage', 'orders.cancel', 'reports.view', 'staff.view', 'staff.create', 'staff.edit', 'staff.delete', 'kitchen.view'], isSystem: false },
+    { id: 'r2', name: 'Menecer', permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'tables.view', 'tables.manage', 'tables.status', 'orders.view', 'orders.manage', 'orders.cancel', 'reports.view', 'staff.view', 'staff.create', 'staff.edit', 'staff.delete', 'kitchen.view', 'settings.view'], isSystem: false },
     { id: 'r3', name: 'Ofisant', permissions: ['dashboard.view', 'tables.view', 'tables.status', 'orders.view', 'orders.manage', 'kitchen.view'], isSystem: false },
     { id: 'r4', name: 'Aşpaz', permissions: ['kitchen.view', 'kitchen.manage', 'orders.view'], isSystem: false },
   ],
@@ -87,6 +88,8 @@ export const initialData: AppState = {
       ],
       status: 'preparing', paymentStatus: 'pending', totalAmount: 74,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: null, paymentRequested: false,
       createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
       updatedAt: new Date(Date.now() - 10 * 60000).toISOString(),
     },
@@ -100,6 +103,8 @@ export const initialData: AppState = {
       ],
       status: 'ready', paymentStatus: 'pending', totalAmount: 148,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: null, paymentRequested: false,
       createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
       updatedAt: new Date(Date.now() - 5 * 60000).toISOString(),
     },
@@ -112,6 +117,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 58,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(7, 12, 30), updatedAt: daysAgo(7, 13, 15),
     },
     {
@@ -123,6 +130,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 58,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(7, 19, 0), updatedAt: daysAgo(7, 20, 0),
     },
     {
@@ -135,6 +144,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 251,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(6, 13, 0), updatedAt: daysAgo(6, 14, 30),
     },
     {
@@ -145,6 +156,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 59,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(6, 18, 45), updatedAt: daysAgo(6, 19, 30),
     },
     {
@@ -157,6 +170,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 150,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(5, 12, 0), updatedAt: daysAgo(5, 13, 30),
     },
     {
@@ -170,6 +185,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 320,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(5, 19, 30), updatedAt: daysAgo(5, 21, 0),
     },
     {
@@ -181,6 +198,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 70,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(4, 13, 15), updatedAt: daysAgo(4, 14, 0),
     },
     {
@@ -192,6 +211,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 121,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(4, 19, 0), updatedAt: daysAgo(4, 20, 0),
     },
     {
@@ -203,6 +224,8 @@ export const initialData: AppState = {
       ],
       status: 'cancelled', paymentStatus: 'pending', totalAmount: 36,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: null, paymentRequested: false,
       createdAt: daysAgo(4, 20, 30), updatedAt: daysAgo(4, 20, 45),
     },
     {
@@ -214,6 +237,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 42,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(3, 12, 45), updatedAt: daysAgo(3, 13, 30),
     },
     {
@@ -226,6 +251,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 158,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(3, 19, 0), updatedAt: daysAgo(3, 20, 15),
     },
     {
@@ -236,6 +263,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 56,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(2, 13, 30), updatedAt: daysAgo(2, 14, 15),
     },
     {
@@ -249,6 +278,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 270,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(2, 19, 30), updatedAt: daysAgo(2, 21, 0),
     },
     {
@@ -260,6 +291,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 217,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(2, 20, 0), updatedAt: daysAgo(2, 21, 30),
     },
     {
@@ -271,6 +304,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 76,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(1, 12, 0), updatedAt: daysAgo(1, 13, 0),
     },
     {
@@ -283,6 +318,8 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 140,
       waiterId: 'u2', waiterName: 'Leyla Hüseynova',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Leyla Hüseynova',
+      paymentMethod: 'cash', paymentRequested: true,
       createdAt: daysAgo(1, 18, 30), updatedAt: daysAgo(1, 20, 0),
     },
     {
@@ -294,10 +331,15 @@ export const initialData: AppState = {
       ],
       status: 'completed', paymentStatus: 'paid', totalAmount: 64,
       waiterId: 'u3', waiterName: 'Kamil Əliyev',
+      orderSource: 'waiter', waiterConfirmed: true, confirmedBy: 'Kamil Əliyev',
+      paymentMethod: 'card', paymentRequested: true,
       createdAt: daysAgo(1, 13, 45), updatedAt: daysAgo(1, 14, 30),
     },
   ],
   currentUser: null,
+  orderMode: 'waiter',
+  customerPhotoRequired: false,
+  paymentTiming: 'after',
   cart: [],
   currentOrderId: null,
 };

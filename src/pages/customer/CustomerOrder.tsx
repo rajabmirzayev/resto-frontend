@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ArrowLeft, ReceiptText } from 'lucide-react';
+import { useToast } from '../../store/useToast';
+import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ArrowLeft, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
+import type { PaymentMethod } from '../../types';
 
 export default function CustomerOrder() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const orderId = searchParams.get('id');
   const orders = useStore((s) => s.orders);
+  const requestPayment = useStore((s) => s.requestPayment);
+  const paymentTiming = useStore((s) => s.paymentTiming);
+  const { addToast } = useToast();
 
   const [, forceUpdate] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -49,6 +55,8 @@ export default function CustomerOrder() {
 
   const activeIndex = statusConfig.findIndex((s) => s.key === order.status);
   const isCancelled = order.status === 'cancelled';
+  const isCompleted = order.status === 'completed';
+  const canRequestPayment = paymentTiming === 'after' && !isCancelled && !isCompleted && !order.paymentRequested && order.paymentStatus === 'pending';
 
   const statusColorMap: Record<string, string> = {
     warning: 'bg-warning-500 text-white',
@@ -64,6 +72,12 @@ export default function CustomerOrder() {
     served: { label: 'Verilib', color: 'bg-success-50 text-success-600' },
     completed: { label: 'Tamamlanıb', color: 'bg-surface-secondary text-text-muted' },
     cancelled: { label: 'Ləğv', color: 'bg-danger-50 text-danger-600' },
+  };
+
+  const handleRequestPayment = (method: PaymentMethod) => {
+    requestPayment(order.id, method);
+    setShowPaymentModal(false);
+    addToast('Hesab istəyi göndərildi. Ofisant gələcək.', 'success');
   };
 
   return (
@@ -82,6 +96,40 @@ export default function CustomerOrder() {
       </div>
 
       <div className="p-4 max-w-md mx-auto space-y-4">
+        {order.orderSource === 'customer' && !order.waiterConfirmed && (
+          <div className="bg-warning-50 border border-warning-200 rounded-2xl p-4 flex items-start gap-3">
+            <UserCheck className="w-5 h-5 text-warning-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-warning-700">Ofisant təsdiqi gözlənilir</p>
+              <p className="text-xs text-warning-600 mt-1">Sifarişiniz ofisant tərəfindən yoxlanılır. Təsdiq edildikdən sonra metbəxə göndəriləcək.</p>
+            </div>
+          </div>
+        )}
+
+        {order.orderSource === 'customer' && order.waiterConfirmed && order.status === 'confirmed' && (
+          <div className="bg-success-50 border border-success-200 rounded-2xl p-4 flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-success-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-success-700">Sifariş təsdiqləndi</p>
+              <p className="text-xs text-success-600 mt-1">Sifarişiniz ofisant tərəfindən təsdiqləndi və metbəxə göndərildi.</p>
+            </div>
+          </div>
+        )}
+
+        {order.paymentRequested && (
+          <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4 flex items-start gap-3">
+            <ReceiptText className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-primary-700">Hesab istəyi göndərildi</p>
+              <p className="text-xs text-primary-600 mt-1">
+                Ödəniş üsulu: {order.paymentMethod === 'cash' ? 'Nagd' : 'Kart'}
+                {order.paymentMethod === 'cash' ? ' 💵' : ' 💳'}
+              </p>
+              <p className="text-xs text-primary-500 mt-1">Ofisant tezliklə gələcək.</p>
+            </div>
+          </div>
+        )}
+
         {isCancelled && (
           <div className="bg-danger-50 border border-danger-500/20 rounded-2xl p-4 text-center">
             <p className="text-danger-600 font-semibold">Sifariş ləğv edilib</p>
@@ -92,7 +140,7 @@ export default function CustomerOrder() {
           <div className="bg-white rounded-2xl border border-border p-5">
             <div className="flex items-center gap-2 mb-1">
               <ReceiptText className="w-4 h-4 text-text-muted" />
-              <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Sifariş #${order.id.slice(0, 6).toUpperCase()}</p>
+              <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Sifariş #{order.id.slice(0, 6).toUpperCase()}</p>
             </div>
 
             <div className="mt-5 space-y-0">
@@ -177,6 +225,16 @@ export default function CustomerOrder() {
           </div>
         </div>
 
+        {canRequestPayment && (
+          <button
+            onClick={() => setShowPaymentModal(true)}
+            className="w-full bg-success-500 hover:bg-success-600 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+          >
+            <ReceiptText className="w-4 h-4" />
+            Hesab İstəyirəm
+          </button>
+        )}
+
         <button
           onClick={() => navigate('/menu')}
           className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
@@ -184,6 +242,58 @@ export default function CustomerOrder() {
           Menyuya Qayıt
         </button>
       </div>
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-text-primary">Ödəniş Üsulu</h3>
+              <button onClick={() => setShowPaymentModal(false)} className="p-1 hover:bg-surface-secondary rounded-lg transition-colors">
+                <X className="w-5 h-5 text-text-muted" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-text-secondary text-center mb-4">Hesabı necə ödəmək istəyirsiniz?</p>
+              
+              <button
+                onClick={() => handleRequestPayment('cash')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-success-400 hover:bg-success-50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-success-100 flex items-center justify-center">
+                  <Banknote className="w-6 h-6 text-success-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-text-primary">Nagd</p>
+                  <p className="text-xs text-text-muted">Nağd ödəniş</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleRequestPayment('card')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-primary-400 hover:bg-primary-50 transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                  <CreditCard className="w-6 h-6 text-primary-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-text-primary">Kart</p>
+                  <p className="text-xs text-text-muted">Kartla ödəniş</p>
+                </div>
+              </button>
+            </div>
+
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
+              >
+                Geri
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

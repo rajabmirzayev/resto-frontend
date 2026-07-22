@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Banknote, CreditCard, RotateCcw } from 'lucide-react';
+import type { PaymentMethod } from '../../types';
 
 export default function CustomerMenu() {
-  const { menuItems, menuCategories, tables, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, createCustomerOrder } = useStore();
+  const { menuItems, menuCategories, tables, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, createCustomerOrder, requestPayment, orderMode, customerPhotoRequired, paymentTiming } = useStore();
   const navigate = useNavigate();
   const { tableId: urlTableId } = useParams();
   const [searchParams] = useSearchParams();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+
+  const canOrder = orderMode === 'customer' || orderMode === 'customer-waiter-confirm';
+  const needsPhoto = canOrder && orderMode === 'customer' && customerPhotoRequired;
 
   const tableParam = urlTableId || searchParams.get('t');
   const initialTable = tableParam
@@ -18,6 +27,9 @@ export default function CustomerMenu() {
   const [showCart, setShowCart] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [customerPhoto, setCustomerPhoto] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(null);
+  const isBeforePayment = paymentTiming === 'before';
 
   const availableTables = tables.filter((t) => t.status === 'available');
   const filtered = menuItems.filter((m) => m.category === selectedCategory && m.isAvailable);
@@ -40,14 +52,91 @@ export default function CustomerMenu() {
     setShowOrderModal(true);
   };
 
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  }, []);
+
+  const startCamera = useCallback(async (facing: 'user' | 'environment') => {
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setFacingMode(facing);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch {
+      setOrderError('Kameraya icazə verilmədi. Zəhmət olmasa kamera icazəsini aktiv edin.');
+      setShowCamera(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showCamera && videoRef.current) {
+      startCamera(facingMode);
+    }
+    return () => {
+      if (!showCamera && streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+  }, [showCamera, facingMode, startCamera]);
+
+  const capturePhoto = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    setCustomerPhoto(dataUrl);
+    setOrderError('');
+    stopCamera();
+  }, [facingMode, stopCamera]);
+
+  const handleOpenCamera = () => {
+    setOrderError('');
+    setShowCamera(true);
+  };
+
   const handleConfirmOrder = () => {
     if (!selectedTableId) {
       setOrderError('Zəhmət olmasa masa seçin');
       return;
     }
-    const order = createCustomerOrder(selectedTableId);
+    if (needsPhoto && !customerPhoto) {
+      setOrderError('Zəhmət olmasa masada olduğunuzu təsdiqləmək üçün şəkil çəkin');
+      return;
+    }
+    if (isBeforePayment && !selectedPaymentMethod) {
+      setOrderError('Zəhmət olmasa ödəniş üsulunu seçin');
+      return;
+    }
+    const order = createCustomerOrder(selectedTableId, customerPhoto || undefined);
     if (order) {
+      if (isBeforePayment && selectedPaymentMethod) {
+        requestPayment(order.id, selectedPaymentMethod);
+      }
       setShowOrderModal(false);
+      setCustomerPhoto(null);
+      setSelectedPaymentMethod(null);
       navigate(`/order?id=${order.id}`);
     } else {
       setOrderError('Sifariş yaradılarkən xəta baş verdi');
@@ -64,21 +153,23 @@ export default function CustomerMenu() {
               Masa #{tables.find((t) => t.id === selectedTableId)?.number || '?'}
             </span>
           )}
-          <button
-            onClick={() => setShowCart(!showCart)}
-            className="relative bg-primary-600 text-white p-2.5 rounded-xl hover:bg-primary-700 transition-colors"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-danger-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                {cartCount}
-              </span>
-            )}
-          </button>
+          {canOrder && (
+            <button
+              onClick={() => setShowCart(!showCart)}
+              className="relative bg-primary-600 text-white p-2.5 rounded-xl hover:bg-primary-700 transition-colors"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-danger-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
-      {!selectedTableId && (
+      {!selectedTableId && canOrder && (
         <div className="bg-white border-b border-border px-4 py-4">
           <p className="text-sm text-text-secondary mb-2 font-medium">Zəhmət olmasa masanızı seçin:</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -107,7 +198,7 @@ export default function CustomerMenu() {
         </div>
       )}
 
-      {showCart && (
+      {showCart && canOrder && (
         <div className="bg-white border-b border-border px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-text-primary">Səbət</h3>
@@ -168,23 +259,31 @@ export default function CustomerMenu() {
         </div>
       )}
 
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white border-b border-border">
-        {menuCategories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-              selectedCategory === cat.id
-                ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-surface-secondary text-text-secondary hover:bg-border'
-            }`}
-          >
-            {cat.name}
-          </button>
-        ))}
-      </div>
+      {canOrder && (
+        <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white border-b border-border">
+          {menuCategories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedCategory === cat.id
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-surface-secondary text-text-secondary hover:bg-border'
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {!canOrder && (
+        <div className="px-4 py-3 bg-white border-b border-border">
+          <p className="text-sm text-text-muted text-center">Bu restoranda sifarişlər ofisant tərəfindən qəbul edilir</p>
+        </div>
+      )}
+
+      <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${!canOrder ? 'pt-4' : ''}`}>
         {filtered.map((item) => {
           const cartItem = cart.find((c) => c.menuItemId === item.id);
           return (
@@ -198,29 +297,31 @@ export default function CustomerMenu() {
                 <p className="text-xs text-text-muted mt-1">~{item.preparationTime} dəq</p>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-primary-600">{item.price} ₼</span>
-                  {cartItem ? (
-                    <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-2 py-1">
+                  {canOrder && (
+                    cartItem ? (
+                      <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-2 py-1">
+                        <button
+                          onClick={() => updateCartQuantity(item.id, cartItem.quantity - 1)}
+                          className="w-7 h-7 rounded-lg bg-white border border-primary-200 flex items-center justify-center hover:bg-primary-100 transition-colors"
+                        >
+                          <Minus className="w-3 h-3 text-primary-700" />
+                        </button>
+                        <span className="w-6 text-center text-sm font-bold text-primary-700">{cartItem.quantity}</span>
+                        <button
+                          onClick={() => updateCartQuantity(item.id, cartItem.quantity + 1)}
+                          className="w-7 h-7 rounded-lg bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => updateCartQuantity(item.id, cartItem.quantity - 1)}
-                        className="w-7 h-7 rounded-lg bg-white border border-primary-200 flex items-center justify-center hover:bg-primary-100 transition-colors"
+                        onClick={() => handleAddToCart(item)}
+                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-xl transition-colors"
                       >
-                        <Minus className="w-3 h-3 text-primary-700" />
+                        <Plus className="w-4 h-4" />
                       </button>
-                      <span className="w-6 text-center text-sm font-bold text-primary-700">{cartItem.quantity}</span>
-                      <button
-                        onClick={() => updateCartQuantity(item.id, cartItem.quantity + 1)}
-                        className="w-7 h-7 rounded-lg bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleAddToCart(item)}
-                      className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-xl transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    )
                   )}
                 </div>
               </div>
@@ -280,6 +381,81 @@ export default function CustomerMenu() {
                 </div>
               </div>
 
+              {needsPhoto && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Şəkil təsdiqi <span className="text-danger-500">*</span>
+                  </label>
+                  <p className="text-xs text-text-muted mb-3">Masada olduğunuzu təsdiqləmək üçün şəkil çəkin</p>
+                  
+                  {customerPhoto ? (
+                    <div className="relative">
+                      <img src={customerPhoto} alt="Müşteri şəkli" className="w-full h-40 object-cover rounded-xl border border-border" />
+                      <button
+                        onClick={() => setCustomerPhoto(null)}
+                        className="absolute top-2 right-2 w-8 h-8 bg-danger-500 text-white rounded-full flex items-center justify-center hover:bg-danger-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 bg-success-500 text-white text-xs px-2 py-1 rounded-lg flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        Şəkil çəkildi
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleOpenCamera}
+                      className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 hover:border-primary-400 hover:bg-primary-50 transition-colors"
+                    >
+                      <Camera className="w-8 h-8 text-text-muted" />
+                      <span className="text-sm font-medium text-text-secondary">Şəkil Çək</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {isBeforePayment && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    Ödəniş Üsulu <span className="text-danger-500">*</span>
+                  </label>
+                  <p className="text-xs text-text-muted mb-3">Sifarişdən əvvəl ödəniş üsulunu seçin</p>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod('cash')}
+                      className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                        selectedPaymentMethod === 'cash'
+                          ? 'border-success-500 bg-success-50'
+                          : 'border-border hover:border-success-300'
+                      }`}
+                    >
+                      <Banknote className={`w-6 h-6 ${selectedPaymentMethod === 'cash' ? 'text-success-600' : 'text-text-muted'}`} />
+                      <div className="text-left">
+                        <p className={`text-sm font-semibold ${selectedPaymentMethod === 'cash' ? 'text-success-700' : 'text-text-primary'}`}>Nagd</p>
+                        <p className="text-[10px] text-text-muted">Nağd ödəniş</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod('card')}
+                      className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                        selectedPaymentMethod === 'card'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-border hover:border-primary-300'
+                      }`}
+                    >
+                      <CreditCard className={`w-6 h-6 ${selectedPaymentMethod === 'card' ? 'text-primary-600' : 'text-text-muted'}`} />
+                      <div className="text-left">
+                        <p className={`text-sm font-semibold ${selectedPaymentMethod === 'card' ? 'text-primary-700' : 'text-text-primary'}`}>Kart</p>
+                        <p className="text-[10px] text-text-muted">Kart ilə ödəniş</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {orderError && (
                 <p className="text-sm text-danger-600 bg-danger-50 px-3 py-2 rounded-lg mb-3">{orderError}</p>
               )}
@@ -301,6 +477,42 @@ export default function CustomerMenu() {
                 Təsdiqlə
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCamera && (
+        <div className="fixed inset-0 bg-black z-[60] flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 bg-black">
+            <h3 className="text-white font-semibold">Kamera</h3>
+            <button onClick={stopCamera} className="p-2 text-white hover:bg-white/10 rounded-xl transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 relative bg-black overflow-hidden">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+            />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+          <div className="bg-black px-6 py-6 flex items-center justify-center gap-6">
+            <button
+              onClick={() => startCamera(facingMode === 'user' ? 'environment' : 'user')}
+              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <button
+              onClick={capturePhoto}
+              className="w-16 h-16 rounded-full bg-white border-4 border-white/50 flex items-center justify-center hover:scale-105 transition-transform"
+            >
+              <div className="w-13 h-13 rounded-full border-2 border-gray-300" />
+            </button>
+            <div className="w-12 h-12" />
           </div>
         </div>
       )}

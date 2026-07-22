@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderStatus, Permission, Role, Table, TableStatus, User } from '../types';
+import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User } from '../types';
 import { initialData } from '../data/mock';
 
 interface StoreActions {
@@ -41,11 +41,16 @@ interface StoreActions {
   clearCart: () => void;
 
   createOrder: (tableId: string, waiterId: string, waiterName: string) => Order | null;
-  createCustomerOrder: (tableId: string) => Order | null;
+  createCustomerOrder: (tableId: string, customerPhoto?: string) => Order | null;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateOrderItemStatus: (orderId: string, itemId: string, status: OrderStatus) => void;
+  confirmOrder: (orderId: string, waiterId: string, waiterName: string) => void;
   cancelOrder: (orderId: string) => void;
   completePayment: (orderId: string) => void;
+  requestPayment: (orderId: string, method: PaymentMethod) => void;
+  setOrderMode: (mode: OrderMode) => void;
+  setCustomerPhotoRequired: (required: boolean) => void;
+  setPaymentTiming: (timing: PaymentTiming) => void;
 
   getTableOrders: (tableId: string) => Order[];
   getActiveOrders: () => Order[];
@@ -272,6 +277,11 @@ export const useStore = create<Store>()(
           totalAmount,
           waiterId,
           waiterName,
+          orderSource: 'waiter',
+          waiterConfirmed: true,
+          confirmedBy: waiterName,
+          paymentMethod: null,
+          paymentRequested: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -287,8 +297,8 @@ export const useStore = create<Store>()(
         return newOrder;
       },
 
-      createCustomerOrder: (tableId) => {
-        const { cart, tables } = get();
+      createCustomerOrder: (tableId, customerPhoto) => {
+        const { cart, tables, orderMode } = get();
         if (cart.length === 0) return null;
 
         const table = tables.find((t) => t.id === tableId);
@@ -306,16 +316,25 @@ export const useStore = create<Store>()(
 
         const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+        const needsWaiterConfirm = orderMode === 'customer-waiter-confirm';
+        const initialStatus: OrderStatus = needsWaiterConfirm ? 'pending' : 'confirmed';
+
         const newOrder: Order = {
           id: uuidv4(),
           tableId,
           tableNumber: table.number,
           items: orderItems,
-          status: 'pending',
+          status: initialStatus,
           paymentStatus: 'pending',
           totalAmount,
           waiterId: '',
-          waiterName: 'Müştəri',
+          waiterName: '',
+          orderSource: 'customer',
+          waiterConfirmed: !needsWaiterConfirm,
+          confirmedBy: needsWaiterConfirm ? '' : 'Avtomatik',
+          customerPhoto: customerPhoto || undefined,
+          paymentMethod: null,
+          paymentRequested: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -354,6 +373,16 @@ export const useStore = create<Store>()(
         }));
       },
 
+      confirmOrder: (orderId, waiterId, waiterName) => {
+        set((state) => ({
+          orders: state.orders.map((o) =>
+            o.id === orderId
+              ? { ...o, status: 'confirmed' as OrderStatus, waiterConfirmed: true, waiterId, waiterName, confirmedBy: waiterName, updatedAt: new Date().toISOString() }
+              : o
+          ),
+        }));
+      },
+
       cancelOrder: (orderId) => {
         const order = get().orders.find((o) => o.id === orderId);
         if (!order) return;
@@ -382,6 +411,16 @@ export const useStore = create<Store>()(
         }));
       },
 
+      requestPayment: (orderId, method) => {
+        set((state) => ({
+          orders: state.orders.map((o) =>
+            o.id === orderId
+              ? { ...o, paymentRequested: true, paymentMethod: method, updatedAt: new Date().toISOString() }
+              : o
+          ),
+        }));
+      },
+
       getTableOrders: (tableId) => {
         const { orders } = get();
         return orders.filter((o) => o.tableId === tableId && o.status !== 'cancelled');
@@ -395,6 +434,18 @@ export const useStore = create<Store>()(
       getOrdersByWaiter: (waiterId) => {
         const { orders } = get();
         return orders.filter((o) => o.waiterId === waiterId);
+      },
+
+      setOrderMode: (mode) => {
+        set({ orderMode: mode });
+      },
+
+      setCustomerPhotoRequired: (required) => {
+        set({ customerPhotoRequired: required });
+      },
+
+      setPaymentTiming: (timing) => {
+        set({ paymentTiming: timing });
       },
 
       resetData: () => {

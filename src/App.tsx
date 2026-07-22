@@ -10,6 +10,7 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminReports from './pages/admin/AdminReports';
 import StaffManagement from './pages/admin/StaffManagement';
 import RoleManagement from './pages/admin/RoleManagement';
+import AdminSettings from './pages/admin/AdminSettings';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
 import KitchenDashboard from './pages/kitchen/KitchenDashboard';
 import CustomerMenu from './pages/customer/CustomerMenu';
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="reports" element={<PermRoute permission="reports.view"><AdminReports /></PermRoute>} />
           <Route path="staff" element={<PermRoute permission="staff.view"><StaffManagement /></PermRoute>} />
           <Route path="roles" element={<PermRoute permission="roles.view"><RoleManagement /></PermRoute>} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
 
         <Route

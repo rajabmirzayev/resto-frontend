@@ -4,7 +4,7 @@ import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { playNewOrderSound } from '../../lib/sounds';
 import type { Order, OrderStatus } from '../../types';
-import { Clock, CheckCircle, ChefHat, AlertCircle, Timer, ArrowRight } from 'lucide-react';
+import { Clock, CheckCircle, ChefHat, AlertCircle, Timer, ArrowRight, Camera } from 'lucide-react';
 
 export default function KitchenDashboard() {
   const { orders, updateOrderItemStatus, updateOrderStatus } = useStore();
@@ -13,7 +13,11 @@ export default function KitchenDashboard() {
   const prevPendingCount = useRef(0);
 
   useEffect(() => {
-    const interval = setInterval(() => forceUpdate((n) => n + 1), 2000);
+    useStore.persist.rehydrate();
+    const interval = setInterval(() => {
+      useStore.persist.rehydrate();
+      forceUpdate((n) => n + 1);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -27,7 +31,7 @@ export default function KitchenDashboard() {
     prevPendingCount.current = pendingCount;
   }, [orders, addToast]);
 
-  const newOrders = orders.filter((o) => o.status === 'pending');
+  const newOrders = orders.filter((o) => o.status === 'pending' || (o.status === 'confirmed' && o.orderSource === 'customer'));
   const preparingOrders = orders.filter((o) => o.status === 'preparing');
   const readyOrders = orders.filter((o) => o.status === 'ready');
 
@@ -137,10 +141,13 @@ export default function KitchenDashboard() {
         }`}
       >
         <div className={`px-5 py-3 border-b border-border ${headerStyles[variant]}`}>
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChefHat className="w-4 h-4 text-text-muted" />
               <span className="font-bold text-text-primary">Masa #{order.tableNumber}</span>
+              {order.orderSource === 'customer' && (
+                <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">Müştəri</span>
+              )}
             </div>
             <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeStyles[variant]}`}>
               {badgeLabels[variant]}
@@ -163,7 +170,7 @@ export default function KitchenDashboard() {
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-[10px] text-text-muted">
-              {order.waiterName || 'Müştəri'} • {readyCount}/{totalCount} hazırdır
+              {order.orderSource === 'customer' ? 'Müştəri sifarişi' : order.waiterName || 'Ofisant'} • {readyCount}/{totalCount} hazırdır
             </span>
           </div>
         </div>
@@ -211,6 +218,21 @@ export default function KitchenDashboard() {
             );
           })}
         </div>
+
+        {order.customerPhoto && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Camera className="w-3.5 h-3.5 text-primary-600" />
+              <span className="text-xs font-semibold text-primary-700">Müşteri Şəkli</span>
+            </div>
+            <img
+              src={order.customerPhoto}
+              alt={`Masa #${order.tableNumber} müştəri şəkli`}
+              className="w-full h-32 object-cover rounded-xl border border-primary-200"
+            />
+            <p className="text-[10px] text-text-muted mt-1">Müştərinin masada olduğunu təsdiqləyin</p>
+          </div>
+        )}
 
         <div className="px-4 pb-4 space-y-2">
           {variant === 'new' && (

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, LogOut, ChefHat, Shield, X } from 'lucide-react';
+import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, LogOut, ChefHat, Shield, X, Settings } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useSidebar } from '../../store/useSidebar';
@@ -12,6 +12,7 @@ const navItems: { to: string; label: string; icon: typeof LayoutDashboard; permi
   { to: '/admin/reports', label: 'Hesabatlar', icon: BarChart3, permission: 'reports.view' },
   { to: '/admin/staff', label: 'Personal', icon: Users, permission: 'staff.view' },
   { to: '/admin/roles', label: 'Rollar', icon: Shield, permission: 'roles.view' },
+  { to: '/admin/settings', label: 'Tənzimləmələr', icon: Settings, permission: 'dashboard.view' },
 ];
 
 export default function Sidebar() {

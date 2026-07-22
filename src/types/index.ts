@@ -5,6 +5,17 @@ export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning';
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'served' | 'completed' | 'cancelled';
 
 export type PaymentStatus = 'pending' | 'paid';
+export type PaymentMethod = 'cash' | 'card' | null;
+export type PaymentTiming = 'before' | 'after';
+
+export type OrderMode = 'waiter' | 'customer' | 'customer-waiter-confirm' | 'kitchen';
+
+export const ORDER_MODES: { value: OrderMode; title: string; description: string; waiterPanel: boolean; kitchenPanel: boolean }[] = [
+  { value: 'waiter', title: 'Ofisant Sifariş Alır', description: 'Ənənəvi qayda. Ofisant sifarişi özü yazır, müştəri sadəcə menyuya baxa bilər.', waiterPanel: true, kitchenPanel: true },
+  { value: 'customer', title: 'Müştəri Özü Sifariş Verir', description: 'Müştəri menyudan sifariş edir, sifariş birbaşa metbexə gedir. Ofisant paneli lazım deyil.', waiterPanel: false, kitchenPanel: true },
+  { value: 'customer-waiter-confirm', title: 'Müştəri Verir, Ofisant Təsdiqləyir', description: 'Müştəri sifariş edir, ofisant yoxlayıb təsdiqləyir, sonra metbexə gedir.', waiterPanel: true, kitchenPanel: true },
+  { value: 'kitchen', title: 'Sifariş Sistemə Qeyd Olunur', description: 'Ofisant və ya müştəri paneli olmadan. Sifarişlər sistemi vasitəsilə metbexə düşür.', waiterPanel: false, kitchenPanel: true },
+];
 
 export type Permission =
   | 'dashboard.view'
@@ -14,7 +25,8 @@ export type Permission =
   | 'reports.view'
   | 'staff.view' | 'staff.create' | 'staff.edit' | 'staff.delete'
   | 'roles.view' | 'roles.create' | 'roles.edit' | 'roles.delete'
-  | 'kitchen.view' | 'kitchen.manage';
+  | 'kitchen.view' | 'kitchen.manage'
+  | 'settings.view' | 'settings.edit';
 
 export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission; label: string }[] }[] = [
   {
@@ -73,6 +85,13 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     permissions: [
       { key: 'kitchen.view', label: 'Panelə baxış' },
       { key: 'kitchen.manage', label: 'Sifariş idarəetməsi' },
+    ],
+  },
+  {
+    label: 'Tənzimləmələr',
+    permissions: [
+      { key: 'settings.view', label: 'Baxış' },
+      { key: 'settings.edit', label: 'Redaktə' },
     ],
   },
 ];
@@ -140,6 +159,12 @@ export interface Order {
   totalAmount: number;
   waiterId: string;
   waiterName: string;
+  orderSource: 'waiter' | 'customer';
+  waiterConfirmed: boolean;
+  confirmedBy: string;
+  customerPhoto?: string;
+  paymentMethod: PaymentMethod;
+  paymentRequested: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -152,6 +177,9 @@ export interface AppState {
   tables: Table[];
   tableSections: string[];
   orders: Order[];
+  orderMode: OrderMode;
+  customerPhotoRequired: boolean;
+  paymentTiming: PaymentTiming;
   currentUser: User | null;
   cart: CartItem[];
   currentOrderId: string | null;
