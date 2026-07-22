@@ -36,7 +36,7 @@ export default function AdminSettings() {
                 className={`relative text-left p-6 rounded-2xl border-2 transition-all ${
                   isActive
                     ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100'
-                    : 'border-border bg-white hover:border-primary-300 hover:shadow-md'
+                    : 'border-border bg-white dark:bg-surface hover:border-primary-300 hover:shadow-md'
                 }`}
               >
                 {isActive && (
@@ -75,7 +75,7 @@ export default function AdminSettings() {
           })}
         </div>
 
-        <div className="mt-8 bg-white rounded-2xl border border-border p-6">
+        <div className="mt-8 bg-white dark:bg-surface rounded-2xl border border-border p-6">
           <h3 className="text-base font-bold text-text-primary mb-3">Cari Rejim: {ORDER_MODES.find((m) => m.value === orderMode)?.title}</h3>
           <div className="bg-surface-secondary rounded-xl p-4">
             <p className="text-sm text-text-secondary leading-relaxed">
@@ -88,7 +88,7 @@ export default function AdminSettings() {
         </div>
 
         {orderMode === 'customer' && (
-          <div className="mt-6 bg-white rounded-2xl border border-border p-6">
+          <div className="mt-6 bg-white dark:bg-surface rounded-2xl border border-border p-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-warning-50 flex items-center justify-center flex-shrink-0">
                 <Camera className="w-6 h-6 text-warning-600" />
@@ -108,7 +108,7 @@ export default function AdminSettings() {
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                      className={`absolute top-1 w-6 h-6 bg-white dark:bg-surface rounded-full shadow transition-transform ${
                         customerPhotoRequired ? 'translate-x-7' : 'translate-x-1'
                       }`}
                     />
@@ -133,7 +133,7 @@ export default function AdminSettings() {
           </div>
         )}
 
-        <div className="mt-6 bg-white rounded-2xl border border-border p-6">
+        <div className="mt-6 bg-white dark:bg-surface rounded-2xl border border-border p-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
                 <CreditCard className="w-6 h-6 text-primary-600" />

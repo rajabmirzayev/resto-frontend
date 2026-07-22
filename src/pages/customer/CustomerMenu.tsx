@@ -89,7 +89,7 @@ export default function CustomerMenu() {
 
   return (
     <div className="min-h-screen bg-surface-secondary">
-      <div className="bg-white border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+      <div className="bg-white dark:bg-surface border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20">
         <h1 className="text-xl font-bold text-text-primary">Tabler Menyu</h1>
         <div className="flex items-center gap-2">
           {selectedTableId && (
@@ -114,7 +114,7 @@ export default function CustomerMenu() {
       </div>
 
       {!selectedTableId && canOrder && (
-        <div className="bg-white border-b border-border px-4 py-4">
+        <div className="bg-white dark:bg-surface border-b border-border px-4 py-4">
           <p className="text-sm text-text-secondary mb-2 font-medium">Zəhmət olmasa masanızı seçin:</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {tables.map((table) => {
@@ -130,7 +130,7 @@ export default function CustomerMenu() {
                       ? 'border-primary-600 bg-primary-50 text-primary-700'
                       : isOccupied
                       ? 'border-border bg-surface-secondary text-text-muted cursor-not-allowed opacity-50'
-                      : 'border-border bg-white text-text-secondary hover:border-primary-300 hover:bg-primary-50'
+                      : 'border-border bg-white dark:bg-surface text-text-secondary hover:border-primary-300 hover:bg-primary-50'
                   }`}
                 >
                   #{table.number}
@@ -143,7 +143,7 @@ export default function CustomerMenu() {
       )}
 
       {showCart && canOrder && (
-        <div className="bg-white border-b border-border px-4 py-4">
+        <div className="bg-white dark:bg-surface border-b border-border px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-text-primary">Səbət</h3>
             {cart.length > 0 && (
@@ -165,14 +165,14 @@ export default function CustomerMenu() {
                   <div className="flex items-center gap-2 ml-3">
                     <button
                       onClick={() => updateCartQuantity(item.menuItemId, item.quantity - 1)}
-                      className="w-7 h-7 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
+                      className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
                     <span className="w-6 text-center text-sm font-semibold text-text-primary">{item.quantity}</span>
                     <button
                       onClick={() => updateCartQuantity(item.menuItemId, item.quantity + 1)}
-                      className="w-7 h-7 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
+                      className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
@@ -204,7 +204,7 @@ export default function CustomerMenu() {
       )}
 
       {canOrder && (
-        <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white border-b border-border">
+        <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white dark:bg-surface border-b border-border">
           {menuCategories.map((cat) => (
             <button
               key={cat.id}
@@ -222,7 +222,7 @@ export default function CustomerMenu() {
       )}
 
       {!canOrder && (
-        <div className="px-4 py-3 bg-white border-b border-border">
+        <div className="px-4 py-3 bg-white dark:bg-surface border-b border-border">
           <p className="text-sm text-text-muted text-center">Bu restoranda sifarişlər ofisant tərəfindən qəbul edilir</p>
         </div>
       )}
@@ -231,8 +231,8 @@ export default function CustomerMenu() {
         {filtered.map((item) => {
           const cartItem = cart.find((c) => c.menuItemId === item.id);
           return (
-            <div key={item.id} className="bg-white rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-32 bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center">
+            <div key={item.id} className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="h-32 bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center">
                 <span className="text-4xl">🍽️</span>
               </div>
               <div className="p-4">
@@ -246,7 +246,7 @@ export default function CustomerMenu() {
                       <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-2 py-1">
                         <button
                           onClick={() => updateCartQuantity(item.id, cartItem.quantity - 1)}
-                          className="w-7 h-7 rounded-lg bg-white border border-primary-200 flex items-center justify-center hover:bg-primary-100 transition-colors"
+                          className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-primary-200 flex items-center justify-center hover:bg-primary-100 transition-colors"
                         >
                           <Minus className="w-3 h-3 text-primary-700" />
                         </button>
@@ -276,7 +276,7 @@ export default function CustomerMenu() {
 
       {showOrderModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOrderModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-text-primary">Sifarişi Təsdiqlə</h3>
               <button onClick={() => setShowOrderModal(false)} className="p-1 hover:bg-surface-secondary rounded-lg transition-colors">

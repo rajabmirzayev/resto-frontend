@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center">
                 <DollarSign className="w-5 h-5 text-success-600" />
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
             <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
             <p className="text-sm text-text-secondary mt-1">Ümumi Gəlir</p>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-primary-600" />
@@ -55,7 +55,7 @@ export default function AdminDashboard() {
             <p className="text-2xl font-bold text-text-primary">{completedOrders.length}</p>
             <p className="text-sm text-text-secondary mt-1">Tamamlanan Sifariş</p>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-warning-600" />
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
             <p className="text-2xl font-bold text-text-primary">{activeOrders.length}</p>
             <p className="text-sm text-text-secondary mt-1">Aktiv Sifariş</p>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center">
                 <Users className="w-5 h-5 text-danger-600" />
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-border">
+          <div className="lg:col-span-2 bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary-500" />
               Ən Çox Satılan Məhsullar
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <UserCog className="w-5 h-5 text-primary-500" />
               Aktiv İşçilər
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-primary-500" />
               Son Sifarişlər
@@ -184,7 +184,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <ChefHat className="w-5 h-5 text-primary-500" />
               Masa Xəritəsi

@@ -78,7 +78,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-border overflow-hidden transition-all hover:shadow-lg ${
+      className={`bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden transition-all hover:shadow-lg ${
         variant === 'new' ? 'ring-2 ring-warning-300 shadow-warning-100' : ''
       }`}
     >

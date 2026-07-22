@@ -73,7 +73,7 @@ export default function CustomerOrder() {
 
   return (
     <div className="min-h-screen bg-surface-secondary">
-      <div className="bg-white border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+      <div className="bg-white dark:bg-surface border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
         <button
           onClick={() => navigate('/menu')}
           className="p-2 hover:bg-surface-secondary rounded-xl transition-colors"
@@ -128,7 +128,7 @@ export default function CustomerOrder() {
         )}
 
         {!isCancelled && (
-          <div className="bg-white rounded-2xl border border-border p-5">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-5">
             <div className="flex items-center gap-2 mb-1">
               <ReceiptText className="w-4 h-4 text-text-muted" />
               <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Sifariş #{order.id.slice(0, 6).toUpperCase()}</p>
@@ -179,7 +179,7 @@ export default function CustomerOrder() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl border border-border p-5">
+        <div className="bg-white dark:bg-surface rounded-2xl border border-border p-5">
           <h3 className="text-sm font-semibold text-text-primary mb-3">Sifariş Detalları</h3>
           <div className="space-y-2">
             {order.items.map((item) => {
@@ -207,7 +207,7 @@ export default function CustomerOrder() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-border p-4">
+        <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-text-secondary">Tarix:</span>
             <span className="text-text-primary font-medium">
@@ -236,7 +236,7 @@ export default function CustomerOrder() {
 
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-text-primary">Ödəniş Üsulu</h3>
               <button onClick={() => setShowPaymentModal(false)} className="p-1 hover:bg-surface-secondary rounded-lg transition-colors">

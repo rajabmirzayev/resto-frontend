@@ -214,7 +214,7 @@ export default function AdminTables() {
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => { e.stopPropagation(); openEdit(table); }}
-                          className="w-7 h-7 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
+                          className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
                           title="Redaktə"
                         >
                           <Edit2 className="w-3.5 h-3.5 text-text-secondary" />
@@ -222,7 +222,7 @@ export default function AdminTables() {
                         {!activeOrder && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(table.id); }}
-                            className="w-7 h-7 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-danger-50 transition-colors"
+                            className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-border flex items-center justify-center hover:bg-danger-50 transition-colors"
                             title="Sil"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-danger-500" />
@@ -242,7 +242,7 @@ export default function AdminTables() {
                       </div>
 
                       {activeOrder && (
-                        <div className="mt-3 bg-white rounded-xl p-2.5 border border-border">
+                        <div className="mt-3 bg-white dark:bg-surface rounded-xl p-2.5 border border-border">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <ChefHat className="w-3.5 h-3.5 text-primary-600" />
                             <span className="text-[10px] font-semibold text-primary-600">Aktiv Sifariş</span>
@@ -291,7 +291,7 @@ export default function AdminTables() {
         })}
 
         {sections.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-2xl border border-border">
+          <div className="text-center py-20 bg-white dark:bg-surface rounded-2xl border border-border">
             <FolderOpen className="w-12 h-12 mx-auto text-text-muted opacity-30 mb-3" />
             <p className="text-text-muted mb-4">Hələ zona yaradılmayıb</p>
             <button onClick={openSectionAdd} className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
@@ -304,7 +304,7 @@ export default function AdminTables() {
       {/* Table Add / Edit Modal */}
       {(modalMode === 'add' || modalMode === 'edit') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit' ? 'Masanı Redaktə Et' : 'Yeni Masa Əlavə Et'}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
@@ -398,7 +398,7 @@ export default function AdminTables() {
       {/* Section Add / Edit Modal */}
       {(modalMode === 'sectionAdd' || modalMode === 'sectionEdit') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'sectionEdit' ? 'Zonanı Redaktə Et' : 'Yeni Zona Əlavə Et'}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
@@ -441,7 +441,7 @@ export default function AdminTables() {
       {/* Table Delete Confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
             <h3 className="text-lg font-bold text-text-primary mb-1">
               Masa #{tables.find((t) => t.id === deleteConfirm)?.number} silinsin?
@@ -462,7 +462,7 @@ export default function AdminTables() {
       {/* Section Delete Confirmation */}
       {deleteSectionConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteSectionConfirm(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
             <h3 className="text-lg font-bold text-text-primary mb-1">
               "{deleteSectionConfirm}" zonası silinsin?

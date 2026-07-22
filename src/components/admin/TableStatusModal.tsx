@@ -52,7 +52,7 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h3 className="text-lg font-bold text-text-primary">Masa #{table.number} — Status</h3>
           <button onClick={onClose} className="p-1 hover:bg-surface-secondary rounded-lg">

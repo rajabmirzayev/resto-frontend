@@ -32,6 +32,37 @@
   --color-text-muted: #94a3b8;
 }
 
+.dark {
+  --color-surface: #1e293b;
+  --color-surface-secondary: #131c2e;
+  --color-border: #2d3a4f;
+  --color-text-primary: #e8edf5;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --color-primary-50: rgba(14, 165, 233, 0.1);
+  --color-primary-100: rgba(14, 165, 233, 0.15);
+
+  --color-success-50: rgba(34, 197, 94, 0.12);
+  --color-warning-50: rgba(245, 158, 11, 0.12);
+  --color-danger-50: rgba(239, 68, 68, 0.12);
+}
+
+.dark .shadow-primary-200,
+.dark .shadow-primary-100,
+.dark .shadow-primary-100\/50,
+.dark .shadow-warning-100,
+.dark .shadow-danger-100,
+.dark .hover\:shadow-primary-300,
+.dark .ring-primary-100,
+.dark .ring-warning-100,
+.dark .ring-warning-200,
+.dark .ring-warning-300,
+.dark .ring-danger-100,
+.dark .ring-danger-200 {
+  box-shadow: none;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -39,6 +70,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-surface-secondary);
   color: var(--color-text-primary);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 #root {
@@ -60,6 +92,10 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
 }
 
 @keyframes slideIn {

@@ -140,14 +140,14 @@ export default function AdminMenu() {
                   <div className={`flex items-center pr-1.5 gap-0.5 opacity-0 group-hover/cat:opacity-100 transition-opacity ${isActive ? '' : ''}`}>
                     <button
                       onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }}
-                      className={`p-0.5 rounded transition-colors ${isActive ? 'hover:bg-white/20 text-white' : 'hover:bg-primary-100 text-text-muted hover:text-primary-600'}`}
+                      className={`p-0.5 rounded transition-colors ${isActive ? 'hover:bg-white dark:bg-surface/20 text-white' : 'hover:bg-primary-100 text-text-muted hover:text-primary-600'}`}
                       title="Redaktə"
                     >
                       <Edit2 className="w-3 h-3" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); openDeleteCategory(cat); }}
-                      className={`p-0.5 rounded transition-colors ${isActive ? 'hover:bg-white/20 text-white' : 'hover:bg-danger-100 text-text-muted hover:text-danger-600'}`}
+                      className={`p-0.5 rounded transition-colors ${isActive ? 'hover:bg-white dark:bg-surface/20 text-white' : 'hover:bg-danger-100 text-text-muted hover:text-danger-600'}`}
                       title="Sil"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -159,7 +159,7 @@ export default function AdminMenu() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-border overflow-hidden">
+        <div className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px]">
               <thead>
@@ -217,7 +217,7 @@ export default function AdminMenu() {
       {/* Item Add / Edit Modal */}
       {(modalMode === 'add-item' || modalMode === 'edit-item') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit-item' ? 'Məhsulu Redaktə Et' : 'Yeni Məhsul Əlavə Et'}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg"><X className="w-5 h-5 text-text-muted" /></button>
@@ -269,7 +269,7 @@ export default function AdminMenu() {
       {/* Category Add / Edit Modal */}
       {(modalMode === 'add-category' || modalMode === 'edit-category') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit-category' ? 'Kateqoriyanı Redaktə Et' : 'Yeni Kateqoriya'}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg"><X className="w-5 h-5 text-text-muted" /></button>
@@ -297,7 +297,7 @@ export default function AdminMenu() {
       {/* Category Delete Confirmation */}
       {deleteCatConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteCatConfirm(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="text-center mb-5">
               <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
               <h3 className="text-lg font-bold text-text-primary mb-1">"{deleteCatConfirm.name}" kateqoriyası silinsin?</h3>
@@ -332,7 +332,7 @@ export default function AdminMenu() {
       {/* Item Delete Confirmation */}
       {deleteItemConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteItemConfirm(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
             <h3 className="text-lg font-bold text-text-primary mb-1">Silmək istəyirsiniz?</h3>
             <p className="text-sm text-text-secondary mb-5">Bu əməliyyat geri alına bilməz.</p>

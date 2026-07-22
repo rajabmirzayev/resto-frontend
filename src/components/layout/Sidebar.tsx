@@ -33,7 +33,7 @@ export default function Sidebar() {
 
       <aside
         className={`
-          fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-border flex flex-col
+          fixed top-0 left-0 z-50 h-screen w-64 bg-white dark:bg-surface border-r border-border flex flex-col
           transform transition-transform duration-300 ease-in-out
           lg:sticky lg:translate-x-0 lg:z-10
           ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}

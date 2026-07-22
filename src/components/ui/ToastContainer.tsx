@@ -27,7 +27,7 @@ export default function ToastContainer() {
         return (
           <div
             key={toast.id}
-            className="bg-white rounded-xl shadow-2xl border border-border p-4 flex items-start gap-3 pointer-events-auto animate-[slideIn_0.3s_ease-out]"
+            className="bg-white dark:bg-surface rounded-xl shadow-2xl border border-border p-4 flex items-start gap-3 pointer-events-auto animate-[slideIn_0.3s_ease-out]"
           >
             <div className={`w-8 h-8 rounded-lg ${colorMap[toast.type]} flex items-center justify-center flex-shrink-0`}>
               <Icon className="w-4 h-4 text-white" />

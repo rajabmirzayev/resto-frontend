@@ -82,7 +82,7 @@ export default function RoleManagement() {
             return (
               <div
                 key={role.id}
-                className="bg-white rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-surface rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -157,7 +157,7 @@ export default function RoleManagement() {
       {modalMode && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
           <div
-            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col"
+            className="bg-white dark:bg-surface rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
@@ -200,7 +200,7 @@ export default function RoleManagement() {
                                 ? 'bg-primary-500 border-primary-500'
                                 : someSelected
                                 ? 'bg-primary-200 border-primary-400'
-                                : 'border-border bg-white'
+                                : 'border-border bg-white dark:bg-surface'
                             }`}
                           >
                             {allSelected && <Check className="w-3 h-3 text-white" />}
@@ -218,7 +218,7 @@ export default function RoleManagement() {
                                 className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-all ${
                                   selected
                                     ? 'bg-primary-50 border-primary-300 text-primary-700'
-                                    : 'bg-white border-border text-text-muted hover:border-primary-200'
+                                    : 'bg-white dark:bg-surface border-border text-text-muted hover:border-primary-200'
                                 }`}
                               >
                                 {perm.label}
@@ -254,7 +254,7 @@ export default function RoleManagement() {
 
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
             <h3 className="text-lg font-bold text-text-primary mb-1">Rolü silmək?</h3>
             <p className="text-sm text-text-secondary mb-5">Bu əməliyyat geri alına bilməz.</p>

@@ -12,7 +12,7 @@ export default function AppLayout() {
   }, [location.pathname, closeSidebar]);
 
   return (
-    <div className="flex min-h-screen bg-surface-secondary">
+    <div className="flex min-h-screen bg-surface-secondary dark:bg-surface">
       <Sidebar />
       <main className="flex-1 min-w-0 overflow-auto">
         <Outlet />

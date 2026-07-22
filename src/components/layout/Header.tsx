@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Bell, Search, Menu, LogOut, Globe, Sun, Moon, ChevronDown } from 'lucide-react';
 import { useSidebar } from '../../store/useSidebar';
 import { useStore } from '../../store/useStore';
+import { useTheme } from '../../store/useTheme';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -20,12 +21,12 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
   const toggleSidebar = useSidebar((s) => s.toggle);
   const currentUser = useStore((s) => s.currentUser);
   const logout = useStore((s) => s.logout);
+  const { isDark, toggleDark } = useTheme();
   const navigate = useNavigate();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [selectedLang, setSelectedLang] = useState('az');
-  const [isDark, setIsDark] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -54,7 +55,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
   const currentLang = LANGUAGES.find((l) => l.code === selectedLang);
 
   return (
-    <header className="bg-white border-b border-border px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between sticky top-0 z-30">
+    <header className="bg-white dark:bg-surface border-b border-border px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center gap-3">
         {!showUser && (
           <button
@@ -78,7 +79,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
               <input
                 type="text"
                 placeholder="Axtar..."
-                className="pl-9 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64 transition-all"
+                className="pl-9 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64 transition-all text-text-primary placeholder:text-text-muted"
               />
             </div>
             <button className="relative p-2 hover:bg-surface-secondary rounded-xl transition-colors">
@@ -95,7 +96,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
               <input
                 type="text"
                 placeholder="Axtar..."
-                className="pl-9 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64 transition-all"
+                className="pl-9 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64 transition-all text-text-primary placeholder:text-text-muted"
               />
             </div>
 
@@ -114,14 +115,14 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
                 <span className="hidden lg:inline text-text-secondary font-medium">{currentLang?.flag}</span>
               </button>
               {showLanguageMenu && (
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-xl py-1.5 w-44 z-50">
+                <div className="absolute right-0 top-full mt-2 bg-white dark:bg-surface rounded-xl border border-border shadow-xl py-1.5 w-44 z-50">
                   {LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => { setSelectedLang(lang.code); setShowLanguageMenu(false); }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                         selectedLang === lang.code
-                          ? 'bg-primary-50 text-primary-700 font-semibold'
+                          ? 'bg-primary-50 dark:bg-primary-100 text-primary-700 dark:text-primary-300 font-semibold'
                           : 'text-text-secondary hover:bg-surface-secondary'
                       }`}
                     >
@@ -134,7 +135,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
             </div>
 
             <button
-              onClick={() => setIsDark(!isDark)}
+              onClick={toggleDark}
               className="p-2 hover:bg-surface-secondary rounded-xl transition-colors hidden sm:flex"
               title={isDark ? 'İşıqlı rejim' : 'Tünd rejim'}
             >
@@ -166,7 +167,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
                 )}
               </button>
               {showProfileMenu && (
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl border border-border shadow-xl py-1.5 w-52 z-50">
+                <div className="absolute right-0 top-full mt-2 bg-white dark:bg-surface rounded-xl border border-border shadow-xl py-1.5 w-52 z-50">
                   {currentUser && (
                     <div className="px-3 py-2.5 border-b border-border">
                       <p className="text-sm font-semibold text-text-primary">{currentUser.name}</p>

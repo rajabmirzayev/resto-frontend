@@ -41,7 +41,7 @@ export default function KitchenDashboard() {
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-5 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center">
                 <AlertCircle className="w-5 h-5 text-warning-600" />
@@ -52,7 +52,7 @@ export default function KitchenDashboard() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-primary-600" />
@@ -63,7 +63,7 @@ export default function KitchenDashboard() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-success-600" />

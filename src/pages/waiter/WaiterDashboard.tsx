@@ -157,7 +157,7 @@ export default function WaiterDashboard() {
         {activeTab === 'payments' && paymentRequests.length > 0 ? (
           <div className="space-y-4">
             {paymentRequests.map((order) => (
-              <div key={order.id} className="bg-white rounded-2xl border-2 border-danger-300 p-5 shadow-sm ring-2 ring-danger-100">
+              <div key={order.id} className="bg-white dark:bg-surface rounded-2xl border-2 border-danger-300 p-5 shadow-sm ring-2 ring-danger-100">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <ReceiptText className="w-4 h-4 text-danger-600" />
@@ -209,7 +209,7 @@ export default function WaiterDashboard() {
         ) : activeTab === 'pending' && isConfirmMode ? (
           <div className="space-y-4">
             {pendingCustomerOrders.map((order) => (
-              <div key={order.id} className="bg-white rounded-2xl border border-warning-300 p-5 shadow-sm">
+              <div key={order.id} className="bg-white dark:bg-surface rounded-2xl border border-warning-300 p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <ReceiptText className="w-4 h-4 text-warning-600" />
@@ -253,7 +253,7 @@ export default function WaiterDashboard() {
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-2xl p-5 border border-border">
+              <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                     <ClipboardList className="w-5 h-5 text-primary-600" />
@@ -264,7 +264,7 @@ export default function WaiterDashboard() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-2xl p-5 border border-border">
+              <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-success-600" />
@@ -275,7 +275,7 @@ export default function WaiterDashboard() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-2xl p-5 border border-border">
+              <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center">
                     <Users className="w-5 h-5 text-danger-600" />
@@ -286,7 +286,7 @@ export default function WaiterDashboard() {
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-2xl p-5 border border-border">
+              <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center">
                     <ReceiptText className="w-5 h-5 text-warning-600" />

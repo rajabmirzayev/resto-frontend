@@ -108,7 +108,7 @@ export default function AdminReports() {
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center">
                 <DollarSign className="w-5 h-5 text-success-600" />
@@ -118,7 +118,7 @@ export default function AdminReports() {
             <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
             <p className="text-sm text-text-secondary mt-1">Ümumi Gəlir</p>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5 text-primary-600" />
@@ -128,7 +128,7 @@ export default function AdminReports() {
             <p className="text-2xl font-bold text-text-primary">{completedCount}</p>
             <p className="text-sm text-text-secondary mt-1">Tamamlanan</p>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-warning-600" />
@@ -138,7 +138,7 @@ export default function AdminReports() {
             <p className="text-2xl font-bold text-text-primary">{avgOrderValue} ₼</p>
             <p className="text-sm text-text-secondary mt-1">Ort. Sifariş</p>
           </div>
-          <div className="bg-white rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
+          <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className="w-10 h-10 rounded-xl bg-danger-50 flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-danger-600" />
@@ -151,7 +151,7 @@ export default function AdminReports() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary-500" />
               Günlük Gəlir (Son 7 Gün)
@@ -173,7 +173,7 @@ export default function AdminReports() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-warning-500" />
               Saatlıq Sifariş Paylanması
@@ -200,7 +200,7 @@ export default function AdminReports() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <PieChart className="w-5 h-5 text-success-500" />
               Kateqoriyalara Görə Satış
@@ -225,7 +225,7 @@ export default function AdminReports() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary-500" />
               Ən Çox Satılan Məhsullar
@@ -259,7 +259,7 @@ export default function AdminReports() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 border border-border">
+        <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
           <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
             <Users className="w-5 h-5 text-primary-500" />
             İşçi Performansı
@@ -282,11 +282,11 @@ export default function AdminReports() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white rounded-lg p-2 text-center">
+                  <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
                     <p className="text-lg font-bold text-text-primary">{staff.totalOrders}</p>
                     <p className="text-[10px] text-text-muted">Cəmi</p>
                   </div>
-                  <div className="bg-white rounded-lg p-2 text-center">
+                  <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
                     <p className="text-lg font-bold text-success-600">{staff.completedOrders}</p>
                     <p className="text-[10px] text-text-muted">Tamam</p>
                   </div>
@@ -296,7 +296,7 @@ export default function AdminReports() {
                     <span className="text-[10px] text-text-muted">Gəlir</span>
                     <span className="text-xs font-bold text-primary-600">{staff.revenue} ₼</span>
                   </div>
-                  <div className="w-full h-2 bg-white rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-white dark:bg-surface rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${colors[i % colors.length]}`}
                       style={{ width: `${(staff.revenue / maxStaffRevenue) * 100}%` }}

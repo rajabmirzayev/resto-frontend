@@ -106,7 +106,7 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
           onClick={capturePhoto}
           className="w-16 h-16 rounded-full bg-white border-4 border-white/50 flex items-center justify-center hover:scale-105 transition-transform"
         >
-          <div className="w-13 h-13 rounded-full border-2 border-gray-300" />
+          <div className="w-13 h-13 rounded-full border-2 border-gray-300 dark:border-slate-600" />
         </button>
         <div className="w-12 h-12" />
       </div>

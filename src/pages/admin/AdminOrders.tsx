@@ -12,7 +12,7 @@ export default function AdminOrders() {
       <Header title="Sifariş Tarixçəsi" subtitle={`${orders.length} ümumi sifariş`} showUser />
 
       <div className="p-6">
-        <div className="bg-white rounded-2xl border border-border overflow-hidden">
+        <div className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-surface-secondary">
