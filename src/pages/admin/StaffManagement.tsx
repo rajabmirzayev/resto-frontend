@@ -3,6 +3,7 @@ import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import type { User, UserRole } from '../../types';
 import { Plus, Edit2, Trash2, X, Users, Shield, UtensilsCrossed, ChefHat } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 type ModalMode = 'add' | 'edit' | null;
 
@@ -23,6 +24,7 @@ const iconMap: Record<string, typeof Shield> = {
 };
 
 export default function StaffManagement() {
+  const { t } = useTranslation();
   const { users, orders, roles, addUser, updateUser, deleteUser } = useStore();
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -77,18 +79,18 @@ export default function StaffManagement() {
 
   return (
     <div>
-      <Header title="Personal İdarəetməsi" subtitle={`${staff.length} işçi`} showUser />
+      <Header title={t('staff.title')} subtitle={`${staff.length} ${t('staff.staff_suffix')}`} showUser />
 
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button onClick={openAdd} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary-200">
             <Plus className="w-4 h-4" />
-            Yeni İşçi
+            {t('staff.new_staff')}
           </button>
 
           <div className="flex gap-2 flex-wrap ml-auto">
             <button onClick={() => setRoleFilter('all')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${roleFilter === 'all' ? 'bg-primary-600 text-white' : 'bg-surface-secondary text-text-secondary hover:bg-border'}`}>
-              Hamısı ({staff.length})
+              {t('common.all')} ({staff.length})
             </button>
             {roles.map((role) => (
               <button key={role.id} onClick={() => setRoleFilter(role.id)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${roleFilter === role.id ? 'bg-primary-600 text-white' : 'bg-surface-secondary text-text-secondary hover:bg-border'}`}>
@@ -119,29 +121,29 @@ export default function StaffManagement() {
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${badgeColor}`}>
-                    {role?.name || 'Naməlum'}
+                    {role?.name || t('common.unknown')}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-surface-secondary rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-text-primary">{orderCount}</p>
-                    <p className="text-[10px] text-text-muted">Aktiv Sifariş</p>
+                    <p className="text-[10px] text-text-muted">{t('staff.active_orders')}</p>
                   </div>
                   <div className="bg-surface-secondary rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-text-primary">{revenue} ₼</p>
-                    <p className="text-[10px] text-text-muted">Gəlir</p>
+                    <p className="text-[10px] text-text-muted">{t('staff.revenue')}</p>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
                   <button onClick={() => openEdit(user)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-surface-secondary hover:bg-border text-text-secondary rounded-xl text-xs font-medium transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
-                    Redaktə
+                    {t('common.edit')}
                   </button>
                   <button onClick={() => setDeleteConfirm(user.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-danger-50 hover:bg-danger-100 text-danger-600 rounded-xl text-xs font-medium transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
-                    Sil
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -151,7 +153,7 @@ export default function StaffManagement() {
           {filtered.length === 0 && (
             <div className="col-span-full text-center py-16">
               <Users className="w-12 h-12 mx-auto text-text-muted opacity-30 mb-3" />
-              <p className="text-text-muted">Bu kateqoriyada işçi yoxdur</p>
+              <p className="text-text-muted">{t('staff.no_staff_in_category')}</p>
             </div>
           )}
         </div>
@@ -161,26 +163,26 @@ export default function StaffManagement() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit' ? 'İşçini Redaktə Et' : 'Yeni İşçi Əlavə Et'}</h3>
+              <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit' ? t('staff.edit_staff') : t('staff.add_staff')}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg"><X className="w-5 h-5 text-text-muted" /></button>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Ad Soyad</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Ad Soyad" />
+                <label className="block text-sm font-medium text-text-secondary mb-1">{t('staff.full_name')}</label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('staff.full_name_placeholder')} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">İstifadəçi adı</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">{t('staff.username')}</label>
                   <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="username" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Şifrə</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">{t('common.password')}</label>
                   <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Rol</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">{t('staff.role')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {roles.map((role) => {
                     const Icon = iconMap[role.name.toLowerCase()] || Shield;
@@ -195,9 +197,9 @@ export default function StaffManagement() {
               </div>
             </div>
             <div className="px-6 pb-6 flex gap-3">
-              <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">Ləğv</button>
+              <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
               <button onClick={handleSave} disabled={!form.name || !form.username || !form.roleId || (!editingUser && !form.password)} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
-                {modalMode === 'edit' ? 'Yadda Saxla' : 'Əlavə Et'}
+                {modalMode === 'edit' ? t('common.save') : t('common.add')}
               </button>
             </div>
           </div>
@@ -208,11 +210,11 @@ export default function StaffManagement() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
-            <h3 className="text-lg font-bold text-text-primary mb-1">İşçini silmək?</h3>
-            <p className="text-sm text-text-secondary mb-5">Bu əməliyyat geri alına bilməz.</p>
+            <h3 className="text-lg font-bold text-text-primary mb-1">{t('staff.delete_confirmation')}</h3>
+            <p className="text-sm text-text-secondary mb-5">{t('common.irreversible_warning')}</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">Geri</button>
-              <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors">Sil</button>
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.back')}</button>
+              <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors">{t('common.delete')}</button>
             </div>
           </div>
         </div>

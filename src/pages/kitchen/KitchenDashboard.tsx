@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from '../../i18n';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
@@ -7,6 +8,7 @@ import KitchenOrderCard from '../../components/kitchen/KitchenOrderCard';
 import { Clock, CheckCircle, ChefHat, AlertCircle } from 'lucide-react';
 
 export default function KitchenDashboard() {
+  const { t } = useTranslation();
   const orders = useStore((s) => s.orders);
   const { addToast } = useToast();
   const [, forceUpdate] = useState(0);
@@ -26,10 +28,10 @@ export default function KitchenDashboard() {
     if (prevPendingCount.current > 0 && pendingCount > prevPendingCount.current) {
       const newCount = pendingCount - prevPendingCount.current;
       playNewOrderSound();
-      addToast(`${newCount} yeni sifariş gəldi!`, 'warning', 5000);
+      addToast(t('toast.new_orders_received', { count: newCount }), 'warning', 5000);
     }
     prevPendingCount.current = pendingCount;
-  }, [orders, addToast]);
+  }, [orders, addToast, t]);
 
   const newOrders = orders.filter((o) => o.status === 'pending' || (o.status === 'confirmed' && o.orderSource === 'customer'));
   const preparingOrders = orders.filter((o) => o.status === 'preparing');
@@ -37,7 +39,7 @@ export default function KitchenDashboard() {
 
   return (
     <div>
-      <Header title="Mtbəx Paneli" subtitle={`${newOrders.length + preparingOrders.length} aktiv, ${readyOrders.length} hazır`} showUser />
+      <Header title={t('kitchen.title')} subtitle={`${newOrders.length + preparingOrders.length} ${t('kitchen.active')}, ${readyOrders.length} ${t('kitchen.ready')}`} showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -48,7 +50,7 @@ export default function KitchenDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary">{newOrders.length}</p>
-                <p className="text-sm text-text-secondary">Yeni Sifarişlər</p>
+                <p className="text-sm text-text-secondary">{t('kitchen.new_orders')}</p>
               </div>
             </div>
           </div>
@@ -59,7 +61,7 @@ export default function KitchenDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary">{preparingOrders.length}</p>
-                <p className="text-sm text-text-secondary">Hazırlanır</p>
+                <p className="text-sm text-text-secondary">{t('kitchen.preparing')}</p>
               </div>
             </div>
           </div>
@@ -70,7 +72,7 @@ export default function KitchenDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary">{readyOrders.length}</p>
-                <p className="text-sm text-text-secondary">Hazır / Təhvil</p>
+                <p className="text-sm text-text-secondary">{t('kitchen.ready_for_handoff')}</p>
               </div>
             </div>
           </div>
@@ -80,7 +82,7 @@ export default function KitchenDashboard() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full bg-warning-500 animate-pulse" />
-              <h2 className="text-lg font-bold text-text-primary">Yeni Sifarişlər</h2>
+              <h2 className="text-lg font-bold text-text-primary">{t('kitchen.new_orders')}</h2>
               <span className="bg-warning-100 text-warning-700 text-xs font-bold px-2 py-0.5 rounded-full">{newOrders.length}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -95,7 +97,7 @@ export default function KitchenDashboard() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full bg-primary-500" />
-              <h2 className="text-lg font-bold text-text-primary">Hazırlanır</h2>
+              <h2 className="text-lg font-bold text-text-primary">{t('kitchen.preparing')}</h2>
               <span className="bg-primary-100 text-primary-700 text-xs font-bold px-2 py-0.5 rounded-full">{preparingOrders.length}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -110,7 +112,7 @@ export default function KitchenDashboard() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full bg-success-500" />
-              <h2 className="text-lg font-bold text-text-primary">Hazır — Təhvil Gözləyir</h2>
+              <h2 className="text-lg font-bold text-text-primary">{t('kitchen.ready_waiting')}</h2>
               <span className="bg-success-100 text-success-700 text-xs font-bold px-2 py-0.5 rounded-full">{readyOrders.length}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -124,8 +126,8 @@ export default function KitchenDashboard() {
         {newOrders.length === 0 && preparingOrders.length === 0 && readyOrders.length === 0 && (
           <div className="text-center py-20">
             <ChefHat className="w-16 h-16 mx-auto mb-4 text-text-muted opacity-30" />
-            <p className="text-xl font-semibold text-text-primary">Sifariş yoxdur</p>
-            <p className="text-sm text-text-muted mt-2">Yeni sifarişlər burada avtomatik görünəcək</p>
+            <p className="text-xl font-semibold text-text-primary">{t('kitchen.no_orders')}</p>
+            <p className="text-sm text-text-muted mt-2">{t('kitchen.no_orders_hint')}</p>
           </div>
         )}
       </div>

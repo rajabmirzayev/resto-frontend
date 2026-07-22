@@ -2,20 +2,22 @@ import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, ChefHa
 import { NavLink } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useSidebar } from '../../store/useSidebar';
+import { useTranslation } from '../../i18n';
 import type { Permission } from '../../types';
 
-const navItems: { to: string; label: string; icon: typeof LayoutDashboard; permission: Permission }[] = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
-  { to: '/admin/menu', label: 'Menyu', icon: Menu, permission: 'menu.view' },
-  { to: '/admin/tables', label: 'Masalar', icon: Grid3X3, permission: 'tables.view' },
-  { to: '/admin/orders', label: 'Sifarişlər', icon: ClipboardList, permission: 'orders.view' },
-  { to: '/admin/reports', label: 'Hesabatlar', icon: BarChart3, permission: 'reports.view' },
-  { to: '/admin/staff', label: 'Personal', icon: Users, permission: 'staff.view' },
-  { to: '/admin/roles', label: 'Rollar', icon: Shield, permission: 'roles.view' },
-  { to: '/admin/settings', label: 'Tənzimləmələr', icon: Settings, permission: 'dashboard.view' },
+const navItems: { to: string; labelKey: string; icon: typeof LayoutDashboard; permission: Permission }[] = [
+  { to: '/admin', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+  { to: '/admin/menu', labelKey: 'nav.menu', icon: Menu, permission: 'menu.view' },
+  { to: '/admin/tables', labelKey: 'nav.tables', icon: Grid3X3, permission: 'tables.view' },
+  { to: '/admin/orders', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view' },
+  { to: '/admin/reports', labelKey: 'nav.reports', icon: BarChart3, permission: 'reports.view' },
+  { to: '/admin/staff', labelKey: 'nav.staff', icon: Users, permission: 'staff.view' },
+  { to: '/admin/roles', labelKey: 'nav.roles', icon: Shield, permission: 'roles.view' },
+  { to: '/admin/settings', labelKey: 'nav.settings', icon: Settings, permission: 'dashboard.view' },
 ];
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const hasPermission = useStore((s) => s.hasPermission);
   const roles = useStore((s) => s.roles);
@@ -47,7 +49,7 @@ export default function Sidebar() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-text-primary leading-tight">Tabler</h1>
-                <p className="text-xs text-text-muted">{currentRole?.name || 'Admin Panel'}</p>
+                <p className="text-xs text-text-muted">{currentRole?.name || t('sidebar.admin_panel')}</p>
               </div>
             </div>
             <button onClick={close} className="p-2 rounded-xl hover:bg-surface-secondary transition-colors lg:hidden">
@@ -72,7 +74,7 @@ export default function Sidebar() {
               }
             >
               <item.icon className="w-5 h-5" />
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -86,7 +88,7 @@ export default function Sidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">{currentUser?.name}</p>
-              <p className="text-xs text-text-muted">{currentRole?.name || 'İstifadəçi'}</p>
+              <p className="text-xs text-text-muted">{currentRole?.name || t('common.user')}</p>
             </div>
           </div>
         </div>

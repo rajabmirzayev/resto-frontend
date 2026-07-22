@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from '../../i18n';
 import { X, RotateCcw } from 'lucide-react';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function CameraCapture({ onCapture, onClose }: Props) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -35,9 +37,9 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
         videoRef.current.srcObject = stream;
       }
     } catch {
-      setError('Kameraya icazə verilmədi. Zəhmət olmasa kamera icazəsini aktiv edin.');
+      setError(t('error.camera_permission_denied'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     startCamera(facingMode);
@@ -75,7 +77,7 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
   return (
     <div className="fixed inset-0 bg-black z-[60] flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 bg-black">
-        <h3 className="text-white font-semibold">Kamera</h3>
+        <h3 className="text-white font-semibold">{t('camera.title')}</h3>
         <button onClick={handleClose} className="p-2 text-white hover:bg-white/10 rounded-xl transition-colors">
           <X className="w-5 h-5" />
         </button>

@@ -3,6 +3,7 @@ import { useStore } from './store/useStore';
 import AppLayout from './components/layout/AppLayout';
 import ToastContainer from './components/ui/ToastContainer';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import { I18nProvider } from './i18n';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -36,9 +37,10 @@ function PermRoute({ children, permission }: { children: React.ReactNode; permis
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <ToastContainer />
+    <I18nProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <ToastContainer />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
@@ -86,7 +88,8 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </BrowserRouter>
-    </ErrorBoundary>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </I18nProvider>
   );
 }

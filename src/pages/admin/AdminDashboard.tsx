@@ -1,17 +1,21 @@
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
+import { useTranslation } from '../../i18n';
+import { getOrderStatusLabels } from '../../lib/constants';
 import {
   TrendingUp, ShoppingBag, Users, DollarSign, CheckCircle, Clock,
   ChefHat, UserCog, ArrowUpRight,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
+  const ORDER_STATUS_LABELS = getOrderStatusLabels(t);
   const { orders, tables, menuItems, users } = useStore();
 
   const totalRevenue = orders.filter((o) => o.paymentStatus === 'paid').reduce((s, o) => s + o.totalAmount, 0);
   const completedOrders = orders.filter((o) => o.status === 'completed');
   const activeOrders = orders.filter((o) => !['completed', 'cancelled'].includes(o.status));
-  const occupiedTables = tables.filter((t) => t.status === 'occupied');
+  const occupiedTables = tables.filter((table) => table.status === 'occupied');
 
   const itemCounts: Record<string, number> = {};
   orders.forEach((o) => {
@@ -24,14 +28,14 @@ export default function AdminDashboard() {
     .slice(0, 5)
     .map(([id, count]) => {
       const mi = menuItems.find((m) => m.id === id);
-      return { name: mi?.name || 'Naməlum', count };
+      return { name: mi?.name || t('common.unknown'), count };
     });
 
   const staff = users.filter((u) => u.role !== 'customer');
 
   return (
     <div>
-      <Header title="Dashboard" subtitle="Xoş gəlmisiniz, ümumi baxış" showUser />
+      <Header title={t('dashboard.welcome_overview')} subtitle={t('dashboard.welcome_overview')} showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -43,7 +47,7 @@ export default function AdminDashboard() {
               <ArrowUpRight className="w-4 h-4 text-success-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
-            <p className="text-sm text-text-secondary mt-1">Ümumi Gəlir</p>
+            <p className="text-sm text-text-secondary mt-1">{t('dashboard.total_revenue')}</p>
           </div>
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -53,7 +57,7 @@ export default function AdminDashboard() {
               <ArrowUpRight className="w-4 h-4 text-primary-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{completedOrders.length}</p>
-            <p className="text-sm text-text-secondary mt-1">Tamamlanan Sifariş</p>
+            <p className="text-sm text-text-secondary mt-1">{t('dashboard.completed_orders')}</p>
           </div>
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -63,7 +67,7 @@ export default function AdminDashboard() {
               <ArrowUpRight className="w-4 h-4 text-warning-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{activeOrders.length}</p>
-            <p className="text-sm text-text-secondary mt-1">Aktiv Sifariş</p>
+            <p className="text-sm text-text-secondary mt-1">{t('dashboard.active_orders')}</p>
           </div>
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -73,7 +77,7 @@ export default function AdminDashboard() {
               <ArrowUpRight className="w-4 h-4 text-danger-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{occupiedTables.length}/{tables.length}</p>
-            <p className="text-sm text-text-secondary mt-1">Məşğul Masalar</p>
+            <p className="text-sm text-text-secondary mt-1">{t('dashboard.occupied_tables')}</p>
           </div>
         </div>
 
@@ -81,10 +85,10 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2 bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary-500" />
-              Ən Çox Satılan Məhsullar
+              {t('dashboard.top_selling_items')}
             </h3>
             {topItems.length === 0 ? (
-              <p className="text-text-muted text-center py-6">Satış yoxdur</p>
+              <p className="text-text-muted text-center py-6">{t('dashboard.no_sales')}</p>
             ) : (
               <div className="space-y-3">
                 {topItems.map((item, i) => (
@@ -95,7 +99,7 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-text-primary truncate">{item.name}</p>
-                        <span className="text-sm font-bold text-primary-600">{item.count} dəfə</span>
+                        <span className="text-sm font-bold text-primary-600">{item.count} {t('dashboard.orders_suffix')}</span>
                       </div>
                       <div className="w-full bg-border rounded-full h-1.5 mt-1">
                         <div
@@ -113,7 +117,7 @@ export default function AdminDashboard() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <UserCog className="w-5 h-5 text-primary-500" />
-              Aktiv İşçilər
+              {t('dashboard.active_staff')}
             </h3>
             <div className="space-y-3">
               {staff.map((s) => {
@@ -132,15 +136,15 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-text-primary truncate">{s.name}</p>
                       <p className="text-xs text-text-muted">
-                        {s.role === 'admin' ? 'Admin' : s.role === 'waiter' ? 'Ofisant' : 'Aşpaz'}
+                        {s.role === 'admin' ? t('role.admin') : s.role === 'waiter' ? t('role.waiter') : t('role.chef')}
                       </p>
                     </div>
-                    <span className="text-xs text-text-muted">{orderCount} sifariş</span>
+                    <span className="text-xs text-text-muted">{orderCount} {t('dashboard.orders_suffix')}</span>
                   </div>
                 );
               })}
               {staff.length === 0 && (
-                <p className="text-text-muted text-center py-4 text-sm">İşçi yoxdur</p>
+                <p className="text-text-muted text-center py-4 text-sm">{t('dashboard.no_staff')}</p>
               )}
             </div>
           </div>
@@ -150,13 +154,13 @@ export default function AdminDashboard() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-primary-500" />
-              Son Sifarişlər
+              {t('dashboard.recent_orders')}
             </h3>
             <div className="space-y-2">
               {orders.slice(-6).reverse().map((order) => (
                 <div key={order.id} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                   <div>
-                    <p className="text-sm font-semibold text-text-primary">Masa #{order.tableNumber}</p>
+                    <p className="text-sm font-semibold text-text-primary">{t('table.number_prefix')}{order.tableNumber}</p>
                     <p className="text-xs text-text-muted">{order.waiterName} • {new Date(order.createdAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <div className="text-right">
@@ -168,18 +172,13 @@ export default function AdminDashboard() {
                       order.status === 'ready' ? 'bg-warning-50 text-warning-600' :
                       'bg-surface-secondary text-text-muted'
                     }`}>
-                      {order.status === 'completed' ? 'Tamam' :
-                       order.status === 'cancelled' ? 'Ləğv' :
-                       order.status === 'preparing' ? 'Hazırlanır' :
-                       order.status === 'ready' ? 'Hazır' :
-                       order.status === 'served' ? 'Verilib' :
-                       order.status === 'pending' ? 'Gözləyir' : 'Təsdiq'}
+                      {ORDER_STATUS_LABELS[order.status]}
                     </span>
                   </div>
                 </div>
               ))}
               {orders.length === 0 && (
-                <p className="text-center text-text-muted py-6 text-sm">Sifariş yoxdur</p>
+                <p className="text-center text-text-muted py-6 text-sm">{t('dashboard.no_orders')}</p>
               )}
             </div>
           </div>
@@ -187,7 +186,7 @@ export default function AdminDashboard() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
               <ChefHat className="w-5 h-5 text-primary-500" />
-              Masa Xəritəsi
+              {t('dashboard.table_map')}
             </h3>
             <div className="grid grid-cols-5 gap-2">
               {tables.map((table) => (
@@ -207,9 +206,9 @@ export default function AdminDashboard() {
                     table.status === 'reserved' ? 'text-warning-600' :
                     'text-text-muted'
                   }`}>
-                    {table.status === 'available' ? 'Boş' :
-                     table.status === 'occupied' ? 'Məşğul' :
-                     table.status === 'reserved' ? 'Rezerv' : 'Təmiz'}
+                    {table.status === 'available' ? t('table.status.available') :
+                     table.status === 'occupied' ? t('table.status.occupied') :
+                     table.status === 'reserved' ? t('table.status.reserved') : t('table.status.cleaning')}
                   </p>
                 </div>
               ))}

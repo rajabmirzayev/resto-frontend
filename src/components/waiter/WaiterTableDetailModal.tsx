@@ -1,7 +1,8 @@
+import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import type { Table, Order } from '../../types';
-import { ORDER_ITEM_STATUS_LABELS } from '../../lib/constants';
+import { getOrderItemStatusLabels } from '../../lib/constants';
 import { X, ClipboardList, CheckCircle, UtensilsCrossed, CreditCard, Timer, ReceiptText, Banknote, Clock, User, Phone } from 'lucide-react';
 
 interface Props {
@@ -10,13 +11,15 @@ interface Props {
 }
 
 export default function WaiterTableDetailModal({ table, onClose }: Props) {
+  const { t } = useTranslation();
+  const ORDER_ITEM_STATUS_LABELS = getOrderItemStatusLabels(t);
   const { orders, updateTableStatus, completePayment } = useStore();
   const { addToast } = useToast();
 
   const getElapsed = (createdAt: string) => {
     const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
     const m = Math.floor(diff / 60);
-    return `${m} dəq`;
+    return `${m} ${t('time.minutes_abbreviation')}`;
   };
 
   const getTableOrder = (): Order | undefined => {
@@ -31,8 +34,8 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
       return (
         <div className="text-center py-8">
           <CheckCircle className="w-12 h-12 mx-auto text-success-500 mb-3" />
-          <p className="text-lg font-semibold text-text-primary">Masa Boşdur</p>
-          <p className="text-sm text-text-muted mt-1">Bu masada aktiv sifariş yoxdur</p>
+          <p className="text-lg font-semibold text-text-primary">{t('table.is_empty')}</p>
+          <p className="text-sm text-text-muted mt-1">{t('table.no_active_order')}</p>
         </div>
       );
     }
@@ -41,13 +44,13 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
       return (
         <div className="text-center py-8">
           <UtensilsCrossed className="w-12 h-12 mx-auto text-text-muted mb-3 opacity-40" />
-          <p className="text-lg font-semibold text-text-primary">Təmizlənir</p>
-          <p className="text-sm text-text-muted mt-1">Masa təmizlənir, hazırlanır</p>
+          <p className="text-lg font-semibold text-text-primary">{t('table.cleaning_detail')}</p>
+          <p className="text-sm text-text-muted mt-1">{t('table.marked_clean')}</p>
           <button
             onClick={() => { updateTableStatus(table.id, 'available'); onClose(); }}
             className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
           >
-            Təmizləndi
+            {t('table.status.available')}
           </button>
         </div>
       );
@@ -58,7 +61,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
       return (
         <div className="text-center py-8">
           <Clock className="w-12 h-12 mx-auto text-warning-500 mb-3" />
-          <p className="text-lg font-semibold text-text-primary">Rezervasiya</p>
+          <p className="text-lg font-semibold text-text-primary">{t('table.status.reserved')}</p>
           {r ? (
             <div className="mt-4 space-y-3">
               <div className="bg-warning-50 rounded-xl p-4 border border-warning-200 text-left space-y-2">
@@ -74,7 +77,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
                 )}
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-text-muted" />
-                  <span className="text-sm text-text-secondary">{r.time} • {r.guestCount} nəfər</span>
+                  <span className="text-sm text-text-secondary">{r.time} • {r.guestCount} {t('table.guests')}</span>
                 </div>
                 {r.notes && (
                   <p className="text-xs text-text-muted pt-2 border-t border-warning-200">{r.notes}</p>
@@ -82,13 +85,13 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-text-muted mt-1">Masa rezervasiya olunub</p>
+            <p className="text-sm text-text-muted mt-1">{t('table.reservation_info')}</p>
           )}
           <button
             onClick={() => { updateTableStatus(table.id, 'available'); onClose(); }}
             className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
           >
-            Boşalt
+            {t('table.free_table')}
           </button>
         </div>
       );
@@ -98,7 +101,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
       return (
         <div className="text-center py-8">
           <ClipboardList className="w-12 h-12 mx-auto text-text-muted mb-3 opacity-40" />
-          <p className="text-lg font-semibold text-text-primary">Sifariş Tapılmadı</p>
+          <p className="text-lg font-semibold text-text-primary">{t('order.not_found')}</p>
         </div>
       );
     }
@@ -109,10 +112,10 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
           <div className="flex items-center gap-2">
             <ReceiptText className="w-4 h-4 text-text-muted" />
             <span className="text-sm font-medium text-text-secondary">
-              Sifariş #{order.id.slice(0, 6).toUpperCase()}
+              {t('order.order_number_prefix', { number: order.id.slice(0, 6).toUpperCase() })}
             </span>
             {order.orderSource === 'customer' && (
-              <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">Müştəri</span>
+              <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">{t('order.customer')}</span>
             )}
           </div>
           <span className="text-xs text-text-muted flex items-center gap-1">
@@ -122,7 +125,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Məhsullar</p>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{t('order.items')}</p>
           <div className="space-y-2">
             {order.items.map((item) => {
               const statusInfo = ORDER_ITEM_STATUS_LABELS[item.status] || ORDER_ITEM_STATUS_LABELS.pending;
@@ -148,7 +151,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
 
         <div className="p-4 bg-primary-50 rounded-xl border border-primary-200">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-primary-700">Cəmi</span>
+            <span className="text-sm font-semibold text-primary-700">{t('order.total')}</span>
             <span className="text-xl font-bold text-primary-700">{order.totalAmount} ₼</span>
           </div>
         </div>
@@ -161,8 +164,8 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
               <CreditCard className="w-5 h-5 text-primary-600" />
             )}
             <div>
-              <p className="text-sm font-semibold text-danger-700">Hesab istəyir</p>
-              <p className="text-xs text-danger-600">Ödəniş üsulu: {order.paymentMethod === 'cash' ? 'Nagd' : 'Kart'}</p>
+              <p className="text-sm font-semibold text-danger-700">{t('order.bill_requested')}</p>
+              <p className="text-xs text-danger-600">{t('payment.method')}: {order.paymentMethod === 'cash' ? t('payment.cash') : t('payment.card')}</p>
             </div>
           </div>
         )}
@@ -173,12 +176,12 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
               completePayment(order.id);
               updateTableStatus(table.id, 'available');
               onClose();
-              addToast(`Masa #${table.number} hesabı bağlandı`, 'success');
+              addToast(t('toast.bill_closed', { number: table.number }), 'success');
             }}
             className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <CreditCard className="w-5 h-5" />
-            Hesabı Bağla
+            {t('order.close_bill')}
           </button>
         )}
       </div>
@@ -193,8 +196,8 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
       >
         <div className="px-6 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-text-primary">Masa #{table.number}</h3>
-            <p className="text-xs text-text-muted">{table.section} • {table.capacity} nəfər</p>
+            <h3 className="text-lg font-bold text-text-primary">{t('table.number_prefix', { number: table.number })}</h3>
+            <p className="text-xs text-text-muted">{table.section} • {table.capacity} {t('table.guests')}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-surface-secondary rounded-xl transition-colors">
             <X className="w-5 h-5 text-text-muted" />

@@ -4,15 +4,9 @@ import { useStore } from '../../store/useStore';
 import type { Table, TableStatus } from '../../types';
 import TableStatusModal from '../../components/admin/TableStatusModal';
 import { Plus, Edit2, Trash2, X, Grid3X3, Armchair, ChefHat, FolderOpen, Clock } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 type ModalMode = 'add' | 'edit' | 'status' | 'sectionAdd' | 'sectionEdit' | null;
-
-const statusConfig: Record<TableStatus, { label: string; color: string; badge: string; bg: string }> = {
-  available: { label: 'Boş', color: 'bg-success-500', badge: 'bg-success-500 text-white', bg: 'border-success-300 bg-success-50' },
-  occupied: { label: 'Məşğul', color: 'bg-danger-500', badge: 'bg-danger-500 text-white', bg: 'border-danger-300 bg-danger-50' },
-  reserved: { label: 'Rezervasiya', color: 'bg-warning-500', badge: 'bg-warning-500 text-white', bg: 'border-warning-300 bg-warning-50' },
-  cleaning: { label: 'Təmizlənir', color: 'bg-text-muted', badge: 'bg-text-muted text-white', bg: 'border-border bg-surface-secondary' },
-};
 
 interface TableForm {
   number: number;
@@ -20,9 +14,10 @@ interface TableForm {
   section: string;
 }
 
-const emptyForm: TableForm = { number: 1, capacity: 2, section: 'Zal 1' };
+const emptyForm: TableForm = { number: 1, capacity: 2, section: '' };
 
 export default function AdminTables() {
+  const { t } = useTranslation();
   const { tables, orders, tableSections, addTable, updateTable, deleteTable, updateTableStatus, addTableSection, updateTableSection, deleteTableSection } = useStore();
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
@@ -34,21 +29,28 @@ export default function AdminTables() {
   const [sectionFormName, setSectionFormName] = useState('');
   const [editingSection, setEditingSection] = useState<string | null>(null);
 
+  const statusConfig: Record<TableStatus, { label: string; color: string; badge: string; bg: string }> = {
+    available: { label: t('table.status.available'), color: 'bg-success-500', badge: 'bg-success-500 text-white', bg: 'border-success-300 bg-success-50' },
+    occupied: { label: t('table.status.occupied'), color: 'bg-danger-500', badge: 'bg-danger-500 text-white', bg: 'border-danger-300 bg-danger-50' },
+    reserved: { label: t('table.status.reserved'), color: 'bg-warning-500', badge: 'bg-warning-500 text-white', bg: 'border-warning-300 bg-warning-50' },
+    cleaning: { label: t('table.status.cleaning'), color: 'bg-text-muted', badge: 'bg-text-muted text-white', bg: 'border-border bg-surface-secondary' },
+  };
+
   const sections = tableSections;
-  const filteredTables = activeSection === 'all' ? tables : tables.filter((t) => t.section === activeSection);
+  const filteredTables = activeSection === 'all' ? tables : tables.filter((tbl) => tbl.section === activeSection);
 
   const getTableOrder = (tableId: string) =>
     orders.find((o) => o.tableId === tableId && !['completed', 'cancelled'].includes(o.status));
 
   const sectionStats = (section: string) => {
-    const t = tables.filter((x) => x.section === section);
-    return { total: t.length, available: t.filter((x) => x.status === 'available').length };
+    const st = tables.filter((x) => x.section === section);
+    return { total: st.length, available: st.filter((x) => x.status === 'available').length };
   };
 
   const openAdd = () => {
     setEditingTable(null);
-    const nextNum = tables.length > 0 ? Math.max(...tables.map((t) => t.number)) + 1 : 1;
-    setForm({ number: nextNum, capacity: 4, section: sections[0] || '' });
+    const nextNum = tables.length > 0 ? Math.max(...tables.map((tbl) => tbl.number)) + 1 : 1;
+    setForm({ number: nextNum, capacity: 4, section: sections[0] || t('tables.default_section') });
     setModalMode('add');
   };
 
@@ -65,7 +67,7 @@ export default function AdminTables() {
 
   const handleSave = () => {
     if (form.number < 1 || form.capacity < 1 || !form.section.trim()) return;
-    const duplicate = tables.find((t) => t.number === form.number && t.id !== editingTable?.id);
+    const duplicate = tables.find((tbl) => tbl.number === form.number && tbl.id !== editingTable?.id);
     if (duplicate) return;
 
     if (modalMode === 'edit' && editingTable) {
@@ -115,7 +117,7 @@ export default function AdminTables() {
 
   return (
     <div>
-      <Header title="Masa İdarəetməsi" subtitle={`${tables.length} masa, ${sections.length} zona`} showUser />
+      <Header title={t('tables.title')} subtitle={t('tables.subtitle', { count: tables.length, zones: sections.length })} showUser />
 
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -124,7 +126,7 @@ export default function AdminTables() {
             className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary-200"
           >
             <Plus className="w-4 h-4" />
-            Yeni Masa
+            {t('tables.new_table')}
           </button>
 
           <button
@@ -132,7 +134,7 @@ export default function AdminTables() {
             className="bg-surface-secondary hover:bg-border text-text-secondary font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 border border-border"
           >
             <FolderOpen className="w-4 h-4" />
-            Yeni Zona
+            {t('tables.new_zone')}
           </button>
 
           <div className="flex gap-4 ml-auto text-sm">
@@ -152,7 +154,7 @@ export default function AdminTables() {
               activeSection === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-surface-secondary text-text-secondary hover:bg-border'
             }`}
           >
-            Hamısı ({tables.length})
+            {t('common.all')} ({tables.length})
           </button>
           {sections.map((section) => {
             const stats = sectionStats(section);
@@ -172,7 +174,7 @@ export default function AdminTables() {
 
         {sections.filter((s) => activeSection === 'all' || activeSection === s).map((section) => {
           const stats = sectionStats(section);
-          const sectionTables = filteredTables.filter((t) => t.section === section);
+          const sectionTables = filteredTables.filter((tbl) => tbl.section === section);
 
           return (
             <div key={section} className="mb-8">
@@ -180,21 +182,21 @@ export default function AdminTables() {
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-text-primary">{section}</h3>
                   <span className="text-xs bg-surface-secondary text-text-muted px-2.5 py-1 rounded-full font-medium">
-                    {stats.available} boş / {stats.total} cəmi
+                    {t('tables.available_total', { free: stats.available, total: stats.total })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => openSectionEdit(section)}
                     className="p-1.5 rounded-lg hover:bg-surface-secondary transition-colors"
-                    title="Zonanı redaktə et"
+                    title={t('tables.edit_zone')}
                   >
                     <Edit2 className="w-4 h-4 text-text-muted" />
                   </button>
                   <button
                     onClick={() => setDeleteSectionConfirm(section)}
                     className="p-1.5 rounded-lg hover:bg-danger-50 transition-colors"
-                    title="Zonanı sil"
+                    title={t('tables.delete_zone')}
                   >
                     <Trash2 className="w-4 h-4 text-danger-400" />
                   </button>
@@ -215,7 +217,7 @@ export default function AdminTables() {
                         <button
                           onClick={(e) => { e.stopPropagation(); openEdit(table); }}
                           className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-border flex items-center justify-center hover:bg-surface-secondary transition-colors"
-                          title="Redaktə"
+                          title={t('common.edit')}
                         >
                           <Edit2 className="w-3.5 h-3.5 text-text-secondary" />
                         </button>
@@ -223,7 +225,7 @@ export default function AdminTables() {
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(table.id); }}
                             className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-border flex items-center justify-center hover:bg-danger-50 transition-colors"
-                            title="Sil"
+                            title={t('common.delete')}
                           >
                             <Trash2 className="w-3.5 h-3.5 text-danger-500" />
                           </button>
@@ -231,10 +233,10 @@ export default function AdminTables() {
                       </div>
 
                       <div className="mb-2 cursor-pointer" onClick={() => openStatus(table)}>
-                        <div className="text-3xl font-bold text-text-primary mb-1">#{table.number}</div>
+                        <div className="text-3xl font-bold text-text-primary mb-1">{t('table.number_prefix')}{table.number}</div>
                         <div className="flex items-center justify-center gap-1.5 text-text-secondary mb-3">
                           <Armchair className="w-4 h-4" />
-                          <span className="text-sm">{table.capacity} nəfər</span>
+                          <span className="text-sm">{table.capacity} {t('table.guests')}</span>
                         </div>
                         <span className={`text-xs font-semibold px-3 py-1 rounded-full ${cfg.badge}`}>
                           {cfg.label}
@@ -245,7 +247,7 @@ export default function AdminTables() {
                         <div className="mt-3 bg-white dark:bg-surface rounded-xl p-2.5 border border-border">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <ChefHat className="w-3.5 h-3.5 text-primary-600" />
-                            <span className="text-[10px] font-semibold text-primary-600">Aktiv Sifariş</span>
+                            <span className="text-[10px] font-semibold text-primary-600">{t('tables.active_order')}</span>
                           </div>
                           <p className="text-xs font-bold text-text-primary">{activeOrder.totalAmount} ₼</p>
                           <p className="text-[10px] text-text-muted">{activeOrder.items.length} məhsul</p>
@@ -259,7 +261,7 @@ export default function AdminTables() {
                             <span className="text-[10px] font-semibold text-warning-600">Rezervasiya</span>
                           </div>
                           <p className="text-xs font-bold text-text-primary">{table.reservation.guestName}</p>
-                          <p className="text-[10px] text-text-muted">{table.reservation.time} • {table.reservation.guestCount} nəfər</p>
+                          <p className="text-[10px] text-text-muted">{table.reservation.time} • {table.reservation.guestCount} {t('table.guests')}</p>
                         </div>
                       )}
 
@@ -282,7 +284,7 @@ export default function AdminTables() {
                 {sectionTables.length === 0 && (
                   <div className="col-span-full text-center py-12 bg-surface-secondary rounded-2xl border border-dashed border-border">
                     <Grid3X3 className="w-10 h-10 mx-auto text-text-muted opacity-30 mb-2" />
-                    <p className="text-sm text-text-muted">Bu zonada masa yoxdur</p>
+                    <p className="text-sm text-text-muted">{t('tables.no_tables_in_zone')}</p>
                   </div>
                 )}
               </div>
@@ -293,9 +295,9 @@ export default function AdminTables() {
         {sections.length === 0 && (
           <div className="text-center py-20 bg-white dark:bg-surface rounded-2xl border border-border">
             <FolderOpen className="w-12 h-12 mx-auto text-text-muted opacity-30 mb-3" />
-            <p className="text-text-muted mb-4">Hələ zona yaradılmayıb</p>
+            <p className="text-text-muted mb-4">{t('tables.no_zones_created')}</p>
             <button onClick={openSectionAdd} className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-              İlk Zonanı Yarat
+              {t('tables.create_first_zone')}
             </button>
           </div>
         )}
@@ -306,7 +308,7 @@ export default function AdminTables() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit' ? 'Masanı Redaktə Et' : 'Yeni Masa Əlavə Et'}</h3>
+              <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit' ? t('tables.edit_table') : t('tables.add_table')}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
                 <X className="w-5 h-5 text-text-muted" />
               </button>
@@ -314,7 +316,7 @@ export default function AdminTables() {
             <div className="px-6 py-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Masa nömrəsi</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">{t('tables.table_number')}</label>
                   <input
                     type="number"
                     min={1}
@@ -324,7 +326,7 @@ export default function AdminTables() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Tutum (nəfər)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">{t('tables.capacity')}</label>
                   <input
                     type="number"
                     min={1}
@@ -336,7 +338,7 @@ export default function AdminTables() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Zona</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">{t('tables.zone')}</label>
                 {sections.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {sections.map((section) => (
@@ -355,12 +357,12 @@ export default function AdminTables() {
                   </div>
                 ) : (
                   <div className="bg-surface-secondary rounded-xl p-4 text-center">
-                    <p className="text-sm text-text-muted mb-2">Zona yoxdur</p>
+                    <p className="text-sm text-text-muted mb-2">{t('tables.no_zones')}</p>
                     <button
                       onClick={() => { setModalMode(null); openSectionAdd(); }}
                       className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                     >
-                      + Zona yarat
+                      + {t('tables.create_zone')}
                     </button>
                   </div>
                 )}
@@ -371,14 +373,14 @@ export default function AdminTables() {
                 onClick={() => setModalMode(null)}
                 className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
               >
-                Ləğv
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
-                disabled={form.number < 1 || form.capacity < 1 || !form.section.trim() || (modalMode === 'add' && tables.some((t) => t.number === form.number))}
+                disabled={form.number < 1 || form.capacity < 1 || !form.section.trim() || (modalMode === 'add' && tables.some((tbl) => tbl.number === form.number))}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
               >
-                {modalMode === 'edit' ? 'Yadda Saxla' : 'Əlavə Et'}
+                {modalMode === 'edit' ? t('common.save') : t('common.add')}
               </button>
             </div>
           </div>
@@ -400,23 +402,23 @@ export default function AdminTables() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-bold text-text-primary">{modalMode === 'sectionEdit' ? 'Zonanı Redaktə Et' : 'Yeni Zona Əlavə Et'}</h3>
+              <h3 className="text-lg font-bold text-text-primary">{modalMode === 'sectionEdit' ? t('tables.edit_zone_title') : t('tables.add_zone_title')}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
                 <X className="w-5 h-5 text-text-muted" />
               </button>
             </div>
             <div className="px-6 py-4">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Zona adı</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">{t('tables.zone_name')}</label>
               <input
                 value={sectionFormName}
                 onChange={(e) => setSectionFormName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSectionSave(); }}
                 className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="məs. Zal 3, Terras, Bağça"
+                placeholder={t('tables.zone_placeholder')}
                 autoFocus
               />
               {modalMode === 'sectionAdd' && sections.includes(sectionFormName.trim()) && (
-                <p className="text-xs text-danger-600 mt-1">Bu zona artıq mövcuddur</p>
+                <p className="text-xs text-danger-600 mt-1">{t('tables.zone_already_exists')}</p>
               )}
             </div>
             <div className="px-6 pb-6 flex gap-3">
@@ -424,14 +426,14 @@ export default function AdminTables() {
                 onClick={() => setModalMode(null)}
                 className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
               >
-                Ləğv
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSectionSave}
                 disabled={!sectionFormName.trim() || (modalMode === 'sectionAdd' && sections.includes(sectionFormName.trim())) || (modalMode === 'sectionEdit' && (sectionFormName.trim() === editingSection || sections.includes(sectionFormName.trim())))}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
               >
-                {modalMode === 'sectionEdit' ? 'Yadda Saxla' : 'Əlavə Et'}
+                {modalMode === 'sectionEdit' ? t('common.save') : t('common.add')}
               </button>
             </div>
           </div>
@@ -444,15 +446,15 @@ export default function AdminTables() {
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
             <h3 className="text-lg font-bold text-text-primary mb-1">
-              Masa #{tables.find((t) => t.id === deleteConfirm)?.number} silinsin?
+              {t('tables.delete_confirmation', { number: tables.find((tbl) => tbl.id === deleteConfirm)?.number ?? '?' })}
             </h3>
-            <p className="text-sm text-text-secondary mb-5">Bu əməliyyat geri alına bilməz.</p>
+            <p className="text-sm text-text-secondary mb-5">{t('common.irreversible_warning')}</p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">
-                Geri
+                {t('common.back')}
               </button>
               <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors">
-                Sil
+                {t('common.delete')}
               </button>
             </div>
           </div>
@@ -465,20 +467,20 @@ export default function AdminTables() {
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
             <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
             <h3 className="text-lg font-bold text-text-primary mb-1">
-              "{deleteSectionConfirm}" zonası silinsin?
+              {t('tables.delete_zone_confirmation', { name: deleteSectionConfirm })}
             </h3>
             <p className="text-sm text-text-secondary mb-2">
-              Bu zonada {tables.filter((t) => t.section === deleteSectionConfirm).length} masa var.
+              {t('tables.zone_contains_tables', { count: tables.filter((tbl) => tbl.section === deleteSectionConfirm).length })}
             </p>
             <p className="text-sm text-danger-600 mb-5">
-              Bu masalar ilk mövcud zonaya köçürüləcək.
+              {t('tables.tables_will_be_moved')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteSectionConfirm(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">
-                Geri
+                {t('common.back')}
               </button>
               <button onClick={() => handleSectionDelete(deleteSectionConfirm)} className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors">
-                Sil
+                {t('common.delete')}
               </button>
             </div>
           </div>

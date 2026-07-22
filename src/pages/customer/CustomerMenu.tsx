@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import CameraCapture from '../../components/customer/CameraCapture';
 import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Banknote, CreditCard } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
 
 export default function CustomerMenu() {
+  const { t } = useTranslation();
   const { menuItems, menuCategories, tables, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, createCustomerOrder, requestPayment, orderMode, customerPhotoRequired, paymentTiming } = useStore();
   const navigate = useNavigate();
   const { tableId: urlTableId } = useParams();
@@ -62,15 +64,15 @@ export default function CustomerMenu() {
 
   const handleConfirmOrder = () => {
     if (!selectedTableId) {
-      setOrderError('Zəhmət olmasa masa seçin');
+      setOrderError(t('error.please_select_table'));
       return;
     }
     if (needsPhoto && !customerPhoto) {
-      setOrderError('Zəhmət olmasa masada olduğunuzu təsdiqləmək üçün şəkil çəkin');
+      setOrderError(t('error.please_take_photo'));
       return;
     }
     if (isBeforePayment && !selectedPaymentMethod) {
-      setOrderError('Zəhmət olmasa ödəniş üsulunu seçin');
+      setOrderError(t('error.please_select_payment_method'));
       return;
     }
     const order = createCustomerOrder(selectedTableId, customerPhoto || undefined);
@@ -83,18 +85,18 @@ export default function CustomerMenu() {
       setSelectedPaymentMethod(null);
       navigate(`/order?id=${order.id}`);
     } else {
-      setOrderError('Sifariş yaradılarkən xəta baş verdi');
+      setOrderError(t('error.order_creation_failed'));
     }
   };
 
   return (
     <div className="min-h-screen bg-surface-secondary">
       <div className="bg-white dark:bg-surface border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-        <h1 className="text-xl font-bold text-text-primary">Tabler Menyu</h1>
+        <h1 className="text-xl font-bold text-text-primary">{t('menu.title')}</h1>
         <div className="flex items-center gap-2">
           {selectedTableId && (
             <span className="text-xs bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full font-medium">
-              Masa #{tables.find((t) => t.id === selectedTableId)?.number || '?'}
+              {t('table.number_prefix', { number: tables.find((t) => t.id === selectedTableId)?.number || '?' })}
             </span>
           )}
           {canOrder && (
@@ -115,7 +117,7 @@ export default function CustomerMenu() {
 
       {!selectedTableId && canOrder && (
         <div className="bg-white dark:bg-surface border-b border-border px-4 py-4">
-          <p className="text-sm text-text-secondary mb-2 font-medium">Zəhmət olmasa masanızı seçin:</p>
+          <p className="text-sm text-text-secondary mb-2 font-medium">{t('menu.please_select_your_table')}</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {tables.map((table) => {
               const isSelected = selectedTableId === table.id;
@@ -134,7 +136,7 @@ export default function CustomerMenu() {
                   }`}
                 >
                   #{table.number}
-                  <span className="text-xs ml-1 opacity-70">({table.capacity} nəf.)</span>
+                  <span className="text-xs ml-1 opacity-70">({table.capacity} {t('table.capacity_abbreviation')})</span>
                 </button>
               );
             })}
@@ -145,15 +147,15 @@ export default function CustomerMenu() {
       {showCart && canOrder && (
         <div className="bg-white dark:bg-surface border-b border-border px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-text-primary">Səbət</h3>
+            <h3 className="font-semibold text-text-primary">{t('cart.title')}</h3>
             {cart.length > 0 && (
               <button onClick={clearCart} className="text-xs text-danger-600 hover:text-danger-700 font-medium">
-                Təmizlə
+                {t('cart.clear')}
               </button>
             )}
           </div>
           {cart.length === 0 ? (
-            <p className="text-sm text-text-muted py-2">Səbət boştur. Menyudan əlavə edin.</p>
+            <p className="text-sm text-text-muted py-2">{t('cart.empty_message')}</p>
           ) : (
             <div className="space-y-2">
               {cart.map((item) => (
@@ -187,7 +189,7 @@ export default function CustomerMenu() {
               ))}
               <div className="pt-3 border-t border-border">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-text-secondary">Cəmi:</span>
+                  <span className="text-sm text-text-secondary">{t('cart.total')}:</span>
                   <span className="text-lg font-bold text-text-primary">{cartTotal} ₼</span>
                 </div>
                 <button
@@ -195,7 +197,7 @@ export default function CustomerMenu() {
                   className="w-full bg-primary-600 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  Sifariş Et ({cartCount} məhsul)
+                  {t('cart.place_order')} ({cartCount} {t('cart.items_suffix')})
                 </button>
               </div>
             </div>
@@ -223,7 +225,7 @@ export default function CustomerMenu() {
 
       {!canOrder && (
         <div className="px-4 py-3 bg-white dark:bg-surface border-b border-border">
-          <p className="text-sm text-text-muted text-center">Bu restoranda sifarişlər ofisant tərəfindən qəbul edilir</p>
+          <p className="text-sm text-text-muted text-center">{t('menu.waiter_only_notice')}</p>
         </div>
       )}
 
@@ -238,7 +240,7 @@ export default function CustomerMenu() {
               <div className="p-4">
                 <h3 className="font-semibold text-text-primary">{item.name}</h3>
                 <p className="text-sm text-text-muted mt-1 line-clamp-2">{item.description}</p>
-                <p className="text-xs text-text-muted mt-1">~{item.preparationTime} dəq</p>
+                <p className="text-xs text-text-muted mt-1">~{item.preparationTime} {t('time.minutes_abbreviation')}</p>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-primary-600">{item.price} ₼</span>
                   {canOrder && (
@@ -278,7 +280,7 @@ export default function CustomerMenu() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOrderModal(false)}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold text-text-primary">Sifarişi Təsdiqlə</h3>
+              <h3 className="text-lg font-semibold text-text-primary">{t('order.confirm_title')}</h3>
               <button onClick={() => setShowOrderModal(false)} className="p-1 hover:bg-surface-secondary rounded-lg transition-colors">
                 <X className="w-5 h-5 text-text-muted" />
               </button>
@@ -286,29 +288,29 @@ export default function CustomerMenu() {
 
             <div className="px-6 py-4">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-text-secondary mb-2">Masa seçimi</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">{t('order.table_selection_label')}</label>
                 <div className="relative">
                   <select
                     value={selectedTableId}
                     onChange={(e) => { setSelectedTableId(e.target.value); setOrderError(''); }}
                     className="w-full appearance-none bg-surface-secondary border border-border rounded-xl px-4 py-2.5 pr-10 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
-                    <option value="">Masa seçin...</option>
-                    {availableTables.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        Masa #{t.number} — {t.capacity} nəfər ({t.section})
+                    <option value="">{t('order.select_table_placeholder')}</option>
+                    {availableTables.map((tbl) => (
+                      <option key={tbl.id} value={tbl.id}>
+                        {t('table.number_prefix', { number: tbl.number })} — {tbl.capacity} {t('table.guests')} ({tbl.section})
                       </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
                 </div>
                 {availableTables.length === 0 && (
-                  <p className="text-xs text-warning-600 mt-1">Hal-hazırda bütün masalar məşğuldur</p>
+                  <p className="text-xs text-warning-600 mt-1">{t('order.all_tables_occupied')}</p>
                 )}
               </div>
 
               <div className="bg-surface-secondary rounded-xl p-4 mb-4">
-                <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">Sifariş</p>
+                <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{t('order.order_label')}</p>
                 <div className="space-y-2">
                   {cart.map((item) => (
                     <div key={item.menuItemId} className="flex items-center justify-between text-sm">
@@ -319,7 +321,7 @@ export default function CustomerMenu() {
                     </div>
                   ))}
                   <div className="pt-2 border-t border-border flex items-center justify-between">
-                    <span className="font-semibold text-text-primary">Cəmi</span>
+                    <span className="font-semibold text-text-primary">{t('order.total')}</span>
                     <span className="text-lg font-bold text-primary-600">{cartTotal} ₼</span>
                   </div>
                 </div>
@@ -328,13 +330,13 @@ export default function CustomerMenu() {
               {needsPhoto && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Şəkil təsdiqi <span className="text-danger-500">*</span>
+                    {t('order.photo_confirmation')} <span className="text-danger-500">*</span>
                   </label>
-                  <p className="text-xs text-text-muted mb-3">Masada olduğunuzu təsdiqləmək üçün şəkil çəkin</p>
-                  
+                  <p className="text-xs text-text-muted mb-3">{t('order.photo_confirmation_hint')}</p>
+
                   {customerPhoto ? (
                     <div className="relative">
-                      <img src={customerPhoto} alt="Müşteri şəkli" className="w-full h-40 object-cover rounded-xl border border-border" />
+                      <img src={customerPhoto} alt={t('order.customer_photo_alt')} className="w-full h-40 object-cover rounded-xl border border-border" />
                       <button
                         onClick={() => setCustomerPhoto(null)}
                         className="absolute top-2 right-2 w-8 h-8 bg-danger-500 text-white rounded-full flex items-center justify-center hover:bg-danger-600 transition-colors"
@@ -343,7 +345,7 @@ export default function CustomerMenu() {
                       </button>
                       <div className="absolute bottom-2 left-2 bg-success-500 text-white text-xs px-2 py-1 rounded-lg flex items-center gap-1">
                         <Check className="w-3 h-3" />
-                        Şəkil çəkildi
+                        {t('order.photo_taken')}
                       </div>
                     </div>
                   ) : (
@@ -352,7 +354,7 @@ export default function CustomerMenu() {
                       className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 hover:border-primary-400 hover:bg-primary-50 transition-colors"
                     >
                       <Camera className="w-8 h-8 text-text-muted" />
-                      <span className="text-sm font-medium text-text-secondary">Şəkil Çək</span>
+                      <span className="text-sm font-medium text-text-secondary">{t('order.take_photo')}</span>
                     </button>
                   )}
                 </div>
@@ -361,10 +363,10 @@ export default function CustomerMenu() {
               {isBeforePayment && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-text-secondary mb-2">
-                    Ödəniş Üsulu <span className="text-danger-500">*</span>
+                    {t('payment.method')} <span className="text-danger-500">*</span>
                   </label>
-                  <p className="text-xs text-text-muted mb-3">Sifarişdən əvvəl ödəniş üsulunu seçin</p>
-                  
+                  <p className="text-xs text-text-muted mb-3">{t('payment.how_to_pay')}</p>
+
                   <div className="flex gap-3">
                     <button
                       type="button"
@@ -377,8 +379,8 @@ export default function CustomerMenu() {
                     >
                       <Banknote className={`w-6 h-6 ${selectedPaymentMethod === 'cash' ? 'text-success-600' : 'text-text-muted'}`} />
                       <div className="text-left">
-                        <p className={`text-sm font-semibold ${selectedPaymentMethod === 'cash' ? 'text-success-700' : 'text-text-primary'}`}>Nagd</p>
-                        <p className="text-[10px] text-text-muted">Nağd ödəniş</p>
+                        <p className={`text-sm font-semibold ${selectedPaymentMethod === 'cash' ? 'text-success-700' : 'text-text-primary'}`}>{t('payment.cash')}</p>
+                        <p className="text-[10px] text-text-muted">{t('payment.cash_description')}</p>
                       </div>
                     </button>
                     <button
@@ -392,8 +394,8 @@ export default function CustomerMenu() {
                     >
                       <CreditCard className={`w-6 h-6 ${selectedPaymentMethod === 'card' ? 'text-primary-600' : 'text-text-muted'}`} />
                       <div className="text-left">
-                        <p className={`text-sm font-semibold ${selectedPaymentMethod === 'card' ? 'text-primary-700' : 'text-text-primary'}`}>Kart</p>
-                        <p className="text-[10px] text-text-muted">Kart ilə ödəniş</p>
+                        <p className={`text-sm font-semibold ${selectedPaymentMethod === 'card' ? 'text-primary-700' : 'text-text-primary'}`}>{t('payment.card')}</p>
+                        <p className="text-[10px] text-text-muted">{t('payment.card_description')}</p>
                       </div>
                     </button>
                   </div>
@@ -410,7 +412,7 @@ export default function CustomerMenu() {
                 onClick={() => setShowOrderModal(false)}
                 className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
               >
-                Geri
+                {t('common.back')}
               </button>
               <button
                 onClick={handleConfirmOrder}
@@ -418,7 +420,7 @@ export default function CustomerMenu() {
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                Təsdiqlə
+                {t('common.confirm')}
               </button>
             </div>
           </div>

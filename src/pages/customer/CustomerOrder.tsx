@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ArrowLeft, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
-import { ORDER_ITEM_STATUS_LABELS } from '../../lib/constants';
+import { getOrderItemStatusLabels } from '../../lib/constants';
 
 export default function CustomerOrder() {
+  const { t } = useTranslation();
+  const ORDER_ITEM_STATUS_LABELS = getOrderItemStatusLabels(t);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const orderId = searchParams.get('id');
@@ -32,13 +35,13 @@ export default function CustomerOrder() {
       <div className="min-h-screen bg-surface-secondary flex items-center justify-center p-4">
         <div className="text-center">
           <ChefHat className="w-16 h-16 mx-auto text-text-muted mb-4 opacity-40" />
-          <h2 className="text-xl font-semibold text-text-primary">Sifariş Tapılmadı</h2>
-          <p className="text-text-secondary mt-2 text-sm">Aktiv sifarişiniz yoxdur</p>
+          <h2 className="text-xl font-semibold text-text-primary">{t('order.not_found')}</h2>
+          <p className="text-text-secondary mt-2 text-sm">{t('order.no_active_order')}</p>
           <button
             onClick={() => navigate('/menu')}
             className="mt-6 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
           >
-            Menyuya qayıt
+            {t('order.back_to_menu')}
           </button>
         </div>
       </div>
@@ -46,12 +49,12 @@ export default function CustomerOrder() {
   }
 
   const statusConfig = [
-    { key: 'pending', label: 'Qəbul edildi', sublabel: 'Sifarişiniz qeydə alındı', icon: Clock, color: 'warning' },
-    { key: 'confirmed', label: 'Təsdiqləndi', sublabel: 'Sifarişiniz təsdiqləndi', icon: CheckCircle, color: 'primary' },
-    { key: 'preparing', label: 'Hazırlanır', sublabel: 'Mtbəxdə hazırlanır', icon: ChefHat, color: 'primary' },
-    { key: 'ready', label: 'Hazırdır', sublabel: 'Sifarişiniz hazırdır', icon: UtensilsCrossed, color: 'success' },
-    { key: 'served', label: 'Verilib', sublabel: 'Sifarişiniz masanıza verilib', icon: CheckCircle, color: 'success' },
-    { key: 'completed', label: 'Tamamlandı', sublabel: 'Sifariş tamamlandı', icon: CheckCircle, color: 'success' },
+    { key: 'pending', label: t('order.status.pending'), sublabel: t('order.waiter_confirmation_pending'), icon: Clock, color: 'warning' },
+    { key: 'confirmed', label: t('order.status.confirmed'), sublabel: t('order.confirmed_by_waiter'), icon: CheckCircle, color: 'primary' },
+    { key: 'preparing', label: t('order.status.preparing'), sublabel: t('order.confirmed_by_waiter_detail'), icon: ChefHat, color: 'primary' },
+    { key: 'ready', label: t('order.status.ready'), sublabel: t('order.customer_order'), icon: UtensilsCrossed, color: 'success' },
+    { key: 'served', label: t('order.status.served'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
+    { key: 'completed', label: t('order.status.completed'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
   ];
 
   const activeIndex = statusConfig.findIndex((s) => s.key === order.status);
@@ -68,7 +71,7 @@ export default function CustomerOrder() {
   const handleRequestPayment = (method: PaymentMethod) => {
     requestPayment(order.id, method);
     setShowPaymentModal(false);
-    addToast('Hesab istəyi göndərildi. Ofisant gələcək.', 'success');
+    addToast(t('toast.bill_requested'), 'success');
   };
 
   return (
@@ -81,8 +84,8 @@ export default function CustomerOrder() {
           <ArrowLeft className="w-5 h-5 text-text-secondary" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-text-primary">Sifariş Vəziyyəti</h1>
-          <p className="text-xs text-text-muted">Masa #{order.tableNumber}</p>
+          <h1 className="text-lg font-bold text-text-primary">{t('order.details')}</h1>
+          <p className="text-xs text-text-muted">{t('table.number_prefix', { number: order.tableNumber })}</p>
         </div>
       </div>
 
@@ -91,8 +94,8 @@ export default function CustomerOrder() {
           <div className="bg-warning-50 border border-warning-200 rounded-2xl p-4 flex items-start gap-3">
             <UserCheck className="w-5 h-5 text-warning-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-warning-700">Ofisant təsdiqi gözlənilir</p>
-              <p className="text-xs text-warning-600 mt-1">Sifarişiniz ofisant tərəfindən yoxlanılır. Təsdiq edildikdən sonra metbəxə göndəriləcək.</p>
+              <p className="text-sm font-semibold text-warning-700">{t('order.waiter_confirmation_pending')}</p>
+              <p className="text-xs text-warning-600 mt-1">{t('order.waiter_confirmation_pending_detail')}</p>
             </div>
           </div>
         )}
@@ -101,8 +104,8 @@ export default function CustomerOrder() {
           <div className="bg-success-50 border border-success-200 rounded-2xl p-4 flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-success-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-success-700">Sifariş təsdiqləndi</p>
-              <p className="text-xs text-success-600 mt-1">Sifarişiniz ofisant tərəfindən təsdiqləndi və metbəxə göndərildi.</p>
+              <p className="text-sm font-semibold text-success-700">{t('order.confirmed_by_waiter')}</p>
+              <p className="text-xs text-success-600 mt-1">{t('order.confirmed_by_waiter_detail')}</p>
             </div>
           </div>
         )}
@@ -111,19 +114,19 @@ export default function CustomerOrder() {
           <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4 flex items-start gap-3">
             <ReceiptText className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-primary-700">Hesab istəyi göndərildi</p>
+              <p className="text-sm font-semibold text-primary-700">{t('order.bill_requested')}</p>
               <p className="text-xs text-primary-600 mt-1">
-                Ödəniş üsulu: {order.paymentMethod === 'cash' ? 'Nagd' : 'Kart'}
+                {t('payment.method')}: {order.paymentMethod === 'cash' ? t('payment.cash') : t('payment.card')}
                 {order.paymentMethod === 'cash' ? ' 💵' : ' 💳'}
               </p>
-              <p className="text-xs text-primary-500 mt-1">Ofisant tezliklə gələcək.</p>
+              <p className="text-xs text-primary-500 mt-1">{t('order.waiter_coming')}</p>
             </div>
           </div>
         )}
 
         {isCancelled && (
           <div className="bg-danger-50 border border-danger-500/20 rounded-2xl p-4 text-center">
-            <p className="text-danger-600 font-semibold">Sifariş ləğv edilib</p>
+            <p className="text-danger-600 font-semibold">{t('order.cancelled')}</p>
           </div>
         )}
 
@@ -131,7 +134,7 @@ export default function CustomerOrder() {
           <div className="bg-white dark:bg-surface rounded-2xl border border-border p-5">
             <div className="flex items-center gap-2 mb-1">
               <ReceiptText className="w-4 h-4 text-text-muted" />
-              <p className="text-xs font-medium text-text-muted uppercase tracking-wider">Sifariş #{order.id.slice(0, 6).toUpperCase()}</p>
+              <p className="text-xs font-medium text-text-muted uppercase tracking-wider">{t('order.order_number_prefix', { number: order.id.slice(0, 6).toUpperCase() })}</p>
             </div>
 
             <div className="mt-5 space-y-0">
@@ -168,7 +171,7 @@ export default function CustomerOrder() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
                           </span>
-                          <span className="text-xs font-medium text-primary-600">Aktiv</span>
+                          <span className="text-xs font-medium text-primary-600">{t('order.active_status')}</span>
                         </div>
                       )}
                     </div>
@@ -180,7 +183,7 @@ export default function CustomerOrder() {
         )}
 
         <div className="bg-white dark:bg-surface rounded-2xl border border-border p-5">
-          <h3 className="text-sm font-semibold text-text-primary mb-3">Sifariş Detalları</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-3">{t('order.details')}</h3>
           <div className="space-y-2">
             {order.items.map((item) => {
               const statusInfo = ORDER_ITEM_STATUS_LABELS[item.status] || ORDER_ITEM_STATUS_LABELS.pending;
@@ -202,14 +205,14 @@ export default function CustomerOrder() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-            <span className="text-sm text-text-secondary">Cəmi</span>
+            <span className="text-sm text-text-secondary">{t('order.total')}</span>
             <span className="text-lg font-bold text-primary-600">{order.totalAmount} ₼</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-text-secondary">Tarix:</span>
+            <span className="text-text-secondary">{t('order.date_label')}:</span>
             <span className="text-text-primary font-medium">
               {new Date(order.createdAt).toLocaleString('az-AZ')}
             </span>
@@ -222,7 +225,7 @@ export default function CustomerOrder() {
             className="w-full bg-success-500 hover:bg-success-600 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
             <ReceiptText className="w-4 h-4" />
-            Hesab İstəyirəm
+            {t('order.request_bill')}
           </button>
         )}
 
@@ -230,7 +233,7 @@ export default function CustomerOrder() {
           onClick={() => navigate('/menu')}
           className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
         >
-          Menyuya Qayıt
+          {t('order.back_to_menu_btn')}
         </button>
       </div>
 
@@ -238,15 +241,15 @@ export default function CustomerOrder() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold text-text-primary">Ödəniş Üsulu</h3>
+              <h3 className="text-lg font-semibold text-text-primary">{t('payment.method')}</h3>
               <button onClick={() => setShowPaymentModal(false)} className="p-1 hover:bg-surface-secondary rounded-lg transition-colors">
                 <X className="w-5 h-5 text-text-muted" />
               </button>
             </div>
 
             <div className="p-6 space-y-3">
-              <p className="text-sm text-text-secondary text-center mb-4">Hesabı necə ödəmək istəyirsiniz?</p>
-              
+              <p className="text-sm text-text-secondary text-center mb-4">{t('payment.how_to_pay')}</p>
+
               <button
                 onClick={() => handleRequestPayment('cash')}
                 className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-success-400 hover:bg-success-50 transition-all"
@@ -255,8 +258,8 @@ export default function CustomerOrder() {
                   <Banknote className="w-6 h-6 text-success-600" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-text-primary">Nagd</p>
-                  <p className="text-xs text-text-muted">Nağd ödəniş</p>
+                  <p className="font-semibold text-text-primary">{t('payment.cash')}</p>
+                  <p className="text-xs text-text-muted">{t('payment.cash_description')}</p>
                 </div>
               </button>
 
@@ -268,8 +271,8 @@ export default function CustomerOrder() {
                   <CreditCard className="w-6 h-6 text-primary-600" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-text-primary">Kart</p>
-                  <p className="text-xs text-text-muted">Kartla ödəniş</p>
+                  <p className="font-semibold text-text-primary">{t('payment.card')}</p>
+                  <p className="text-xs text-text-muted">{t('payment.card_description')}</p>
                 </div>
               </button>
             </div>
@@ -279,7 +282,7 @@ export default function CustomerOrder() {
                 onClick={() => setShowPaymentModal(false)}
                 className="w-full px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
               >
-                Geri
+                {t('common.back')}
               </button>
             </div>
           </div>

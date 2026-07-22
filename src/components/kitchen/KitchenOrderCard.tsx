@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import type { Order } from '../../types';
 import { CheckCircle, ChefHat, Timer, ArrowRight, Camera } from 'lucide-react';
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function KitchenOrderCard({ order, variant }: Props) {
+  const { t } = useTranslation();
   const { updateOrderItemStatus, updateOrderStatus } = useStore();
 
   const readyCount = order.items.filter((i) => i.status === 'ready').length;
@@ -71,9 +73,9 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   };
 
   const badgeLabels = {
-    new: 'Yeni!',
-    preparing: 'Hazırlanır',
-    ready: 'Hazırdır',
+    new: t('kitchen.badge_new'),
+    preparing: t('kitchen.badge_preparing'),
+    ready: t('kitchen.badge_ready'),
   };
 
   return (
@@ -86,9 +88,9 @@ export default function KitchenOrderCard({ order, variant }: Props) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ChefHat className="w-4 h-4 text-text-muted" />
-            <span className="font-bold text-text-primary">Masa #{order.tableNumber}</span>
+            <span className="font-bold text-text-primary">{t('table.number_prefix', { number: order.tableNumber })}</span>
             {order.orderSource === 'customer' && (
-              <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">Müştəri</span>
+              <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">{t('order.customer')}</span>
             )}
           </div>
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeStyles[variant]}`}>
@@ -108,11 +110,11 @@ export default function KitchenOrderCard({ order, variant }: Props) {
               style={{ width: `${elapsedPercent}%` }}
             />
           </div>
-          <span className="text-[10px]">~{prepTime} dəq</span>
+          <span className="text-[10px]">~{prepTime} {t('time.minutes_abbreviation')}</span>
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-[10px] text-text-muted">
-            {order.orderSource === 'customer' ? 'Müştəri sifarişi' : order.waiterName || 'Ofisant'} • {readyCount}/{totalCount} hazırdır
+            {order.orderSource === 'customer' ? t('order.customer_order') : order.waiterName || t('order.waiter')} • {readyCount}/{totalCount} {t('kitchen.ready_suffix')}
           </span>
         </div>
       </div>
@@ -131,7 +133,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
                     onClick={() => updateOrderItemStatus(order.id, item.id, 'preparing')}
                     className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
-                    Başla
+                    {t('kitchen.start')}
                   </button>
                 )}
                 {item.status === 'preparing' && (
@@ -139,7 +141,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
                     onClick={() => updateOrderItemStatus(order.id, item.id, 'ready')}
                     className="text-xs bg-success-500 hover:bg-success-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
-                    Hazırdır
+                    {t('kitchen.badge_ready')}
                   </button>
                 )}
               </div>
@@ -175,7 +177,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
                     isPreparing ? 'bg-primary-100 text-primary-700' :
                     'bg-surface-secondary text-text-muted'
                   }`}>
-                    {isReady ? 'Hazırdır' : isPreparing ? 'Hazırlanır' : 'Gözləyir'}
+                    {isReady ? t('kitchen.badge_ready') : isPreparing ? t('kitchen.badge_preparing') : t('kitchen.badge_new')}
                   </span>
                 </div>
               </div>
@@ -189,14 +191,14 @@ export default function KitchenOrderCard({ order, variant }: Props) {
         <div className="px-4 pb-3">
           <div className="flex items-center gap-2 mb-2">
             <Camera className="w-3.5 h-3.5 text-primary-600" />
-            <span className="text-xs font-semibold text-primary-700">Müşteri Şəkli</span>
+            <span className="text-xs font-semibold text-primary-700">{t('kitchen.customer_photo')}</span>
           </div>
           <img
             src={order.customerPhoto}
-            alt={`Masa #${order.tableNumber} müştəri şəkli`}
+            alt={t('kitchen.customer_photo_alt', { number: order.tableNumber })}
             className="w-full h-32 object-cover rounded-xl border border-primary-200"
           />
-          <p className="text-[10px] text-text-muted mt-1">Müştərinin masada olduğunu təsdiqləyin</p>
+          <p className="text-[10px] text-text-muted mt-1">{t('kitchen.verify_customer')}</p>
         </div>
       )}
 
@@ -207,7 +209,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
             className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <ChefHat className="w-4 h-4" />
-            Hazırlamaya Başla
+            {t('kitchen.start_preparing')}
           </button>
         )}
         {variant === 'preparing' && !allReady && (
@@ -216,7 +218,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
             className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <CheckCircle className="w-4 h-4" />
-            Hamısını Hazır Et
+            {t('kitchen.mark_all_ready')}
           </button>
         )}
         {allReady && variant !== 'ready' && (
@@ -225,7 +227,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
             className="w-full bg-success-600 hover:bg-success-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
-            Təhvil Ver
+            {t('kitchen.hand_off')}
           </button>
         )}
       </div>

@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
+import { useTranslation } from '../../i18n';
 import {
   DollarSign, TrendingUp, BarChart3, PieChart, Users, ShoppingBag,
   ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 
 export default function AdminReports() {
+  const { t } = useTranslation();
   const { orders, menuItems, menuCategories, users } = useStore();
 
   const paidOrders = orders.filter((o) => o.paymentStatus === 'paid');
@@ -45,10 +47,10 @@ export default function AdminReports() {
     return Object.entries(stats)
       .map(([catId, count]) => {
         const cat = menuCategories.find((c) => c.id === catId);
-        return { name: cat?.name || 'Naməlum', count };
+        return { name: cat?.name || t('common.unknown'), count };
       })
       .sort((a, b) => b.count - a.count);
-  }, [orders, menuItems, menuCategories]);
+  }, [orders, menuItems, menuCategories, t]);
 
   const maxCatCount = Math.max(...categoryStats.map((c) => c.count), 1);
 
@@ -76,13 +78,13 @@ export default function AdminReports() {
       const revenue = completed.reduce((s, o) => s + o.totalAmount, 0);
       return {
         name: s.name,
-        role: s.role === 'admin' ? 'Admin' : s.role === 'waiter' ? 'Ofisant' : 'Aşpaz',
+        role: s.role === 'admin' ? t('role.admin') : s.role === 'waiter' ? t('role.waiter') : t('role.chef'),
         totalOrders: staffOrders.length,
         completedOrders: completed.length,
         revenue,
       };
     }).sort((a, b) => b.revenue - a.revenue);
-  }, [orders, users]);
+  }, [orders, users, t]);
 
   const maxStaffRevenue = Math.max(...staffPerformance.map((s) => s.revenue), 1);
 
@@ -104,7 +106,7 @@ export default function AdminReports() {
 
   return (
     <div>
-      <Header title="Hesabatlar və Analitika" subtitle="Ətraflı biznes göstəriciləri" showUser />
+      <Header title={t('reports.title')} subtitle={t('reports.subtitle')} showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -116,7 +118,7 @@ export default function AdminReports() {
               <ArrowUpRight className="w-4 h-4 text-success-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
-            <p className="text-sm text-text-secondary mt-1">Ümumi Gəlir</p>
+            <p className="text-sm text-text-secondary mt-1">{t('reports.total_revenue')}</p>
           </div>
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -126,7 +128,7 @@ export default function AdminReports() {
               <ArrowUpRight className="w-4 h-4 text-primary-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{completedCount}</p>
-            <p className="text-sm text-text-secondary mt-1">Tamamlanan</p>
+            <p className="text-sm text-text-secondary mt-1">{t('reports.completed')}</p>
           </div>
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -136,7 +138,7 @@ export default function AdminReports() {
               <ArrowUpRight className="w-4 h-4 text-warning-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{avgOrderValue} ₼</p>
-            <p className="text-sm text-text-secondary mt-1">Ort. Sifariş</p>
+            <p className="text-sm text-text-secondary mt-1">{t('reports.avg_order')}</p>
           </div>
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -146,7 +148,7 @@ export default function AdminReports() {
               <ArrowDownRight className="w-4 h-4 text-danger-500" />
             </div>
             <p className="text-2xl font-bold text-text-primary">{cancelledCount}</p>
-            <p className="text-sm text-text-secondary mt-1">Ləğv Edilən</p>
+            <p className="text-sm text-text-secondary mt-1">{t('reports.cancelled')}</p>
           </div>
         </div>
 
@@ -154,9 +156,9 @@ export default function AdminReports() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary-500" />
-              Günlük Gəlir (Son 7 Gün)
+              {t('reports.daily_revenue')}
             </h3>
-            <p className="text-xs text-text-muted mb-5">Günlər üzrə gəlir</p>
+            <p className="text-xs text-text-muted mb-5">{t('reports.daily_revenue_subtitle')}</p>
             <div className="flex items-end gap-2 h-48">
               {dailyRevenue.map((day, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -176,9 +178,9 @@ export default function AdminReports() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-warning-500" />
-              Saatlıq Sifariş Paylanması
+              {t('reports.hourly_distribution')}
             </h3>
-            <p className="text-xs text-text-muted mb-5">Gün ərzində saatlar üzrə</p>
+            <p className="text-xs text-text-muted mb-5">{t('reports.hourly_subtitle')}</p>
             <div className="flex items-end gap-0.5 h-48">
               {hourlyData.map((count, h) => (
                 <div key={h} className="flex-1 flex flex-col items-center justify-end h-full" title={`${h}:00 — ${count} sifariş`}>
@@ -203,9 +205,9 @@ export default function AdminReports() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <PieChart className="w-5 h-5 text-success-500" />
-              Kateqoriyalara Görə Satış
+              {t('reports.sales_by_category')}
             </h3>
-            <p className="text-xs text-text-muted mb-5">Ən çox satılan kateqoriyalar</p>
+            <p className="text-xs text-text-muted mb-5">{t('reports.top_categories')}</p>
             <div className="space-y-3">
               {categoryStats.map((cat, i) => (
                 <div key={cat.name} className="flex items-center gap-3">
@@ -220,7 +222,7 @@ export default function AdminReports() {
                 </div>
               ))}
               {categoryStats.length === 0 && (
-                <p className="text-center text-text-muted py-4 text-sm">Məlumat yoxdur</p>
+                <p className="text-center text-text-muted py-4 text-sm">{t('common.no_data')}</p>
               )}
             </div>
           </div>
@@ -228,9 +230,9 @@ export default function AdminReports() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary-500" />
-              Ən Çox Satılan Məhsullar
+              {t('dashboard.top_selling_items')}
             </h3>
-            <p className="text-xs text-text-muted mb-5">Miqdar üzrə TOP 8</p>
+            <p className="text-xs text-text-muted mb-5">{t('reports.top_8_by_quantity')}</p>
             <div className="space-y-3">
               {topItems.map((item, i) => (
                 <div key={item.name} className="flex items-center gap-3">
@@ -253,7 +255,7 @@ export default function AdminReports() {
                 </div>
               ))}
               {topItems.length === 0 && (
-                <p className="text-center text-text-muted py-4 text-sm">Satış yoxdur</p>
+                <p className="text-center text-text-muted py-4 text-sm">{t('dashboard.no_sales')}</p>
               )}
             </div>
           </div>
@@ -262,18 +264,18 @@ export default function AdminReports() {
         <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
           <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
             <Users className="w-5 h-5 text-primary-500" />
-            İşçi Performansı
+            {t('reports.staff_performance')}
           </h3>
-          <p className="text-xs text-text-muted mb-5">Hər işçinin sifariş və gəlir göstəriciləri</p>
+          <p className="text-xs text-text-muted mb-5">{t('reports.staff_performance_subtitle')}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {staffPerformance.map((staff, i) => (
               <div key={staff.name} className="bg-surface-secondary rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    staff.role === 'Admin' ? 'bg-primary-100' : staff.role === 'Ofisant' ? 'bg-warning-100' : 'bg-success-100'
+                    staff.role === t('role.admin') ? 'bg-primary-100' : staff.role === t('role.waiter') ? 'bg-warning-100' : 'bg-success-100'
                   }`}>
                     <span className={`text-sm font-bold ${
-                      staff.role === 'Admin' ? 'text-primary-700' : staff.role === 'Ofisant' ? 'text-warning-700' : 'text-success-700'
+                      staff.role === t('role.admin') ? 'text-primary-700' : staff.role === t('role.waiter') ? 'text-warning-700' : 'text-success-700'
                     }`}>{staff.name.charAt(0)}</span>
                   </div>
                   <div>
@@ -284,16 +286,16 @@ export default function AdminReports() {
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
                     <p className="text-lg font-bold text-text-primary">{staff.totalOrders}</p>
-                    <p className="text-[10px] text-text-muted">Cəmi</p>
+                    <p className="text-[10px] text-text-muted">{t('reports.total')}</p>
                   </div>
                   <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
                     <p className="text-lg font-bold text-success-600">{staff.completedOrders}</p>
-                    <p className="text-[10px] text-text-muted">Tamam</p>
+                    <p className="text-[10px] text-text-muted">{t('common.active')}</p>
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-text-muted">Gəlir</span>
+                    <span className="text-[10px] text-text-muted">{t('reports.revenue')}</span>
                     <span className="text-xs font-bold text-primary-600">{staff.revenue} ₼</span>
                   </div>
                   <div className="w-full h-2 bg-white dark:bg-surface rounded-full overflow-hidden">

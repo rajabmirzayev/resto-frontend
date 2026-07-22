@@ -3,7 +3,11 @@ import { Bell, Search, Menu, LogOut, Globe, Sun, Moon, ChevronDown } from 'lucid
 import { useSidebar } from '../../store/useSidebar';
 import { useStore } from '../../store/useStore';
 import { useTheme } from '../../store/useTheme';
+import { useTranslation, type Locale } from '../../i18n';
 import { useNavigate } from 'react-router-dom';
+import azFlag from '../../assets/azerbaijan-flag.png';
+import enFlag from '../../assets/united-kingdom-flag.png';
+import ruFlag from '../../assets/russian-flag.png';
 
 interface HeaderProps {
   title: string;
@@ -11,10 +15,10 @@ interface HeaderProps {
   showUser?: boolean;
 }
 
-const LANGUAGES = [
-  { code: 'az', label: 'Azərbaycanca', flag: '🇦🇿' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
+  { code: 'az', label: 'Azərbaycanca', flag: azFlag },
+  { code: 'en', label: 'English', flag: enFlag },
+  { code: 'ru', label: 'Русский', flag: ruFlag },
 ];
 
 export default function Header({ title, subtitle, showUser }: HeaderProps) {
@@ -22,11 +26,11 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
   const currentUser = useStore((s) => s.currentUser);
   const logout = useStore((s) => s.logout);
   const { isDark, toggleDark } = useTheme();
+  const { locale, setLocale, t } = useTranslation();
   const navigate = useNavigate();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
-  const [selectedLang, setSelectedLang] = useState('az');
 
   const handleLogout = () => {
     logout();
@@ -42,17 +46,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
       .slice(0, 2);
   };
 
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      admin: 'Admin',
-      waiter: 'Ofisant',
-      chef: 'Aşpaz',
-      customer: 'Müştəri',
-    };
-    return labels[role] || role;
-  };
-
-  const currentLang = LANGUAGES.find((l) => l.code === selectedLang);
+  const currentLang = LANGUAGES.find((l) => l.code === locale);
 
   return (
     <header className="bg-white dark:bg-surface border-b border-border px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between sticky top-0 z-30">
@@ -78,7 +72,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
-                placeholder="Axtar..."
+                placeholder={t('common.search')}
                 className="pl-9 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64 transition-all text-text-primary placeholder:text-text-muted"
               />
             </div>
@@ -95,7 +89,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
-                placeholder="Axtar..."
+                placeholder={t('common.search')}
                 className="pl-9 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64 transition-all text-text-primary placeholder:text-text-muted"
               />
             </div>
@@ -109,24 +103,24 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
               <button
                 onClick={() => { setShowLanguageMenu(!showLanguageMenu); setShowProfileMenu(false); }}
                 className="flex items-center gap-1.5 px-2.5 py-2 hover:bg-surface-secondary rounded-xl transition-colors text-sm"
-                title="Dil"
+                title={t('header.language')}
               >
                 <Globe className="w-4 h-4 text-text-secondary" />
-                <span className="hidden lg:inline text-text-secondary font-medium">{currentLang?.flag}</span>
+                <img src={currentLang?.flag} alt="" className="hidden lg:inline w-4 h-3 rounded-sm object-cover" />
               </button>
               {showLanguageMenu && (
                 <div className="absolute right-0 top-full mt-2 bg-white dark:bg-surface rounded-xl border border-border shadow-xl py-1.5 w-44 z-50">
                   {LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}
-                      onClick={() => { setSelectedLang(lang.code); setShowLanguageMenu(false); }}
+                      onClick={() => { setLocale(lang.code); setShowLanguageMenu(false); }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
-                        selectedLang === lang.code
+                        locale === lang.code
                           ? 'bg-primary-50 dark:bg-primary-100 text-primary-700 dark:text-primary-300 font-semibold'
                           : 'text-text-secondary hover:bg-surface-secondary'
                       }`}
                     >
-                      <span className="text-base">{lang.flag}</span>
+                      <img src={lang.flag} alt="" className="w-5 h-3.5 rounded-sm object-cover" />
                       <span>{lang.label}</span>
                     </button>
                   ))}
@@ -137,7 +131,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
             <button
               onClick={toggleDark}
               className="p-2 hover:bg-surface-secondary rounded-xl transition-colors hidden sm:flex"
-              title={isDark ? 'İşıqlı rejim' : 'Tünd rejim'}
+              title={isDark ? t('header.light_mode') : t('header.dark_mode')}
             >
               {isDark ? (
                 <Sun className="w-5 h-5 text-warning-500" />
@@ -160,7 +154,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
                     </div>
                     <div className="hidden lg:block text-left">
                       <p className="text-sm font-semibold text-text-primary leading-tight">{currentUser.name}</p>
-                      <p className="text-[11px] text-text-muted">{getRoleLabel(currentUser.role)}</p>
+                      <p className="text-[11px] text-text-muted">{t(`role.${currentUser.role}`)}</p>
                     </div>
                     <ChevronDown className="w-3.5 h-3.5 text-text-muted hidden lg:block" />
                   </>
@@ -179,7 +173,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-danger-600 hover:bg-danger-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span className="font-medium">Çıxış</span>
+                    <span className="font-medium">{t('header.logout')}</span>
                   </button>
                 </div>
               )}
@@ -193,7 +187,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
             className="flex items-center gap-2 px-3 py-2 bg-danger-50 text-danger-600 hover:bg-danger-100 rounded-xl text-sm font-medium transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Çıxış</span>
+            <span className="hidden sm:inline">{t('header.logout')}</span>
           </button>
         )}
       </div>

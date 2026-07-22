@@ -1,28 +1,31 @@
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
-import { ORDER_STATUS_LABELS, ORDER_STATUS_STYLES } from '../../lib/constants';
+import { useTranslation } from '../../i18n';
+import { getOrderStatusLabels, ORDER_STATUS_STYLES } from '../../lib/constants';
 
 export default function AdminOrders() {
+  const { t } = useTranslation();
+  const ORDER_STATUS_LABELS = getOrderStatusLabels(t);
   const { orders } = useStore();
 
   const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div>
-      <Header title="Sifariş Tarixçəsi" subtitle={`${orders.length} ümumi sifariş`} showUser />
+      <Header title={t('orders.history_title')} subtitle={t('orders.total_orders', { count: orders.length })} showUser />
 
       <div className="p-6">
         <div className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-surface-secondary">
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Sifariş ID</th>
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Masa</th>
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Ofisant</th>
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Məhsullar</th>
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Məbləğ</th>
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Status</th>
-                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">Tarix</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.id')}</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.table')}</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.waiter')}</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.items')}</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.amount')}</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.status')}</th>
+                <th className="text-left text-xs font-semibold text-text-secondary uppercase tracking-wider px-6 py-3">{t('orders.table_header.date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -55,7 +58,7 @@ export default function AdminOrders() {
               ))}
               {sortedOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-text-muted">Hələ sifariş yoxdur</td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-text-muted">{t('orders.no_orders_yet')}</td>
                 </tr>
               )}
             </tbody>

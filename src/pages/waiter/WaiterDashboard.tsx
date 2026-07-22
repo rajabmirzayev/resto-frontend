@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from '../../i18n';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function WaiterDashboard() {
+  const { t } = useTranslation();
   const { tables, orders, currentUser, orderMode, completePayment, confirmOrder, cancelOrder } = useStore();
   const { addToast } = useToast();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
@@ -34,10 +36,10 @@ export default function WaiterDashboard() {
     const readyCount = orders.filter((o) => o.status === 'ready').length;
     if (prevReadyCount.current > 0 && readyCount > prevReadyCount.current) {
       playOrderReadySound();
-      addToast('Sifariş hazır! Təhvil almağa gedin.', 'success', 5000);
+      addToast(t('toast.order_ready'), 'success', 5000);
     }
     prevReadyCount.current = readyCount;
-  }, [orders, addToast]);
+  }, [orders, addToast, t]);
 
   useEffect(() => {
     const newPaymentRequests = orders.filter((o) => o.paymentRequested && o.paymentStatus === 'pending');
@@ -59,16 +61,16 @@ export default function WaiterDashboard() {
   };
 
   const getTableStatusLabel = (table: Table, order?: Order): string => {
-    if (table.status === 'available') return 'Boş';
-    if (table.status === 'cleaning') return 'Təmizlənir';
-    if (table.status === 'reserved') return 'Rezervasiya';
-    if (!order) return 'Məşğul';
-    if (order.status === 'pending' && !order.waiterConfirmed) return 'Təsdiq gözləyir';
-    if (order.status === 'pending') return 'Sifariş gözləyir';
-    if (order.status === 'confirmed' || order.status === 'preparing') return 'Hazırlanır';
-    if (order.status === 'ready') return 'Hesab istəyir';
-    if (order.status === 'served') return 'Verilib';
-    return 'Məşğul';
+    if (table.status === 'available') return t('table.status.available');
+    if (table.status === 'cleaning') return t('table.status.cleaning');
+    if (table.status === 'reserved') return t('table.status.reserved');
+    if (!order) return t('table.status.occupied');
+    if (order.status === 'pending' && !order.waiterConfirmed) return t('table.status.waiting_confirmation');
+    if (order.status === 'pending') return t('table.status.waiting_order');
+    if (order.status === 'confirmed' || order.status === 'preparing') return t('table.status.preparing');
+    if (order.status === 'ready') return t('table.status.bill_requested');
+    if (order.status === 'served') return t('table.status.served');
+    return t('table.status.occupied');
   };
 
   const getTableStatusColor = (table: Table, order?: Order): string => {
@@ -99,19 +101,19 @@ export default function WaiterDashboard() {
   const getElapsed = (createdAt: string) => {
     const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
     const m = Math.floor(diff / 60);
-    return `${m} dəq`;
+    return `${m} ${t('time.minutes_abbreviation')}`;
   };
 
   const sections = [...new Set(tables.map((t) => t.section))];
 
   const handleConfirmCustomerOrder = (order: Order) => {
     confirmOrder(order.id, currentUser?.id || '', currentUser?.name || '');
-    addToast(`Masa #${order.tableNumber} sifarişi təsdiqləndi`, 'success');
+    addToast(t('toast.table_order_confirmed', { number: order.tableNumber }), 'success');
   };
 
   return (
     <div>
-      <Header title="Ofisant Paneli" subtitle={isConfirmMode ? 'Təsdiq Rejimi' : undefined} showUser />
+      <Header title={t('waiter.title')} subtitle={isConfirmMode ? t('waiter.confirm_mode') : undefined} showUser />
 
       <div className="p-6">
         {(isConfirmMode || paymentRequests.length > 0) && (
@@ -123,7 +125,7 @@ export default function WaiterDashboard() {
                   activeTab === 'tables' ? 'bg-primary-600 text-white shadow-sm' : 'bg-surface-secondary text-text-secondary hover:bg-border'
                 }`}
               >
-                Masalar
+                {t('waiter.tables_tab')}
               </button>
               {isConfirmMode && (
                 <button
@@ -132,7 +134,7 @@ export default function WaiterDashboard() {
                     activeTab === 'pending' ? 'bg-warning-600 text-white shadow-sm' : 'bg-surface-secondary text-text-secondary hover:bg-border'
                   }`}
                 >
-                  Təsdiq Gözləyənlər
+                  {t('waiter.pending_confirmations')}
                   <span className="ml-1.5 bg-white/20 text-xs px-1.5 py-0.5 rounded-full">{pendingCustomerOrders.length}</span>
                 </button>
               )}
@@ -145,7 +147,7 @@ export default function WaiterDashboard() {
                 >
                   <span className="flex items-center gap-1">
                     <Bell className="w-3.5 h-3.5" />
-                    Hesab İstəyənlər
+                    {t('waiter.bill_requesters')}
                   </span>
                   <span className="ml-1.5 bg-white/20 text-xs px-1.5 py-0.5 rounded-full">{paymentRequests.length}</span>
                 </button>
@@ -161,11 +163,11 @@ export default function WaiterDashboard() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <ReceiptText className="w-4 h-4 text-danger-600" />
-                    <span className="font-bold text-text-primary">Masa #{order.tableNumber}</span>
+                    <span className="font-bold text-text-primary">{t('table.number_prefix', { number: order.tableNumber })}</span>
                   </div>
                   <span className="flex items-center gap-1.5 bg-danger-100 text-danger-700 text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
                     <Bell className="w-3 h-3" />
-                    Hesab İstəyir
+                    {t('order.bill_requested')}
                   </span>
                 </div>
                 <div className="space-y-1.5 mb-3">
@@ -177,31 +179,31 @@ export default function WaiterDashboard() {
                   ))}
                 </div>
                 <div className="flex items-center justify-between mb-3 p-3 bg-danger-50 rounded-xl">
-                  <span className="text-sm font-semibold text-danger-700">Cəmi</span>
+                  <span className="text-sm font-semibold text-danger-700">{t('order.total')}</span>
                   <span className="text-lg font-bold text-danger-700">{order.totalAmount} ₼</span>
                 </div>
                 <div className="flex items-center gap-2 mb-3 p-3 bg-surface-secondary rounded-xl">
                   {order.paymentMethod === 'cash' ? (
                     <>
                       <Banknote className="w-5 h-5 text-success-600" />
-                      <span className="text-sm font-semibold text-text-primary">Nagd ödəniş</span>
+                      <span className="text-sm font-semibold text-text-primary">{t('payment.cash')}</span>
                     </>
                   ) : (
                     <>
                       <CreditCard className="w-5 h-5 text-primary-600" />
-                      <span className="text-sm font-semibold text-text-primary">Kart ilə ödəniş</span>
+                      <span className="text-sm font-semibold text-text-primary">{t('payment.card')}</span>
                     </>
                   )}
                 </div>
                 <button
                   onClick={() => {
                     completePayment(order.id);
-                    addToast(`Masa #${order.tableNumber} hesabı bağlandı`, 'success');
+                    addToast(t('toast.bill_closed', { number: order.tableNumber }), 'success');
                   }}
                   className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
-                  Hesabı Bağla
+                  {t('order.close_bill')}
                 </button>
               </div>
             ))}
@@ -213,7 +215,7 @@ export default function WaiterDashboard() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <ReceiptText className="w-4 h-4 text-warning-600" />
-                    <span className="font-bold text-text-primary">Masa #{order.tableNumber}</span>
+                    <span className="font-bold text-text-primary">{t('table.number_prefix', { number: order.tableNumber })}</span>
                   </div>
                   <span className="text-xs text-text-muted flex items-center gap-1">
                     <Timer className="w-3 h-3" />
@@ -229,22 +231,22 @@ export default function WaiterDashboard() {
                   ))}
                 </div>
                 <div className="flex items-center justify-between mb-3 p-3 bg-primary-50 rounded-xl">
-                  <span className="text-sm font-semibold text-primary-700">Cəmi</span>
+                  <span className="text-sm font-semibold text-primary-700">{t('order.total')}</span>
                   <span className="text-lg font-bold text-primary-700">{order.totalAmount} ₼</span>
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { cancelOrder(order.id); addToast(`Masa #${order.tableNumber} sifarişi ləğv edildi`, 'warning'); }}
+                    onClick={() => { cancelOrder(order.id); addToast(t('toast.order_cancelled', { number: order.tableNumber }), 'warning'); }}
                     className="flex-1 bg-danger-500 hover:bg-danger-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
                   >
-                    Rədd Et
+                    {t('order.reject')}
                   </button>
                   <button
                     onClick={() => handleConfirmCustomerOrder(order)}
                     className="flex-1 bg-success-500 hover:bg-success-600 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
                   >
                     <UserCheck className="w-4 h-4" />
-                    Təsdiqlə
+                    {t('common.confirm')}
                   </button>
                 </div>
               </div>
@@ -260,7 +262,7 @@ export default function WaiterDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-text-primary">{activeOrders.length}</p>
-                    <p className="text-xs text-text-secondary">Aktiv Sifariş</p>
+                    <p className="text-xs text-text-secondary">{t('waiter.active_orders')}</p>
                   </div>
                 </div>
               </div>
@@ -271,7 +273,7 @@ export default function WaiterDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-text-primary">{availableCount}</p>
-                    <p className="text-xs text-text-secondary">Boş Masa</p>
+                    <p className="text-xs text-text-secondary">{t('waiter.available_tables')}</p>
                   </div>
                 </div>
               </div>
@@ -282,7 +284,7 @@ export default function WaiterDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-text-primary">{occupiedCount}</p>
-                    <p className="text-xs text-text-secondary">Məşğul</p>
+                    <p className="text-xs text-text-secondary">{t('waiter.occupied_tables')}</p>
                   </div>
                 </div>
               </div>
@@ -293,7 +295,7 @@ export default function WaiterDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
-                    <p className="text-xs text-text-secondary">Gəlir</p>
+                    <p className="text-xs text-text-secondary">{t('waiter.revenue')}</p>
                   </div>
                 </div>
               </div>
@@ -339,17 +341,17 @@ export default function WaiterDashboard() {
                             </div>
                             {order.orderSource === 'customer' && (
                               <span className="text-[10px] bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded mt-1 inline-block font-medium">
-                                Müştəri sifarişi
+                                {t('order.customer_order')}
                               </span>
                             )}
                             {order.paymentRequested && order.paymentStatus === 'pending' && (
                               <span className="text-[10px] bg-danger-50 text-danger-600 px-1.5 py-0.5 rounded mt-1 inline-block font-medium animate-pulse">
-                                Hesab istəyir
+                                {t('order.bill_requested')}
                               </span>
                             )}
                             <div className="flex items-center gap-1 mt-1">
                               <span className="text-[10px] text-text-muted">
-                                {order.items.length} məhsul
+                                {order.items.length} {t('order.items_suffix')}
                               </span>
                               <ChevronRight className="w-3 h-3 text-text-muted" />
                             </div>
@@ -366,7 +368,7 @@ export default function WaiterDashboard() {
                                 <Clock className="w-2.5 h-2.5" />
                                 {table.reservation.time}
                               </span>
-                              <span className="text-[10px] text-text-muted">{table.reservation.guestCount} nəfər</span>
+                              <span className="text-[10px] text-text-muted">{table.reservation.guestCount} {t('table.guests')}</span>
                             </div>
                             {table.reservation.phone && (
                               <div className="flex items-center gap-0.5 mt-0.5">

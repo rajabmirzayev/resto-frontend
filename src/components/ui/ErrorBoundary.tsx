@@ -1,9 +1,10 @@
-import { Component } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useTranslation, type I18nContextValue } from '../../i18n';
 
 interface Props {
   children: ReactNode;
+  t: I18nContextValue['t'];
 }
 
 interface State {
@@ -11,7 +12,7 @@ interface State {
   error: Error | null;
 }
 
-export default class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundaryInner extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -37,8 +38,8 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div className="w-16 h-16 rounded-2xl bg-danger-50 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-danger-500" />
             </div>
-            <h2 className="text-xl font-bold text-text-primary mb-2">Xəta baş verdi</h2>
-            <p className="text-sm text-text-secondary mb-2">Gözlənilməz xəta baş verdi.</p>
+            <h2 className="text-xl font-bold text-text-primary mb-2">{this.props.t('error.title')}</h2>
+            <p className="text-sm text-text-secondary mb-2">{this.props.t('error.unexpected')}</p>
             {this.state.error && (
               <p className="text-xs text-text-muted bg-surface-secondary rounded-xl p-3 mb-6 font-mono text-left overflow-auto max-h-32">
                 {this.state.error.message}
@@ -49,7 +50,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-6 rounded-xl transition-colors inline-flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
-              Yenidən Cəhd Et
+              {this.props.t('error.retry')}
             </button>
           </div>
         </div>
@@ -58,4 +59,9 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+}
+
+export default function ErrorBoundary({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return <ErrorBoundaryInner t={t}>{children}</ErrorBoundaryInner>;
 }
