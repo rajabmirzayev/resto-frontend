@@ -7,7 +7,7 @@ import type { Table, Order } from '../../types';
 import {
   ClipboardList, Clock, X, Users, ReceiptText, CheckCircle,
   ChevronRight, UtensilsCrossed, CreditCard, Timer, UserCheck,
-  Banknote, Bell,
+  Banknote, Bell, Phone, User,
 } from 'lucide-react';
 
 export default function WaiterDashboard() {
@@ -120,7 +120,7 @@ export default function WaiterDashboard() {
 
   return (
     <div>
-      <Header title="Ofisant Paneli" subtitle={`Xoş gəlmisiniz, ${currentUser?.name}${isConfirmMode ? ' • Təsdiq Rejimi' : ''}`} />
+      <Header title="Ofisant Paneli" subtitle={isConfirmMode ? 'Təsdiq Rejimi' : undefined} showUser />
 
       <div className="p-6">
         {(isConfirmMode || paymentRequests.length > 0) && (
@@ -364,6 +364,27 @@ export default function WaiterDashboard() {
                             </div>
                           </div>
                         )}
+                        {table.status === 'reserved' && table.reservation && (
+                          <div className="mt-2 pt-2 border-t border-border/50">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <User className="w-2.5 h-2.5 text-warning-600" />
+                              <span className="text-[10px] font-semibold text-warning-700">{table.reservation.guestName}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-text-muted flex items-center gap-0.5">
+                                <Clock className="w-2.5 h-2.5" />
+                                {table.reservation.time}
+                              </span>
+                              <span className="text-[10px] text-text-muted">{table.reservation.guestCount} nəfər</span>
+                            </div>
+                            {table.reservation.phone && (
+                              <div className="flex items-center gap-0.5 mt-0.5">
+                                <Phone className="w-2.5 h-2.5 text-text-muted" />
+                                <span className="text-[10px] text-text-muted">{table.reservation.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -421,11 +442,42 @@ export default function WaiterDashboard() {
                 }
 
                 if (selectedTable.status === 'reserved') {
+                  const r = selectedTable.reservation;
                   return (
                     <div className="text-center py-8">
                       <Clock className="w-12 h-12 mx-auto text-warning-500 mb-3" />
                       <p className="text-lg font-semibold text-text-primary">Rezervasiya</p>
-                      <p className="text-sm text-text-muted mt-1">Masa rezervasiya olunub</p>
+                      {r ? (
+                        <div className="mt-4 space-y-3">
+                          <div className="bg-warning-50 rounded-xl p-4 border border-warning-200 text-left space-y-2">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-warning-600" />
+                              <span className="text-sm font-semibold text-text-primary">{r.guestName}</span>
+                            </div>
+                            {r.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-text-muted" />
+                                <span className="text-sm text-text-secondary">{r.phone}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-text-muted" />
+                              <span className="text-sm text-text-secondary">{r.time} • {r.guestCount} nəfər</span>
+                            </div>
+                            {r.notes && (
+                              <p className="text-xs text-text-muted pt-2 border-t border-warning-200">{r.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-text-muted mt-1">Masa rezervasiya olunub</p>
+                      )}
+                      <button
+                        onClick={() => { updateTableStatus(selectedTable.id, 'available'); setSelectedTable(null); }}
+                        className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
+                      >
+                        Boşalt
+                      </button>
                     </div>
                   );
                 }

@@ -61,12 +61,10 @@ export default function App() {
           path="/waiter"
           element={
             <ProtectedRoute allowedRoles={['waiter']}>
-              <AppLayout />
+              <WaiterDashboard />
             </ProtectedRoute>
           }
-        >
-          <Route index element={<WaiterDashboard />} />
-        </Route>
+        />
 
         <Route
           path="/kitchen"

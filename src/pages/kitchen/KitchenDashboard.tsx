@@ -269,7 +269,7 @@ export default function KitchenDashboard() {
 
   return (
     <div>
-      <Header title="Mtbəx Paneli" subtitle={`${newOrders.length + preparingOrders.length} aktiv, ${readyOrders.length} hazır`} />
+      <Header title="Mtbəx Paneli" subtitle={`${newOrders.length + preparingOrders.length} aktiv, ${readyOrders.length} hazır`} showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

@@ -130,6 +130,14 @@ export interface MenuCategory {
   icon: string;
 }
 
+export interface TableReservation {
+  guestName: string;
+  phone: string;
+  time: string;
+  guestCount: number;
+  notes?: string;
+}
+
 export interface Table {
   id: string;
   number: number;
@@ -137,6 +145,7 @@ export interface Table {
   status: TableStatus;
   currentOrderId?: string;
   section: string;
+  reservation?: TableReservation;
 }
 
 export interface OrderItem {

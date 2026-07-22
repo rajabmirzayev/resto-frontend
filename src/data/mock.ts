@@ -69,7 +69,7 @@ export const initialData: AppState = {
     { id: 't1', number: 1, capacity: 2, status: 'available', section: 'Zal 1' },
     { id: 't2', number: 2, capacity: 2, status: 'occupied', currentOrderId: 'o1', section: 'Zal 1' },
     { id: 't3', number: 3, capacity: 4, status: 'available', section: 'Zal 1' },
-    { id: 't4', number: 4, capacity: 4, status: 'reserved', section: 'Zal 1' },
+    { id: 't4', number: 4, capacity: 4, status: 'reserved', section: 'Zal 1', reservation: { guestName: 'Əli Həsənov', phone: '+994501234567', time: '19:00', guestCount: 4, notes: 'Ad gününə həsr olunub' } },
     { id: 't5', number: 5, capacity: 6, status: 'available', section: 'Zal 2' },
     { id: 't6', number: 6, capacity: 6, status: 'occupied', currentOrderId: 'o2', section: 'Zal 2' },
     { id: 't7', number: 7, capacity: 8, status: 'available', section: 'Zal 2' },
