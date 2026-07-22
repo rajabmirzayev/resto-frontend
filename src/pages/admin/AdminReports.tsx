@@ -15,11 +15,11 @@ export default function AdminReports() {
   const cancelledCount = orders.filter((o) => o.status === 'cancelled').length;
   const avgOrderValue = paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : 0;
 
-  const today = new Date();
   const dailyRevenue = useMemo(() => {
+    const now = new Date();
     const days: { label: string; revenue: number; count: number }[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
+      const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dayStr = d.toISOString().split('T')[0];
       const dayName = d.toLocaleDateString('az-AZ', { weekday: 'short' });

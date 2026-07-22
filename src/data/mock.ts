@@ -1,4 +1,5 @@
 import type { AppState } from '../types';
+import { hashPassword } from '../lib/validation';
 
 const daysAgo = (days: number, hours = 0, minutes = 0) => {
   const d = new Date();
@@ -27,10 +28,10 @@ export const initialData: AppState = {
     { id: 'r4', name: 'Aşpaz', permissions: ['kitchen.view', 'kitchen.manage', 'orders.view'], isSystem: false },
   ],
   users: [
-    { id: 'u1', name: 'Əli Məmmədov', role: 'admin', roleId: 'r1', username: 'admin', password: 'admin123', avatar: '' },
-    { id: 'u2', name: 'Leyla Hüseynova', role: 'waiter', roleId: 'r3', username: 'waiter1', password: 'waiter123', avatar: '' },
-    { id: 'u3', name: 'Kamil Əliyev', role: 'waiter', roleId: 'r3', username: 'waiter2', password: 'waiter123', avatar: '' },
-    { id: 'u4', name: 'Rəşad Nəsirov', role: 'chef', roleId: 'r4', username: 'chef1', password: 'chef123', avatar: '' },
+    { id: 'u1', name: 'Əli Məmmədov', role: 'admin', roleId: 'r1', username: 'admin', password: hashPassword('admin123'), avatar: '' },
+    { id: 'u2', name: 'Leyla Hüseynova', role: 'waiter', roleId: 'r3', username: 'waiter1', password: hashPassword('waiter123'), avatar: '' },
+    { id: 'u3', name: 'Kamil Əliyev', role: 'waiter', roleId: 'r3', username: 'waiter2', password: hashPassword('waiter123'), avatar: '' },
+    { id: 'u4', name: 'Rəşad Nəsirov', role: 'chef', roleId: 'r4', username: 'chef1', password: hashPassword('chef123'), avatar: '' },
   ],
   menuCategories: [
     { id: 'c1', name: 'Şorbalar', icon: 'soup' },

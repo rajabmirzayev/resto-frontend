@@ -1,30 +1,11 @@
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_STYLES } from '../../lib/constants';
 
 export default function AdminOrders() {
   const { orders } = useStore();
 
   const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const statusStyles: Record<string, string> = {
-    pending: 'bg-warning-50 text-warning-600',
-    confirmed: 'bg-primary-50 text-primary-600',
-    preparing: 'bg-primary-50 text-primary-700',
-    ready: 'bg-success-50 text-success-600',
-    served: 'bg-success-50 text-success-600',
-    completed: 'bg-surface-secondary text-text-muted',
-    cancelled: 'bg-danger-50 text-danger-600',
-  };
-
-  const statusLabels: Record<string, string> = {
-    pending: 'Gözləyir',
-    confirmed: 'Təsdiqlənib',
-    preparing: 'Hazırlanır',
-    ready: 'Hazırdır',
-    served: 'Verilib',
-    completed: 'Tamamlanıb',
-    cancelled: 'Ləğv edilib',
-  };
 
   return (
     <div>
@@ -63,8 +44,8 @@ export default function AdminOrders() {
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-text-primary">{order.totalAmount} ₼</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusStyles[order.status]}`}>
-                      {statusLabels[order.status]}
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${ORDER_STATUS_STYLES[order.status]}`}>
+                      {ORDER_STATUS_LABELS[order.status]}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-text-muted">

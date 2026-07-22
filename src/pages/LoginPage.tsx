@@ -92,30 +92,6 @@ export default function LoginPage() {
               Daxil ol
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-xs text-text-muted text-center mb-3">Demo hesablar:</p>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <button
-                onClick={() => { setUsername('admin'); setPassword('admin123'); }}
-                className="bg-surface-secondary hover:bg-primary-50 text-text-secondary py-2 px-3 rounded-lg transition-colors border border-border"
-              >
-                Admin
-              </button>
-              <button
-                onClick={() => { setUsername('waiter1'); setPassword('waiter123'); }}
-                className="bg-surface-secondary hover:bg-primary-50 text-text-secondary py-2 px-3 rounded-lg transition-colors border border-border"
-              >
-                Ofisant
-              </button>
-              <button
-                onClick={() => { setUsername('chef1'); setPassword('chef123'); }}
-                className="bg-surface-secondary hover:bg-primary-50 text-text-secondary py-2 px-3 rounded-lg transition-colors border border-border"
-              >
-                Aşpaz
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

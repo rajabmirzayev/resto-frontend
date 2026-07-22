@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ArrowLeft, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
+import { ORDER_ITEM_STATUS_LABELS } from '../../lib/constants';
 
 export default function CustomerOrder() {
   const [searchParams] = useSearchParams();
@@ -62,16 +63,6 @@ export default function CustomerOrder() {
     warning: 'bg-warning-500 text-white',
     primary: 'bg-primary-500 text-white',
     success: 'bg-success-500 text-white',
-  };
-
-  const itemStatusLabels: Record<string, { label: string; color: string }> = {
-    pending: { label: 'Gözləyir', color: 'bg-warning-50 text-warning-600' },
-    confirmed: { label: 'Təsdiqlənib', color: 'bg-primary-50 text-primary-600' },
-    preparing: { label: 'Hazırlanır', color: 'bg-primary-50 text-primary-700' },
-    ready: { label: 'Hazırdır', color: 'bg-success-50 text-success-600' },
-    served: { label: 'Verilib', color: 'bg-success-50 text-success-600' },
-    completed: { label: 'Tamamlanıb', color: 'bg-surface-secondary text-text-muted' },
-    cancelled: { label: 'Ləğv', color: 'bg-danger-50 text-danger-600' },
   };
 
   const handleRequestPayment = (method: PaymentMethod) => {
@@ -192,7 +183,7 @@ export default function CustomerOrder() {
           <h3 className="text-sm font-semibold text-text-primary mb-3">Sifariş Detalları</h3>
           <div className="space-y-2">
             {order.items.map((item) => {
-              const statusInfo = itemStatusLabels[item.status] || itemStatusLabels.pending;
+              const statusInfo = ORDER_ITEM_STATUS_LABELS[item.status] || ORDER_ITEM_STATUS_LABELS.pending;
               return (
                 <div key={item.id} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                   <div className="flex-1 min-w-0">

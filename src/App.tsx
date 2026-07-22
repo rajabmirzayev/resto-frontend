@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import AppLayout from './components/layout/AppLayout';
 import ToastContainer from './components/ui/ToastContainer';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMenu from './pages/admin/AdminMenu';
 import AdminTables from './pages/admin/AdminTables';
@@ -34,54 +36,57 @@ function PermRoute({ children, permission }: { children: React.ReactNode; permis
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ToastContainer />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ToastContainer />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="menu" element={<PermRoute permission="menu.view"><AdminMenu /></PermRoute>} />
-          <Route path="tables" element={<PermRoute permission="tables.view"><AdminTables /></PermRoute>} />
-          <Route path="orders" element={<PermRoute permission="orders.view"><AdminOrders /></PermRoute>} />
-          <Route path="reports" element={<PermRoute permission="reports.view"><AdminReports /></PermRoute>} />
-          <Route path="staff" element={<PermRoute permission="staff.view"><StaffManagement /></PermRoute>} />
-          <Route path="roles" element={<PermRoute permission="roles.view"><RoleManagement /></PermRoute>} />
-          <Route path="settings" element={<AdminSettings />} />
-        </Route>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="menu" element={<PermRoute permission="menu.view"><AdminMenu /></PermRoute>} />
+            <Route path="tables" element={<PermRoute permission="tables.view"><AdminTables /></PermRoute>} />
+            <Route path="orders" element={<PermRoute permission="orders.view"><AdminOrders /></PermRoute>} />
+            <Route path="reports" element={<PermRoute permission="reports.view"><AdminReports /></PermRoute>} />
+            <Route path="staff" element={<PermRoute permission="staff.view"><StaffManagement /></PermRoute>} />
+            <Route path="roles" element={<PermRoute permission="roles.view"><RoleManagement /></PermRoute>} />
+            <Route path="settings" element={<PermRoute permission="settings.view"><AdminSettings /></PermRoute>} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
 
-        <Route
-          path="/waiter"
-          element={
-            <ProtectedRoute allowedRoles={['waiter']}>
-              <WaiterDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/waiter"
+            element={
+              <ProtectedRoute allowedRoles={['waiter']}>
+                <WaiterDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/kitchen"
-          element={
-            <ProtectedRoute allowedRoles={['chef']}>
-              <KitchenDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/kitchen"
+            element={
+              <ProtectedRoute allowedRoles={['chef']}>
+                <KitchenDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/menu" element={<CustomerMenu />} />
-        <Route path="/menu/:tableId" element={<CustomerMenu />} />
-        <Route path="/order" element={<CustomerOrder />} />
+          <Route path="/menu" element={<CustomerMenu />} />
+          <Route path="/menu/:tableId" element={<CustomerMenu />} />
+          <Route path="/order" element={<CustomerOrder />} />
 
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

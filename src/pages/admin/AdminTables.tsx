@@ -2,7 +2,8 @@ import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import type { Table, TableStatus } from '../../types';
-import { Plus, Edit2, Trash2, X, Grid3X3, Armchair, ChefHat, FolderOpen, Clock, User, Phone } from 'lucide-react';
+import TableStatusModal from '../../components/admin/TableStatusModal';
+import { Plus, Edit2, Trash2, X, Grid3X3, Armchair, ChefHat, FolderOpen, Clock } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | 'status' | 'sectionAdd' | 'sectionEdit' | null;
 
@@ -32,8 +33,6 @@ export default function AdminTables() {
   const [activeSection, setActiveSection] = useState<string>('all');
   const [sectionFormName, setSectionFormName] = useState('');
   const [editingSection, setEditingSection] = useState<string | null>(null);
-  const [reservationForm, setReservationForm] = useState({ guestName: '', phone: '', time: '', guestCount: 2, notes: '' });
-  const [showReservationForm, setShowReservationForm] = useState(false);
 
   const sections = tableSections;
   const filteredTables = activeSection === 'all' ? tables : tables.filter((t) => t.section === activeSection);
@@ -61,12 +60,6 @@ export default function AdminTables() {
 
   const openStatus = (table: Table) => {
     setStatusTable(table);
-    if (table.reservation) {
-      setReservationForm({ guestName: table.reservation.guestName, phone: table.reservation.phone, time: table.reservation.time, guestCount: table.reservation.guestCount, notes: table.reservation.notes || '' });
-    } else {
-      setReservationForm({ guestName: '', phone: '', time: '', guestCount: 2, notes: '' });
-    }
-    setShowReservationForm(false);
     setModalMode('status');
   };
 
@@ -394,200 +387,12 @@ export default function AdminTables() {
 
       {/* Status Change Modal */}
       {modalMode === 'status' && statusTable && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-bold text-text-primary">Masa #{statusTable.number} — Status</h3>
-              <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
-                <X className="w-5 h-5 text-text-muted" />
-              </button>
-            </div>
-
-            {/* Status Buttons - hidden when reservation form is open */}
-            {!showReservationForm && statusTable.status !== 'reserved' && (
-              <div className="px-6 py-4 space-y-2">
-                {(['available', 'occupied', 'reserved', 'cleaning'] as const).map((s) => {
-                  const cfg = statusConfig[s];
-                  const active = statusTable.status === s;
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => {
-                        if (s === 'reserved') {
-                          setShowReservationForm(true);
-                        } else {
-                          updateTable(statusTable.id, { status: s, reservation: undefined });
-                          updateTableStatus(statusTable.id, s);
-                          setModalMode(null);
-                        }
-                      }}
-                      className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                        active ? 'border-primary-500 bg-primary-50' : 'border-border hover:border-primary-300 bg-surface-secondary'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full ${cfg.color}`} />
-                      <div className="text-left flex-1">
-                        <p className="text-sm font-semibold text-text-primary">{cfg.label}</p>
-                        <p className="text-xs text-text-muted">
-                          {s === 'available' && 'Masa boşaldı'}
-                          {s === 'occupied' && 'Müştəri oturdu'}
-                          {s === 'reserved' && 'Rezervasiya edildi'}
-                          {s === 'cleaning' && 'Təmizlənir'}
-                        </p>
-                      </div>
-                      {active && (
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-primary-600 text-white">Cari</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Reservation Form - shown when clicking reserved to create new */}
-            {showReservationForm && statusTable.status !== 'reserved' && (
-              <div className="px-6 py-4 space-y-3">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Rezervasiya Məlumatı</p>
-                <div>
-                  <input
-                    value={reservationForm.guestName}
-                    onChange={(e) => setReservationForm({ ...reservationForm, guestName: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Qonağın adı *"
-                    autoFocus
-                  />
-                  {!reservationForm.guestName.trim() && <p className="text-[11px] text-danger-500 mt-1">Ad vacibdir</p>}
-                </div>
-                <div>
-                  <input
-                    value={reservationForm.phone}
-                    onChange={(e) => setReservationForm({ ...reservationForm, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Telefon nömrəsi *"
-                  />
-                  {!reservationForm.phone.trim() && <p className="text-[11px] text-danger-500 mt-1">Telefon vacibdir</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <input
-                      type="time"
-                      value={reservationForm.time}
-                      onChange={(e) => setReservationForm({ ...reservationForm, time: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                    {!reservationForm.time && <p className="text-[11px] text-danger-500 mt-1">Saat vacibdir</p>}
-                  </div>
-                  <input
-                    type="number"
-                    min={1}
-                    max={statusTable.capacity}
-                    value={reservationForm.guestCount}
-                    onChange={(e) => setReservationForm({ ...reservationForm, guestCount: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Nəfər"
-                  />
-                </div>
-                <input
-                  value={reservationForm.notes}
-                  onChange={(e) => setReservationForm({ ...reservationForm, notes: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Qeydlər (ixtiyari)"
-                />
-                <div className="flex gap-3 pt-1">
-                  <button
-                    onClick={() => { setShowReservationForm(false); setReservationForm({ guestName: '', phone: '', time: '', guestCount: 2, notes: '' }); }}
-                    className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
-                  >
-                    Geri
-                  </button>
-                  <button
-                    onClick={() => {
-                      updateTable(statusTable.id, {
-                        status: 'reserved',
-                        reservation: {
-                          guestName: reservationForm.guestName.trim(),
-                          phone: reservationForm.phone.trim(),
-                          time: reservationForm.time,
-                          guestCount: reservationForm.guestCount || 1,
-                          notes: reservationForm.notes.trim() || undefined,
-                        },
-                      });
-                      setModalMode(null);
-                    }}
-                    disabled={!reservationForm.guestName.trim() || !reservationForm.phone.trim() || !reservationForm.time}
-                    className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    Rezervasiya Et
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Existing Reservation Info - shown when table is already reserved */}
-            {statusTable.status === 'reserved' && statusTable.reservation && (
-              <div className="px-6 py-4 space-y-3">
-                <div className="bg-warning-50 border border-warning-200 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="w-4 h-4 text-warning-600" />
-                    <span className="text-sm font-semibold text-warning-700">Rezervasiya Məlumatı</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="w-3.5 h-3.5 text-text-muted" />
-                    <span className="text-text-secondary">{statusTable.reservation.guestName}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="w-3.5 h-3.5 text-text-muted" />
-                    <span className="text-text-secondary">{statusTable.reservation.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-3.5 h-3.5 text-text-muted" />
-                    <span className="text-text-secondary">{statusTable.reservation.time} • {statusTable.reservation.guestCount} nəfər</span>
-                  </div>
-                  {statusTable.reservation.notes && (
-                    <p className="text-xs text-text-muted pt-1 border-t border-warning-200">{statusTable.reservation.notes}</p>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => { updateTable(statusTable.id, { status: 'available', reservation: undefined }); updateTableStatus(statusTable.id, 'available'); setModalMode(null); }}
-                    className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    Rezervasiyanı Ləğv Et
-                  </button>
-                  <button
-                    onClick={() => setModalMode(null)}
-                    className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
-                  >
-                    Bağla
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Existing Reserved Table Without Data */}
-            {statusTable.status === 'reserved' && !statusTable.reservation && (
-              <div className="px-6 py-4 space-y-3">
-                <div className="bg-warning-50 border border-warning-200 rounded-xl p-4 text-center">
-                  <p className="text-sm text-text-muted">Rezervasiya məlumatı yoxdur</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => { updateTable(statusTable.id, { status: 'available' }); updateTableStatus(statusTable.id, 'available'); setModalMode(null); }}
-                    className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    Boşalt
-                  </button>
-                  <button
-                    onClick={() => setModalMode(null)}
-                    className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
-                  >
-                    Bağla
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <TableStatusModal
+          table={statusTable}
+          onSave={updateTable}
+          onUpdateStatus={updateTableStatus}
+          onClose={() => setModalMode(null)}
+        />
       )}
 
       {/* Section Add / Edit Modal */}

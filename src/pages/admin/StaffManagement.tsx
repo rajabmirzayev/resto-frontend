@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
-import type { User } from '../../types';
+import type { User, UserRole } from '../../types';
 import { Plus, Edit2, Trash2, X, Users, Shield, UtensilsCrossed, ChefHat } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | null;
@@ -10,7 +10,7 @@ interface StaffForm {
   name: string;
   username: string;
   password: string;
-  role: string;
+  role: UserRole;
   roleId: string;
 }
 
@@ -54,7 +54,7 @@ export default function StaffManagement() {
 
   const openEdit = (user: User) => {
     setEditingUser(user);
-    setForm({ name: user.name, username: user.username, password: user.password, role: user.role, roleId: user.roleId });
+    setForm({ name: user.name, username: user.username, password: '', role: user.role, roleId: user.roleId });
     setModalMode('edit');
   };
 
@@ -62,9 +62,11 @@ export default function StaffManagement() {
     if (!form.name || !form.username || (!editingUser && !form.password)) return;
     const selectedRole = roles.find((r) => r.id === form.roleId);
     if (modalMode === 'edit' && editingUser) {
-      updateUser(editingUser.id, { name: form.name, username: form.username, password: form.password, role: form.role, roleId: form.roleId });
+      const updates: Partial<User> = { name: form.name, username: form.username, role: form.role, roleId: form.roleId };
+      if (form.password) updates.password = form.password;
+      updateUser(editingUser.id, updates);
     } else {
-      addUser({ name: form.name, username: form.username, password: form.password, role: selectedRole ? (selectedRole.name.toLowerCase().includes('aşpaz') || selectedRole.name.toLowerCase().includes('chef') ? 'chef' : 'waiter') : form.role, roleId: form.roleId, avatar: '' });
+      addUser({ name: form.name, username: form.username, password: form.password, role: (selectedRole && (selectedRole.name.toLowerCase().includes('aşpaz') || selectedRole.name.toLowerCase().includes('chef')) ? 'chef' : 'waiter') as UserRole, roleId: form.roleId, avatar: '' });
     }
     setModalMode(null);
     setEditingUser(null);
@@ -174,7 +176,7 @@ export default function StaffManagement() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-1">Şifrə</label>
-                  <input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••" />
+                  <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••" />
                 </div>
               </div>
               <div>

@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'waiter' | 'chef' | 'customer' | string;
+export type UserRole = 'admin' | 'waiter' | 'chef' | 'customer';
 
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning';
 

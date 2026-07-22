@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User } from '../types';
 import { initialData } from '../data/mock';
+import { hashPassword, verifyPassword } from '../lib/validation';
 
 interface StoreActions {
   login: (username: string, password: string) => User | null;
@@ -68,8 +69,16 @@ export const useStore = create<Store>()(
 
       login: (username: string, password: string) => {
         const { users } = get();
-        const user = users.find((u) => u.username === username && u.password === password);
+        const user = users.find((u) => u.username === username && (verifyPassword(password, u.password) || u.password === password));
         if (user) {
+          const needsRehash = user.password !== hashPassword(password);
+          if (needsRehash) {
+            set((state) => ({
+              users: state.users.map((u) =>
+                u.id === user.id ? { ...u, password: hashPassword(password) } : u
+              ),
+            }));
+          }
           set({ currentUser: user });
           return user;
         }
@@ -160,13 +169,14 @@ export const useStore = create<Store>()(
       },
 
       addUser: (user) => {
-        const newUser: User = { ...user, id: uuidv4() };
+        const newUser: User = { ...user, id: uuidv4(), password: hashPassword(user.password) };
         set((state) => ({ users: [...state.users, newUser] }));
       },
 
       updateUser: (id, user) => {
+        const updates = user.password ? { ...user, password: hashPassword(user.password) } : user;
         set((state) => ({
-          users: state.users.map((u) => (u.id === id ? { ...u, ...user } : u)),
+          users: state.users.map((u) => (u.id === id ? { ...u, ...updates } : u)),
         }));
       },
 
