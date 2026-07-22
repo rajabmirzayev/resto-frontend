@@ -1,5 +1,5 @@
-import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, LogOut, ChefHat, Shield, X, Settings } from 'lucide-react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, ChefHat, Shield, X, Settings } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useSidebar } from '../../store/useSidebar';
 import type { Permission } from '../../types';
@@ -16,19 +16,12 @@ const navItems: { to: string; label: string; icon: typeof LayoutDashboard; permi
 ];
 
 export default function Sidebar() {
-  const logout = useStore((s) => s.logout);
   const currentUser = useStore((s) => s.currentUser);
   const hasPermission = useStore((s) => s.hasPermission);
   const roles = useStore((s) => s.roles);
   const { open, close } = useSidebar();
-  const navigate = useNavigate();
 
   const currentRole = roles.find((r) => r.id === currentUser?.roleId);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const visibleItems = navItems.filter((item) => hasPermission(item.permission));
 
@@ -85,7 +78,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="p-3 border-t border-border">
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
+          <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
               <span className="text-sm font-semibold text-primary-700">
                 {currentUser?.name?.charAt(0) || 'A'}
@@ -96,13 +89,6 @@ export default function Sidebar() {
               <p className="text-xs text-text-muted">{currentRole?.name || 'İstifadəçi'}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-danger-600 hover:bg-danger-50 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Çıxış
-          </button>
         </div>
       </aside>
     </>

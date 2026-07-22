@@ -16,7 +16,7 @@ export default function AdminSettings() {
 
   return (
     <div>
-      <Header title="Tənzimləmələr" subtitle="Restoran konfiqurasiyası" />
+      <Header title="Tənzimləmələr" subtitle="Restoran konfiqurasiyası" showUser />
 
       <div className="p-6 max-w-4xl">
         <div className="mb-8">

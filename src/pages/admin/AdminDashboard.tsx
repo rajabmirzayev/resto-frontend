@@ -31,7 +31,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <Header title="Dashboard" subtitle="Xoş gəlmisiniz, ümumi baxış" />
+      <Header title="Dashboard" subtitle="Xoş gəlmisiniz, ümumi baxış" showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

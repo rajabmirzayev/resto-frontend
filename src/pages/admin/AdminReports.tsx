@@ -104,7 +104,7 @@ export default function AdminReports() {
 
   return (
     <div>
-      <Header title="Hesabatlar və Analitika" subtitle="Ətraflı biznes göstəriciləri" />
+      <Header title="Hesabatlar və Analitika" subtitle="Ətraflı biznes göstəriciləri" showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

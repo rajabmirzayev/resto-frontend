@@ -63,7 +63,7 @@ export default function RoleManagement() {
 
   return (
     <div>
-      <Header title="Rol İdarəetməsi" subtitle={`${roles.length} rol`} />
+      <Header title="Rol İdarəetməsi" subtitle={`${roles.length} rol`} showUser />
 
       <div className="p-6">
         <div className="flex items-center gap-3 mb-6">

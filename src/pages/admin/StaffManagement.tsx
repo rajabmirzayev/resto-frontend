@@ -77,7 +77,7 @@ export default function StaffManagement() {
 
   return (
     <div>
-      <Header title="Personal İdarəetməsi" subtitle={`${staff.length} işçi`} />
+      <Header title="Personal İdarəetməsi" subtitle={`${staff.length} işçi`} showUser />
 
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">

@@ -9,7 +9,7 @@ export default function AdminOrders() {
 
   return (
     <div>
-      <Header title="Sifariş Tarixçəsi" subtitle={`${orders.length} ümumi sifariş`} />
+      <Header title="Sifariş Tarixçəsi" subtitle={`${orders.length} ümumi sifariş`} showUser />
 
       <div className="p-6">
         <div className="bg-white rounded-2xl border border-border overflow-hidden">

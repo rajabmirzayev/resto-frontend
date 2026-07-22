@@ -115,7 +115,7 @@ export default function AdminTables() {
 
   return (
     <div>
-      <Header title="Masa İdarəetməsi" subtitle={`${tables.length} masa, ${sections.length} zona`} />
+      <Header title="Masa İdarəetməsi" subtitle={`${tables.length} masa, ${sections.length} zona`} showUser />
 
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">

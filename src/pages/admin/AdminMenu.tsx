@@ -112,7 +112,7 @@ export default function AdminMenu() {
 
   return (
     <div>
-      <Header title="Menyu İdarəetməsi" subtitle={`${menuItems.length} məhsul, ${menuCategories.length} kateqoriya`} />
+      <Header title="Menyu İdarəetməsi" subtitle={`${menuItems.length} məhsul, ${menuCategories.length} kateqoriya`} showUser />
 
       <div className="p-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">
