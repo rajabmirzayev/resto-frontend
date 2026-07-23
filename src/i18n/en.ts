@@ -222,6 +222,9 @@ const en: Record<string, string> = {
   'menu_management.category_name_placeholder': 'e.g. Soups',
   'menu_management.icon': 'Icon',
   'menu_management.icon_placeholder': 'e.g. soup, beef, salad',
+  'menu_management.image': 'Image',
+  'menu_management.upload': 'Upload',
+  'menu_management.image_url_placeholder': 'Enter URL or upload an image',
   'menu_management.edit_category': 'Edit Category',
   'menu_management.delete_category_confirmation': 'Delete category "{name}"?',
   'menu_management.category_contains_items': 'This category has {count} items.',
@@ -400,6 +403,7 @@ const en: Record<string, string> = {
   'menu.title': 'Tabler Menu',
   'menu.please_select_your_table': 'Please select your table:',
   'menu.waiter_only_notice': 'Orders at this restaurant are taken by the waiter',
+  'menu.items_count': 'items',
 
   // Cart
   'cart.title': 'Cart',

@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import CameraCapture from '../../components/customer/CameraCapture';
+import CustomerHeader from '../../components/customer/CustomerHeader';
 import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Banknote, CreditCard } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
 
@@ -22,7 +23,7 @@ export default function CustomerMenu() {
     ? (tables.find((t) => t.id === tableParam)?.id || tables.find((t) => t.number === Number(tableParam))?.id || '')
     : '';
   const [selectedTableId, setSelectedTableId] = useState<string>(initialTable);
-  const [selectedCategory, setSelectedCategory] = useState<string>(menuCategories[0]?.id || '');
+  const [activeCategory, setActiveCategory] = useState<string>(menuCategories[0]?.id || '');
   const [showCart, setShowCart] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderError, setOrderError] = useState('');
@@ -30,8 +31,12 @@ export default function CustomerMenu() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(null);
   const isBeforePayment = paymentTiming === 'before';
 
+  const isScrollingRef = useRef(false);
+  const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const categoryTabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
   const availableTables = tables.filter((t) => t.status === 'available');
-  const filtered = menuItems.filter((m) => m.category === selectedCategory && m.isAvailable);
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -89,31 +94,86 @@ export default function CustomerMenu() {
     }
   };
 
+  const scrollToCategory = (categoryId: string) => {
+    const el = categoryRefs.current.get(categoryId);
+    if (!el) return;
+    isScrollingRef.current = true;
+    setActiveCategory(categoryId);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { isScrollingRef.current = false; }, 800);
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isScrollingRef.current) return;
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('data-category-id');
+            if (id) {
+              setActiveCategory(id);
+              const tabEl = categoryTabRefs.current.get(id);
+              if (tabEl && tabsContainerRef.current) {
+                const container = tabsContainerRef.current;
+                const tabLeft = tabEl.offsetLeft;
+                const tabWidth = tabEl.offsetWidth;
+                const containerWidth = container.offsetWidth;
+                const scrollLeft = container.scrollLeft;
+                if (tabLeft < scrollLeft || tabLeft + tabWidth > scrollLeft + containerWidth) {
+                  container.scrollTo({ left: tabLeft - containerWidth / 2 + tabWidth / 2, behavior: 'smooth' });
+                }
+              }
+            }
+            break;
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+    );
+
+    categoryRefs.current.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [menuCategories]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showCamera) setShowCamera(false);
+        else if (showOrderModal) setShowOrderModal(false);
+        else if (showCart) setShowCart(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showCamera, showOrderModal, showCart]);
+
   return (
     <div className="min-h-screen bg-surface-secondary">
-      <div className="bg-white dark:bg-surface border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-20">
-        <h1 className="text-xl font-bold text-text-primary">{t('menu.title')}</h1>
-        <div className="flex items-center gap-2">
-          {selectedTableId && (
-            <span className="text-xs bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full font-medium">
-              {t('table.number_prefix', { number: tables.find((t) => t.id === selectedTableId)?.number || '?' })}
-            </span>
-          )}
-          {canOrder && (
-            <button
-              onClick={() => setShowCart(!showCart)}
-              className="relative bg-primary-600 text-white p-2.5 rounded-xl hover:bg-primary-700 transition-colors"
-            >
-              <ShoppingBag className="w-5 h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-danger-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-          )}
-        </div>
-      </div>
+      <CustomerHeader
+        title={t('menu.title')}
+        rightAction={
+          <div className="flex items-center gap-2">
+            {selectedTableId && (
+              <span className="text-xs bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full font-medium">
+                {t('table.number_prefix', { number: tables.find((t) => t.id === selectedTableId)?.number || '?' })}
+              </span>
+            )}
+            {canOrder && (
+              <button
+                onClick={() => setShowCart(!showCart)}
+                className="relative bg-primary-600 text-white p-2.5 rounded-xl hover:bg-primary-700 transition-colors"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-danger-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {!selectedTableId && canOrder && (
         <div className="bg-white dark:bg-surface border-b border-border px-4 py-4">
@@ -205,71 +265,105 @@ export default function CustomerMenu() {
         </div>
       )}
 
-      {canOrder && (
-        <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white dark:bg-surface border-b border-border">
-          {menuCategories.map((cat) => (
+      <div
+        ref={tabsContainerRef}
+        className="flex gap-2 px-4 py-3 overflow-x-auto bg-white dark:bg-surface border-b border-border sticky top-[57px] z-20 scrollbar-none"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {menuCategories.map((cat) => {
+          const itemCount = menuItems.filter((m) => m.category === cat.id && m.isAvailable).length;
+          return (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === cat.id
-                  ? 'bg-primary-600 text-white shadow-sm'
+              ref={(el) => { if (el) categoryTabRefs.current.set(cat.id, el); }}
+              onClick={() => scrollToCategory(cat.id)}
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                activeCategory === cat.id
+                  ? 'bg-primary-600 text-white shadow-sm scale-[1.02]'
                   : 'bg-surface-secondary text-text-secondary hover:bg-border'
               }`}
             >
               {cat.name}
+              <span className={`ml-1.5 text-xs ${activeCategory === cat.id ? 'text-primary-200' : 'text-text-muted'}`}>
+                {itemCount}
+              </span>
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
       {!canOrder && (
-        <div className="px-4 py-3 bg-white dark:bg-surface border-b border-border">
-          <p className="text-sm text-text-muted text-center">{t('menu.waiter_only_notice')}</p>
+        <div className="px-4 py-3 bg-warning-50 border-b border-warning-200">
+          <p className="text-sm text-warning-700 text-center font-medium">{t('menu.waiter_only_notice')}</p>
         </div>
       )}
 
-      <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${!canOrder ? 'pt-4' : ''}`}>
-        {filtered.map((item) => {
-          const cartItem = cart.find((c) => c.menuItemId === item.id);
+      <div className="px-4 py-4 space-y-8">
+        {menuCategories.map((cat) => {
+          const categoryItems = menuItems.filter((m) => m.category === cat.id && m.isAvailable);
+          if (categoryItems.length === 0) return null;
           return (
-            <div key={item.id} className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-32 bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center">
-                <span className="text-4xl">🍽️</span>
+            <div
+              key={cat.id}
+              ref={(el) => { if (el) categoryRefs.current.set(cat.id, el); }}
+              data-category-id={cat.id}
+              className="scroll-mt-[100px]"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-lg font-bold text-text-primary">{cat.name}</h2>
+                <span className="text-xs bg-surface-secondary text-text-muted px-2.5 py-1 rounded-full font-medium">
+                  {categoryItems.length} {t('menu.items_count')}
+                </span>
               </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-text-primary">{item.name}</h3>
-                <p className="text-sm text-text-muted mt-1 line-clamp-2">{item.description}</p>
-                <p className="text-xs text-text-muted mt-1">~{item.preparationTime} {t('time.minutes_abbreviation')}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-primary-600">{item.price} ₼</span>
-                  {canOrder && (
-                    cartItem ? (
-                      <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-2 py-1">
-                        <button
-                          onClick={() => updateCartQuantity(item.id, cartItem.quantity - 1)}
-                          className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-primary-200 flex items-center justify-center hover:bg-primary-100 transition-colors"
-                        >
-                          <Minus className="w-3 h-3 text-primary-700" />
-                        </button>
-                        <span className="w-6 text-center text-sm font-bold text-primary-700">{cartItem.quantity}</span>
-                        <button
-                          onClick={() => updateCartQuantity(item.id, cartItem.quantity + 1)}
-                          className="w-7 h-7 rounded-lg bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categoryItems.map((item) => {
+                  const cartItem = cart.find((c) => c.menuItemId === item.id);
+                  return (
+                    <div key={item.id} className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="h-32 bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-4xl">🍽️</span>
+                        )}
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => handleAddToCart(item)}
-                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-xl transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    )
-                  )}
-                </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold text-text-primary">{item.name}</h3>
+                        <p className="text-sm text-text-muted mt-1 line-clamp-2">{item.description}</p>
+                        <p className="text-xs text-text-muted mt-1">~{item.preparationTime} {t('time.minutes_abbreviation')}</p>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-lg font-bold text-primary-600">{item.price} ₼</span>
+                          {canOrder && (
+                            cartItem ? (
+                              <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-2 py-1">
+                                <button
+                                  onClick={() => updateCartQuantity(item.id, cartItem.quantity - 1)}
+                                  className="w-7 h-7 rounded-lg bg-white dark:bg-surface border border-primary-200 flex items-center justify-center hover:bg-primary-100 transition-colors"
+                                >
+                                  <Minus className="w-3 h-3 text-primary-700" />
+                                </button>
+                                <span className="w-6 text-center text-sm font-bold text-primary-700">{cartItem.quantity}</span>
+                                <button
+                                  onClick={() => updateCartQuantity(item.id, cartItem.quantity + 1)}
+                                  className="w-7 h-7 rounded-lg bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleAddToCart(item)}
+                                className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-xl transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -277,7 +371,7 @@ export default function CustomerMenu() {
       </div>
 
       {showOrderModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOrderModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOrderModal(false)} role="dialog" aria-modal="true" aria-label={t('order.confirm_title')}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-text-primary">{t('order.confirm_title')}</h3>

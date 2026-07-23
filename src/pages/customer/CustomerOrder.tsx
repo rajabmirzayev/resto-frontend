@@ -3,12 +3,13 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
-import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ArrowLeft, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
 import { getOrderItemStatusLabels } from '../../lib/constants';
+import CustomerHeader from '../../components/customer/CustomerHeader';
 
 export default function CustomerOrder() {
-  const { t } = useTranslation();
+  const { t, formatDate } = useTranslation();
   const ORDER_ITEM_STATUS_LABELS = getOrderItemStatusLabels(t);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -28,11 +29,26 @@ export default function CustomerOrder() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showPaymentModal) {
+        setShowPaymentModal(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showPaymentModal]);
+
   const order = orderId ? orders.find((o) => o.id === orderId) : null;
 
   if (!order) {
     return (
       <div className="min-h-screen bg-surface-secondary flex items-center justify-center p-4">
+        <CustomerHeader
+          title={t('order.details')}
+          showBack
+          onBack={() => navigate('/menu')}
+        />
         <div className="text-center">
           <ChefHat className="w-16 h-16 mx-auto text-text-muted mb-4 opacity-40" />
           <h2 className="text-xl font-semibold text-text-primary">{t('order.not_found')}</h2>
@@ -76,18 +92,12 @@ export default function CustomerOrder() {
 
   return (
     <div className="min-h-screen bg-surface-secondary">
-      <div className="bg-white dark:bg-surface border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-        <button
-          onClick={() => navigate('/menu')}
-          className="p-2 hover:bg-surface-secondary rounded-xl transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-text-secondary" />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold text-text-primary">{t('order.details')}</h1>
-          <p className="text-xs text-text-muted">{t('table.number_prefix', { number: order.tableNumber })}</p>
-        </div>
-      </div>
+      <CustomerHeader
+        title={t('order.details')}
+        subtitle={t('table.number_prefix', { number: order.tableNumber })}
+        showBack
+        onBack={() => navigate('/menu')}
+      />
 
       <div className="p-4 max-w-md mx-auto space-y-4">
         {order.orderSource === 'customer' && !order.waiterConfirmed && (
@@ -214,7 +224,7 @@ export default function CustomerOrder() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-text-secondary">{t('order.date_label')}:</span>
             <span className="text-text-primary font-medium">
-              {new Date(order.createdAt).toLocaleString('az-AZ')}
+              {formatDate(order.createdAt)}
             </span>
           </div>
         </div>
@@ -238,7 +248,7 @@ export default function CustomerOrder() {
       </div>
 
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowPaymentModal(false)} role="dialog" aria-modal="true" aria-label={t('payment.method')}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-semibold text-text-primary">{t('payment.method')}</h3>

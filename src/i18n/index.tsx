@@ -28,6 +28,7 @@ export interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  formatDate: (date: string | Date, options?: Intl.DateTimeFormatOptions) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -48,8 +49,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [locale]
   );
 
+  const formatDate = useCallback(
+    (date: string | Date, options?: Intl.DateTimeFormatOptions): string => {
+      const localeMap: Record<Locale, string> = { az: 'az-AZ', en: 'en-GB', ru: 'ru-RU' };
+      const d = typeof date === 'string' ? new Date(date) : date;
+      return d.toLocaleString(localeMap[locale], options);
+    },
+    [locale]
+  );
+
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nContext.Provider value={{ locale, setLocale, t, formatDate }}>
       {children}
     </I18nContext.Provider>
   );

@@ -4,7 +4,7 @@ import { useTranslation } from '../../i18n';
 import { getOrderStatusLabels, ORDER_STATUS_STYLES } from '../../lib/constants';
 
 export default function AdminOrders() {
-  const { t } = useTranslation();
+  const { t, formatDate } = useTranslation();
   const ORDER_STATUS_LABELS = getOrderStatusLabels(t);
   const { orders } = useStore();
 
@@ -52,7 +52,7 @@ export default function AdminOrders() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-text-muted">
-                    {new Date(order.createdAt).toLocaleString('az-AZ')}
+                    {formatDate(order.createdAt)}
                   </td>
                 </tr>
               ))}

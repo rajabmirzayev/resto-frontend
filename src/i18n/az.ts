@@ -222,6 +222,9 @@ const az: Record<string, string> = {
   'menu_management.category_name_placeholder': 'Məs: Şorbalar',
   'menu_management.icon': 'İkon',
   'menu_management.icon_placeholder': 'Məs: soup, beef, salad',
+  'menu_management.image': 'Şəkil',
+  'menu_management.upload': 'Yüklə',
+  'menu_management.image_url_placeholder': 'URL daxil edin və ya şəkil yükləyin',
   'menu_management.edit_category': 'Kateqoriyanı Redaktə Et',
   'menu_management.delete_category_confirmation': '"{name}" kateqoriyası silinsin?',
   'menu_management.category_contains_items': 'Bu kateqoriyada {count} məhsul var.',
@@ -400,6 +403,7 @@ const az: Record<string, string> = {
   'menu.title': 'Tabler Menyu',
   'menu.please_select_your_table': 'Zəhmət olmasa masanızı seçin:',
   'menu.waiter_only_notice': 'Bu restoranda sifarişlər ofisant tərəfindən qəbul edilir',
+  'menu.items_count': 'məhsul',
 
   // Cart
   'cart.title': 'Səbət',

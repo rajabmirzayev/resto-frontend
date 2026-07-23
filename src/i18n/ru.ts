@@ -222,6 +222,9 @@ const ru: Record<string, string> = {
   'menu_management.category_name_placeholder': 'напр. Супы',
   'menu_management.icon': 'Иконка',
   'menu_management.icon_placeholder': 'напр. soup, beef, salad',
+  'menu_management.image': 'Изображение',
+  'menu_management.upload': 'Загрузить',
+  'menu_management.image_url_placeholder': 'Введите URL или загрузите изображение',
   'menu_management.edit_category': 'Редактировать категорию',
   'menu_management.delete_category_confirmation': 'Удалить категорию "{name}"?',
   'menu_management.category_contains_items': 'В этой категории {count} блюд.',
@@ -400,6 +403,7 @@ const ru: Record<string, string> = {
   'menu.title': 'Меню Tabler',
   'menu.please_select_your_table': 'Пожалуйста, выберите ваш стол:',
   'menu.waiter_only_notice': 'Заказы в этом ресторане принимает официант',
+  'menu.items_count': 'товаров',
 
   // Cart
   'cart.title': 'Корзина',

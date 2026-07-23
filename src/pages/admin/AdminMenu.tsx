@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import type { MenuItem, MenuCategory } from '../../types';
-import { Plus, Edit2, Trash2, Eye, EyeOff, X, Tag } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
 type ModalMode = 'add-item' | 'edit-item' | 'add-category' | 'edit-category' | null;
@@ -14,9 +14,10 @@ interface ItemForm {
   category: string;
   preparationTime: number;
   isAvailable: boolean;
+  image: string;
 }
 
-const emptyItemForm: ItemForm = { name: '', description: '', price: 0, category: '', preparationTime: 15, isAvailable: true };
+const emptyItemForm: ItemForm = { name: '', description: '', price: 0, category: '', preparationTime: 15, isAvailable: true, image: '' };
 
 export default function AdminMenu() {
   const { t } = useTranslation();
@@ -44,8 +45,19 @@ export default function AdminMenu() {
 
   const openEditItem = (item: MenuItem) => {
     setEditingItem(item);
-    setItemForm({ name: item.name, description: item.description, price: item.price, category: item.category, preparationTime: item.preparationTime, isAvailable: item.isAvailable });
+    setItemForm({ name: item.name, description: item.description, price: item.price, category: item.category, preparationTime: item.preparationTime, isAvailable: item.isAvailable, image: item.image || '' });
     setModalMode('edit-item');
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setItemForm({ ...itemForm, image: reader.result as string });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveItem = () => {
@@ -180,8 +192,19 @@ export default function AdminMenu() {
                   return (
                     <tr key={item.id} className="border-b border-border last:border-0 hover:bg-surface-secondary/50 transition-colors">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-text-primary">{item.name}</p>
-                        <p className="text-xs text-text-muted mt-0.5 truncate max-w-[200px]">{item.description}</p>
+                        <div className="flex items-center gap-3">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center flex-shrink-0">
+                              <Camera className="w-4 h-4 text-primary-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-text-primary">{item.name}</p>
+                            <p className="text-xs text-text-muted mt-0.5 truncate max-w-[200px]">{item.description}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">{cat?.name || t('common.unknown')}</span>
@@ -249,6 +272,39 @@ export default function AdminMenu() {
                   <option value="">{t('common.select_placeholder')}</option>
                   {menuCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.image')}</label>
+                <div className="flex items-center gap-3">
+                  {itemForm.image ? (
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-border flex-shrink-0">
+                      <img src={itemForm.image} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, image: '' })}
+                        className="absolute top-1 right-1 w-5 h-5 bg-danger-500 text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors flex-shrink-0">
+                      <ImagePlus className="w-5 h-5 text-text-muted" />
+                      <span className="text-[10px] text-text-muted mt-0.5">{t('menu_management.upload')}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="url"
+                      value={itemForm.image.startsWith('data:') ? '' : itemForm.image}
+                      onChange={(e) => setItemForm({ ...itemForm, image: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder={t('menu_management.image_url_placeholder')}
+                      disabled={itemForm.image.startsWith('data:')}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-text-secondary">{t('common.status')}:</label>
