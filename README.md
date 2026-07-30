@@ -4,22 +4,30 @@ Müasir veb əsaslı restoran idarəetmə sistemi. Menyu, masalar, sifarişlər,
 
 ## Demo
 
-| İstifadəçi | Şifrə | Rol |
-|------------|-------|-----|
-| `admin` | `admin123` | Admin |
-| `waiter1` | `waiter123` | Ofisant |
-| `waiter2` | `waiter123` | Ofisant |
-| `chef1` | `chef123` | Aşpaz |
+| İstifadəçi | Şifrə | Rol | Panel |
+|------------|-------|-----|-------|
+| `admin` | `admin123` | Super Admin | `/super-admin` |
+| `orxan@nerimanov.az` | `orxan123` | Restoran Admin | `/admin` |
+| `tural@bakibalta.az` | `tural123` | Restoran Admin | `/admin` |
+| `waiter1` | `waiter123` | Ofisant | `/waiter` |
+| `waiter2` | `waiter123` | Ofisant | `/waiter` |
+| `chef1` | `chef123` | Aşpaz | `/kitchen` |
 
 ## Xüsusiyyətlər
 
-- **Admin Paneli** — Dashboard, menyu CRUD, masa idarəetməsi, sifariş tarixçəsi, hesabatlar, personal/rol idarəetməsi, tənzimləmələr
+- **Multi-tenant sistem** — Super admin təşkilat yaradır, hər təşkilatın öz admini
+- **Super Admin Paneli** — Təşkilat idarəetməsi, QR kod, yaratma/silme
+- **Admin Paneli** — Dashboard, menyu CRUD (çoxdilli ad/təsvir), masa idarəetməsi, sifariş tarixçəsi, hesabatlar, personal/rol idarəetməsi, tənzimləmələr
 - **Ofisant Paneli** — Masa xəritəsi, aktiv sifarişlər, müştəri sifarişi təsdiqi, hesab istəyi
 - **Mətbəx Paneli** — Yeni sifarişlər, hazırlama axını, status idarəetməsi, hazırlanma vaxtı izləmə
-- **Müştəri Menyusu** — ictimai menyu, səbət, sifariş, kamera təsdiqi, sifariş izləmə
+- **Müştəri Menyusu** — Hər təşkilat üçün ayrı URL (`/org/:orgId/menu`), səbət, sifariş, kamera təsdiqi, sifariş izləmə
+- **6 Müştəri Teması** — Classic Blue, Emerald, Sunset, Rose, Violet, Amber (light/dark variantları)
 - **4 Sifariş Rejimi** — Ofisant, müştəri, müştəri-ofisant təsdiqi, mətbəx
 - **Ödəniş** — Nağd/kart, qabaqdan/sonradan ödəniş
 - **İcazə Sistemi** — 22 icazə, 9 qrup, rol əsaslı giriş
+- **Çoxdilli Adlar** — Məhsul/kateqoriya adları AZ/EN/RU dillərində saxlanılır
+- **İnterfeys Dilləri** — Azərbaycan, İngilis, Rus
+- **Tünd/Açıq Mövzu** — Admin panel üçün
 - **Real-vaxt yeniləmə** — localStorage polling ilə çox-tab sinkronizasiyası
 - **Səs Bildirişləri** — Yeni sifariş və hazır sifariş üçün səs
 
@@ -87,6 +95,7 @@ src/
 │   ├── NotFoundPage.tsx              # 404 səhifəsi
 │   ├── admin/
 │   │   ├── AdminDashboard.tsx        # Admin baxış paneli
+│   │   ├── Organizations.tsx        # Super Admin təşkilat idarəetməsi
 │   │   ├── AdminMenu.tsx             # Menyu idarəetməsi
 │   │   ├── AdminOrders.tsx           # Sifariş tarixçəsi
 │   │   ├── AdminReports.tsx          # Hesabatlar
@@ -102,11 +111,14 @@ src/
 │   └── waiter/
 │       └── WaiterDashboard.tsx       # Ofisant paneli
 ├── store/
+│   ├── useCustomerTheme.ts           # Müştəri tema store
 │   ├── useSidebar.ts                 # Sidebar state
 │   ├── useStore.ts                   # Əsas Zustand store
 │   └── useToast.ts                   # Toast store
 ├── types/
 │   └── index.ts                      # TypeScript tipləri
+├── utils/
+│   └── localize.ts                   # Çoxdilli ad yardımçısı
 ├── App.tsx                           # Router konfiqurasiyası
 ├── main.tsx                          # Giriş nöqtəsi
 └── index.css                         # Tailwind + mövzu
@@ -117,18 +129,19 @@ src/
 | Route | Komponent | Rollar | İcazə |
 |-------|-----------|--------|-------|
 | `/login` | LoginPage | Hamısı | — |
-| `/admin` | AdminDashboard | admin | — |
-| `/admin/menu` | AdminMenu | admin | `menu.view` |
-| `/admin/tables` | AdminTables | admin | `tables.view` |
-| `/admin/orders` | AdminOrders | admin | `orders.view` |
-| `/admin/reports` | AdminReports | admin | `reports.view` |
-| `/admin/staff` | StaffManagement | admin | `staff.view` |
-| `/admin/roles` | RoleManagement | admin | `roles.view` |
-| `/admin/settings` | AdminSettings | admin | `settings.view` |
+| `/super-admin` | Organizations | admin | — |
+| `/admin` | AdminDashboard | admin, org_admin | — |
+| `/admin/menu` | AdminMenu | admin, org_admin | `menu.view` |
+| `/admin/tables` | AdminTables | admin, org_admin | `tables.view` |
+| `/admin/orders` | AdminOrders | admin, org_admin | `orders.view` |
+| `/admin/reports` | AdminReports | admin, org_admin | `reports.view` |
+| `/admin/staff` | StaffManagement | admin, org_admin | `staff.view` |
+| `/admin/roles` | RoleManagement | admin, org_admin | `roles.view` |
+| `/admin/settings` | AdminSettings | admin, org_admin | `settings.view` |
 | `/waiter` | WaiterDashboard | waiter | — |
 | `/kitchen` | KitchenDashboard | chef | — |
-| `/menu` | CustomerMenu | Hamısı | — |
-| `/menu/:tableId` | CustomerMenu | Hamısı | — |
+| `/org/:orgId/menu` | CustomerMenu | Hamısı | — |
+| `/org/:orgId/menu/:tableId` | CustomerMenu | Hamısı | — |
 | `/order` | CustomerOrder | Hamısı | — |
 
 ## İcazə Sistemi
