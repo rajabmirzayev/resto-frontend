@@ -3,7 +3,10 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
 import { ORDER_MODES } from '../../types';
 import type { OrderMode } from '../../types';
-import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard } from 'lucide-react';
+import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Palette } from 'lucide-react';
+import { useTheme } from '../../store/useTheme';
+import { useCustomerTheme } from '../../store/useCustomerTheme';
+import type { CustomerThemeId } from '../../types';
 
 const modeIcons: Record<OrderMode, typeof Settings> = {
   'waiter': UtensilsCrossed,
@@ -29,6 +32,19 @@ const modeDescKeys: Record<OrderMode, string> = {
 export default function AdminSettings() {
   const { t } = useTranslation();
   const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming } = useStore();
+  const { theme, setTheme } = useTheme();
+  const { theme: customerTheme, setTheme: setCustomerTheme } = useCustomerTheme();
+
+  const customerThemeColors: Record<CustomerThemeId, string[]> = {
+    classic: ['#0ea5e9', '#0284c7', '#0369a1'],
+    emerald: ['#10b981', '#059669', '#047857'],
+    sunset: ['#f97316', '#ea580c', '#c2410c'],
+    rose: ['#f43f5e', '#e11d48', '#be123c'],
+    violet: ['#8b5cf6', '#7c3aed', '#6d28d9'],
+    amber: ['#f59e0b', '#d97706', '#b45309'],
+  };
+
+  const customerThemeIds: CustomerThemeId[] = ['classic', 'emerald', 'sunset', 'rose', 'violet', 'amber'];
 
   return (
     <div>
@@ -201,6 +217,108 @@ export default function AdminSettings() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-white dark:bg-surface rounded-2xl border border-border p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-warning-50 flex items-center justify-center flex-shrink-0">
+                <Sun className="w-6 h-6 text-warning-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-bold text-text-primary mb-1">{t('settings.theme')}</h4>
+                <p className="text-sm text-text-secondary mb-4">
+                  {t('settings.theme_description')}
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-center ${
+                      theme === 'light'
+                        ? 'border-warning-500 bg-warning-50'
+                        : 'border-border hover:border-warning-300'
+                    }`}
+                  >
+                    <Sun className={`w-6 h-6 mx-auto mb-2 ${theme === 'light' ? 'text-warning-600' : 'text-text-muted'}`} />
+                    <span className={`block font-semibold ${theme === 'light' ? 'text-warning-700' : 'text-text-primary'}`}>
+                      {t('settings.theme_light')}
+                    </span>
+                    <p className="text-xs text-text-secondary mt-1">{t('settings.theme_light_desc')}</p>
+                  </button>
+
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-center ${
+                      theme === 'dark'
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-border hover:border-primary-300'
+                    }`}
+                  >
+                    <Moon className={`w-6 h-6 mx-auto mb-2 ${theme === 'dark' ? 'text-primary-600' : 'text-text-muted'}`} />
+                    <span className={`block font-semibold ${theme === 'dark' ? 'text-primary-700' : 'text-text-primary'}`}>
+                      {t('settings.theme_dark')}
+                    </span>
+                    <p className="text-xs text-text-secondary mt-1">{t('settings.theme_dark_desc')}</p>
+                  </button>
+
+                  <button
+                    onClick={() => setTheme('system')}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-center ${
+                      theme === 'system'
+                        ? 'border-text-secondary bg-surface-secondary'
+                        : 'border-border hover:border-text-muted'
+                    }`}
+                  >
+                    <Monitor className={`w-6 h-6 mx-auto mb-2 ${theme === 'system' ? 'text-text-primary' : 'text-text-muted'}`} />
+                    <span className={`block font-semibold ${theme === 'system' ? 'text-text-primary' : 'text-text-primary'}`}>
+                      {t('settings.theme_system')}
+                    </span>
+                    <p className="text-xs text-text-secondary mt-1">{t('settings.theme_system_desc')}</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-border">
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-text-primary mb-1">{t('settings.customer_theme')}</h2>
+              <p className="text-sm text-text-secondary">{t('settings.customer_theme_description')}</p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {customerThemeIds.map((tid) => {
+                const isActive = customerTheme === tid;
+                const colors = customerThemeColors[tid];
+                return (
+                  <button
+                    key={tid}
+                    onClick={() => setCustomerTheme(tid)}
+                    className={`relative text-left p-5 rounded-2xl border-2 transition-all ${
+                      isActive
+                        ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100'
+                        : 'border-border bg-white dark:bg-surface hover:border-primary-300 hover:shadow-md'
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+
+                    <div className="flex gap-1.5 mb-3">
+                      {colors.map((c, i) => (
+                        <div key={i} className="w-6 h-6 rounded-md" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+
+                    <span className={`text-sm font-bold ${isActive ? 'text-primary-700' : 'text-text-primary'}`}>
+                      {t('settings.customer_theme_' + tid)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
       </div>

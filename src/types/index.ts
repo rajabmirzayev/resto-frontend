@@ -10,6 +10,8 @@ export type PaymentTiming = 'before' | 'after';
 
 export type OrderMode = 'waiter' | 'customer' | 'customer-waiter-confirm' | 'kitchen';
 
+export type CustomerThemeId = 'classic' | 'emerald' | 'sunset' | 'rose' | 'violet' | 'amber';
+
 export const ORDER_MODES: { value: OrderMode; title: string; description: string; waiterPanel: boolean; kitchenPanel: boolean }[] = [
   { value: 'waiter', title: 'Ofisant Sifariş Alır', description: 'Ənənəvi qayda. Ofisant sifarişi özü yazır, müştəri sadəcə menyuya baxa bilər.', waiterPanel: true, kitchenPanel: true },
   { value: 'customer', title: 'Müştəri Özü Sifariş Verir', description: 'Müştəri menyudan sifariş edir, sifariş birbaşa metbexə gedir. Ofisant paneli lazım deyil.', waiterPanel: false, kitchenPanel: true },

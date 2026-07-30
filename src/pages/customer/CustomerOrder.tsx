@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
+import { useCustomerTheme } from '../../store/useCustomerTheme';
 import { useToast } from '../../store/useToast';
 import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
@@ -13,6 +14,7 @@ export default function CustomerOrder() {
   const ORDER_ITEM_STATUS_LABELS = getOrderItemStatusLabels(t);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { theme: customerTheme } = useCustomerTheme();
   const orderId = searchParams.get('id');
   const orders = useStore((s) => s.orders);
   const requestPayment = useStore((s) => s.requestPayment);
@@ -49,7 +51,7 @@ export default function CustomerOrder() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4">
+      <div className={`min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4 theme-${customerTheme}`}>
         <CustomerHeader
           title={t('order.details')}
           showBack
@@ -97,7 +99,7 @@ export default function CustomerOrder() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-secondary">
+    <div className={`min-h-screen bg-surface-secondary theme-${customerTheme}`}>
       <CustomerHeader
         title={t('order.details')}
         subtitle={t('table.number_prefix', { number: order.tableNumber })}

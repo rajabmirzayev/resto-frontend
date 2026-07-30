@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
+import { useCustomerTheme } from '../../store/useCustomerTheme';
 import CameraCapture from '../../components/customer/CameraCapture';
 import CustomerHeader from '../../components/customer/CustomerHeader';
 import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Banknote, CreditCard } from 'lucide-react';
@@ -14,6 +15,8 @@ export default function CustomerMenu() {
   const { tableId: urlTableId } = useParams();
   const [searchParams] = useSearchParams();
   const [showCamera, setShowCamera] = useState(false);
+
+  const { theme: customerTheme } = useCustomerTheme();
 
   const canOrder = orderMode === 'customer' || orderMode === 'customer-waiter-confirm';
   const needsPhoto = canOrder && customerPhotoRequired;
@@ -158,7 +161,7 @@ export default function CustomerMenu() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface-secondary">
+    <div className={`min-h-screen bg-surface-secondary theme-${customerTheme}`}>
       <CustomerHeader
         title={t('menu.title')}
         rightAction={
