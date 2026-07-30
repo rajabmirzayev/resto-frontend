@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from '../../i18n';
+import { localize } from '../../utils/localize';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import type { Table, Order } from '../../types';
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export default function WaiterTableDetailModal({ table, onClose }: Props) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const ORDER_ITEM_STATUS_LABELS = useMemo(() => getOrderItemStatusLabels(t), [t]);
   const { orders, menuItems, menuCategories, currentUser, addToCart, removeFromCart, updateCartQuantity, cart, clearCart, createOrder, addItemsToOrder, updateTableStatus, updateOrderStatus, updateOrderItemStatus, completePayment } = useStore();
   const { addToast } = useToast();
@@ -90,13 +91,13 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
           if (items.length === 0) return null;
           return (
             <div key={cat.id}>
-              <p className="text-xs font-semibold text-text-muted uppercase mb-2">{cat.name}</p>
+              <p className="text-xs font-semibold text-text-muted uppercase mb-2">{localize(cat.name, locale)}</p>
               <div className="grid grid-cols-2 gap-2">
                 {items.map((item) => {
                   const cartItem = cart.find((c) => c.menuItemId === item.id);
                   return (
                     <div key={item.id} className="bg-surface-secondary rounded-xl p-3">
-                      <p className="text-xs font-semibold text-text-primary truncate">{item.name}</p>
+                      <p className="text-xs font-semibold text-text-primary truncate">{localize(item.name, locale)}</p>
                       <p className="text-xs text-text-muted">{item.price} ₼</p>
                       {cartItem ? (
                         <div className="flex items-center gap-1 mt-2">
@@ -111,7 +112,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
                           </button>
                           <span className="text-xs font-bold w-5 text-center">{cartItem.quantity}</span>
                           <button
-                            onClick={() => addToCart({ menuItemId: item.id, menuItemName: item.name, price: item.price, quantity: 1 })}
+                            onClick={() => addToCart({ menuItemId: item.id, menuItemName: localize(item.name, locale), price: item.price, quantity: 1 })}
                             className="w-6 h-6 bg-primary-600 text-white rounded-lg flex items-center justify-center"
                           >
                             <Plus className="w-3 h-3" />
@@ -119,7 +120,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
                         </div>
                       ) : (
                         <button
-                          onClick={() => addToCart({ menuItemId: item.id, menuItemName: item.name, price: item.price, quantity: 1 })}
+                          onClick={() => addToCart({ menuItemId: item.id, menuItemName: localize(item.name, locale), price: item.price, quantity: 1 })}
                           className="mt-2 w-full bg-primary-600 hover:bg-primary-700 text-white text-xs py-1.5 rounded-lg transition-colors"
                         >
                           + {t('common.add')}
@@ -170,14 +171,14 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
           if (items.length === 0) return null;
           return (
             <div key={cat.id}>
-              <p className="text-xs font-semibold text-text-muted uppercase mb-2">{cat.name}</p>
+              <p className="text-xs font-semibold text-text-muted uppercase mb-2">{localize(cat.name, locale)}</p>
               <div className="grid grid-cols-2 gap-2">
                 {items.map((item) => {
                   const cartItem = cart.find((c) => c.menuItemId === item.id);
                   const alreadyInOrder = order?.items.some((oi) => oi.menuItemId === item.id);
                   return (
                     <div key={item.id} className={`rounded-xl p-3 ${alreadyInOrder ? 'bg-primary-50 border border-primary-200' : 'bg-surface-secondary'}`}>
-                      <p className="text-xs font-semibold text-text-primary truncate">{item.name}</p>
+                      <p className="text-xs font-semibold text-text-primary truncate">{localize(item.name, locale)}</p>
                       <p className="text-xs text-text-muted">{item.price} ₼</p>
                       {cartItem ? (
                         <div className="flex items-center gap-1 mt-2">
@@ -192,7 +193,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
                           </button>
                           <span className="text-xs font-bold w-5 text-center">{cartItem.quantity}</span>
                           <button
-                            onClick={() => addToCart({ menuItemId: item.id, menuItemName: item.name, price: item.price, quantity: 1 })}
+                            onClick={() => addToCart({ menuItemId: item.id, menuItemName: localize(item.name, locale), price: item.price, quantity: 1 })}
                             className="w-6 h-6 bg-primary-600 text-white rounded-lg flex items-center justify-center"
                           >
                             <Plus className="w-3 h-3" />
@@ -200,7 +201,7 @@ export default function WaiterTableDetailModal({ table, onClose }: Props) {
                         </div>
                       ) : (
                         <button
-                          onClick={() => addToCart({ menuItemId: item.id, menuItemName: item.name, price: item.price, quantity: 1 })}
+                          onClick={() => addToCart({ menuItemId: item.id, menuItemName: localize(item.name, locale), price: item.price, quantity: 1 })}
                           className="mt-2 w-full bg-primary-600 hover:bg-primary-700 text-white text-xs py-1.5 rounded-lg transition-colors"
                         >
                           + {t('common.add')}

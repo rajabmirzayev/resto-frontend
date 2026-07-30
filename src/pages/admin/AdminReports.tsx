@@ -2,13 +2,14 @@ import { useMemo } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
+import { localize } from '../../utils/localize';
 import {
   DollarSign, TrendingUp, BarChart3, PieChart, Users, ShoppingBag,
   ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 
 export default function AdminReports() {
-  const { t, formatDate } = useTranslation();
+  const { t, locale, formatDate } = useTranslation();
   const { orders, menuItems, menuCategories, users } = useStore();
 
   const paidOrders = useMemo(() => orders.filter((o) => o.paymentStatus === 'paid'), [orders]);
@@ -47,7 +48,7 @@ export default function AdminReports() {
     return Object.entries(stats)
       .map(([catId, count]) => {
         const cat = menuCategories.find((c) => c.id === catId);
-        return { name: cat?.name || t('common.unknown'), count };
+        return { name: cat ? localize(cat.name, locale) : t('common.unknown'), count };
       })
       .sort((a, b) => b.count - a.count);
   }, [orders, menuItems, menuCategories, t]);

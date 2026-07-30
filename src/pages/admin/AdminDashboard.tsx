@@ -1,6 +1,7 @@
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
+import { localize } from '../../utils/localize';
 import { getOrderStatusLabels } from '../../lib/constants';
 import {
   TrendingUp, ShoppingBag, Users, DollarSign, CheckCircle, Clock,
@@ -8,7 +9,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const { t, formatDate } = useTranslation();
+  const { t, locale, formatDate } = useTranslation();
   const ORDER_STATUS_LABELS = getOrderStatusLabels(t);
   const { orders, tables, menuItems, users } = useStore();
 
@@ -28,7 +29,7 @@ export default function AdminDashboard() {
     .slice(0, 5)
     .map(([id, count]) => {
       const mi = menuItems.find((m) => m.id === id);
-      return { name: mi?.name || t('common.unknown'), count };
+      return { name: mi ? localize(mi.name, locale) : t('common.unknown'), count };
     });
 
   const staff = users.filter((u) => u.role !== 'customer');

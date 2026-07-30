@@ -135,10 +135,16 @@ export interface User {
   avatar?: string;
 }
 
+export interface LocalizedString {
+  az: string;
+  en: string;
+  ru: string;
+}
+
 export interface MenuItem {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedString;
+  description: LocalizedString;
   price: number;
   category: string;
   image?: string;
@@ -149,7 +155,7 @@ export interface MenuItem {
 
 export interface MenuCategory {
   id: string;
-  name: string;
+  name: LocalizedString;
   icon: string;
   orgId?: string;
 }

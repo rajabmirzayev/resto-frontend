@@ -520,7 +520,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'tabler-storage',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         menuItems: state.menuItems,
         menuCategories: state.menuCategories,

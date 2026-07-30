@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
+import { localize } from '../../utils/localize';
 import { useStore } from '../../store/useStore';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
 import CameraCapture from '../../components/customer/CameraCapture';
@@ -9,7 +10,7 @@ import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Bankno
 import type { PaymentMethod } from '../../types';
 
 export default function CustomerMenu() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { menuItems, menuCategories, tables, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, createCustomerOrder, requestPayment, orderMode, customerPhotoRequired, paymentTiming } = useStore();
   const navigate = useNavigate();
   const params = useParams();
@@ -56,7 +57,7 @@ export default function CustomerMenu() {
   const handleAddToCart = (item: (typeof orgMenuItems)[0]) => {
     addToCart({
       menuItemId: item.id,
-      menuItemName: item.name,
+      menuItemName: localize(item.name, locale),
       price: item.price,
       quantity: 1,
     });
@@ -303,7 +304,7 @@ export default function CustomerMenu() {
                   : 'bg-surface-secondary text-text-secondary hover:bg-border'
               }`}
             >
-              {cat.name}
+              {localize(cat.name, locale)}
               <span className={`ml-1.5 text-xs ${activeCategory === cat.id ? 'text-primary-200' : 'text-text-muted'}`}>
                 {itemCount}
               </span>
@@ -330,7 +331,7 @@ export default function CustomerMenu() {
               className="scroll-mt-[100px]"
             >
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-lg font-bold text-text-primary">{cat.name}</h2>
+                <h2 className="text-lg font-bold text-text-primary">{localize(cat.name, locale)}</h2>
                 <span className="text-xs bg-surface-secondary text-text-muted px-2.5 py-1 rounded-full font-medium">
                   {categoryItems.length} {t('menu.items_count')}
                 </span>
@@ -342,14 +343,14 @@ export default function CustomerMenu() {
                     <div key={item.id} className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
                       <div className="h-32 bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center">
                         {item.image ? (
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          <img src={item.image} alt={localize(item.name, locale)} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-4xl">🍽️</span>
                         )}
                       </div>
                       <div className="p-4">
-                        <h3 className="font-semibold text-text-primary">{item.name}</h3>
-                        <p className="text-sm text-text-muted mt-1 line-clamp-2">{item.description}</p>
+                        <h3 className="font-semibold text-text-primary">{localize(item.name, locale)}</h3>
+                        <p className="text-sm text-text-muted mt-1 line-clamp-2">{localize(item.description, locale)}</p>
                         <p className="text-xs text-text-muted mt-1">~{item.preparationTime} {t('time.minutes_abbreviation')}</p>
                         <div className="flex items-center justify-between mt-3">
                           <span className="text-lg font-bold text-primary-600">{item.price} ₼</span>

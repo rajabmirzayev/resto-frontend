@@ -4,13 +4,18 @@ import { useStore } from '../../store/useStore';
 import type { MenuItem, MenuCategory } from '../../types';
 import { Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { localize } from '../../utils/localize';
 import { useToast } from '../../store/useToast';
 
 type ModalMode = 'add-item' | 'edit-item' | 'add-category' | 'edit-category' | null;
 
 interface ItemForm {
-  name: string;
-  description: string;
+  nameAz: string;
+  nameEn: string;
+  nameRu: string;
+  descAz: string;
+  descEn: string;
+  descRu: string;
   price: number;
   category: string;
   preparationTime: number;
@@ -18,17 +23,19 @@ interface ItemForm {
   image: string;
 }
 
-const emptyItemForm: ItemForm = { name: '', description: '', price: 0, category: '', preparationTime: 15, isAvailable: true, image: '' };
+const emptyItemForm: ItemForm = { nameAz: '', nameEn: '', nameRu: '', descAz: '', descEn: '', descRu: '', price: 0, category: '', preparationTime: 15, isAvailable: true, image: '' };
 
 export default function AdminMenu() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { addToast } = useToast();
   const { menuItems, menuCategories, addMenuItem, updateMenuItem, deleteMenuItem, addMenuCategory, updateMenuCategory, deleteMenuCategory } = useStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm>(emptyItemForm);
-  const [catName, setCatName] = useState('');
+  const [catNameAz, setCatNameAz] = useState('');
+  const [catNameEn, setCatNameEn] = useState('');
+  const [catNameRu, setCatNameRu] = useState('');
   const [catIcon, setCatIcon] = useState('utensils');
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const [deleteItemConfirm, setDeleteItemConfirm] = useState<string | null>(null);
@@ -47,7 +54,7 @@ export default function AdminMenu() {
 
   const openEditItem = (item: MenuItem) => {
     setEditingItem(item);
-    setItemForm({ name: item.name, description: item.description, price: item.price, category: item.category, preparationTime: item.preparationTime, isAvailable: item.isAvailable, image: item.image || '' });
+    setItemForm({ nameAz: item.name.az, nameEn: item.name.en, nameRu: item.name.ru, descAz: item.description.az, descEn: item.description.en, descRu: item.description.ru, price: item.price, category: item.category, preparationTime: item.preparationTime, isAvailable: item.isAvailable, image: item.image || '' });
     setModalMode('edit-item');
   };
 
@@ -73,11 +80,14 @@ export default function AdminMenu() {
   };
 
   const handleSaveItem = () => {
-    if (!itemForm.name || !itemForm.category || itemForm.price <= 0) return;
+    if (!itemForm.nameAz || !itemForm.category || itemForm.price <= 0) return;
+    const localizedName = { az: itemForm.nameAz, en: itemForm.nameEn || itemForm.nameAz, ru: itemForm.nameRu || itemForm.nameAz };
+    const localizedDesc = { az: itemForm.descAz || itemForm.descEn || itemForm.descRu || '', en: itemForm.descEn || itemForm.descAz || '', ru: itemForm.descRu || itemForm.descAz || '' };
+    const payload = { name: localizedName, description: localizedDesc, price: itemForm.price, category: itemForm.category, preparationTime: itemForm.preparationTime, isAvailable: itemForm.isAvailable, image: itemForm.image };
     if (modalMode === 'edit-item' && editingItem) {
-      updateMenuItem(editingItem.id, itemForm);
+      updateMenuItem(editingItem.id, payload);
     } else {
-      addMenuItem(itemForm);
+      addMenuItem(payload);
     }
     setModalMode(null);
     setEditingItem(null);
@@ -86,28 +96,35 @@ export default function AdminMenu() {
 
   const openAddCategory = () => {
     setEditingCategory(null);
-    setCatName('');
+    setCatNameAz('');
+    setCatNameEn('');
+    setCatNameRu('');
     setCatIcon('utensils');
     setModalMode('add-category');
   };
 
   const openEditCategory = (cat: MenuCategory) => {
     setEditingCategory(cat);
-    setCatName(cat.name);
+    setCatNameAz(cat.name.az);
+    setCatNameEn(cat.name.en);
+    setCatNameRu(cat.name.ru);
     setCatIcon(cat.icon);
     setModalMode('edit-category');
   };
 
   const handleSaveCategory = () => {
-    if (!catName.trim()) return;
+    if (!catNameAz.trim()) return;
+    const localizedName = { az: catNameAz.trim(), en: catNameEn.trim() || catNameAz.trim(), ru: catNameRu.trim() || catNameAz.trim() };
     if (modalMode === 'edit-category' && editingCategory) {
-      updateMenuCategory(editingCategory.id, { name: catName.trim(), icon: catIcon });
+      updateMenuCategory(editingCategory.id, { name: localizedName, icon: catIcon });
     } else {
-      addMenuCategory({ name: catName.trim(), icon: catIcon });
+      addMenuCategory({ name: localizedName, icon: catIcon });
     }
     setModalMode(null);
     setEditingCategory(null);
-    setCatName('');
+    setCatNameAz('');
+    setCatNameEn('');
+    setCatNameRu('');
     setCatIcon('utensils');
   };
 
@@ -161,7 +178,7 @@ export default function AdminMenu() {
               return (
                 <div key={cat.id} className={`flex items-center gap-1 rounded-lg transition-colors group/cat ${isActive ? 'bg-primary-600' : 'bg-surface-secondary hover:bg-border'}`}>
                   <button onClick={() => setSelectedCategory(cat.id)} className={`px-3 py-1.5 text-sm font-medium ${isActive ? 'text-white' : 'text-text-secondary'}`}>
-                    {cat.name} ({count})
+                    {localize(cat.name, locale)} ({count})
                   </button>
                   <div className={`flex items-center pr-1.5 gap-0.5 opacity-0 group-hover/cat:opacity-100 transition-opacity ${isActive ? '' : ''}`}>
                     <button
@@ -206,20 +223,20 @@ export default function AdminMenu() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {item.image ? (
-                            <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                            <img src={item.image} alt={localize(item.name, locale)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           ) : (
                             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center flex-shrink-0">
                               <Camera className="w-4 h-4 text-primary-400" />
                             </div>
                           )}
                           <div>
-                            <p className="text-sm font-medium text-text-primary">{item.name}</p>
-                            <p className="text-xs text-text-muted mt-0.5 truncate max-w-[200px]">{item.description}</p>
+                            <p className="text-sm font-medium text-text-primary">{localize(item.name, locale)}</p>
+                            <p className="text-xs text-text-muted mt-0.5 truncate max-w-[200px]">{localize(item.description, locale)}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">{cat?.name || t('common.unknown')}</span>
+                        <span className="text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">{cat ? localize(cat.name, locale) : t('common.unknown')}</span>
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-text-primary">{item.price} ₼</td>
                       <td className="px-6 py-4 text-sm text-text-secondary">{item.preparationTime} {t('time.minutes_abbreviation')}</td>
@@ -254,19 +271,45 @@ export default function AdminMenu() {
       {/* Item Add / Edit Modal */}
       {(modalMode === 'add-item' || modalMode === 'edit-item') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit-item' ? t('menu_management.edit_item') : t('menu_management.add_item')}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg"><X className="w-5 h-5 text-text-muted" /></button>
             </div>
-            <div className="px-6 py-4 space-y-4">
+            <div className="px-6 py-4 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">{t('common.name')}</label>
-                <input value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.item_name_placeholder')} />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">AZ</span>
+                    <input value={itemForm.nameAz} onChange={(e) => setItemForm({ ...itemForm, nameAz: e.target.value })} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.item_name_placeholder')} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">EN</span>
+                    <input value={itemForm.nameEn} onChange={(e) => setItemForm({ ...itemForm, nameEn: e.target.value })} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.item_name_placeholder')} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">RU</span>
+                    <input value={itemForm.nameRu} onChange={(e) => setItemForm({ ...itemForm, nameRu: e.target.value })} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.item_name_placeholder')} />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.description')}</label>
-                <textarea value={itemForm.description} onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" rows={2} placeholder={t('menu_management.short_description_placeholder')} />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">AZ</span>
+                    <textarea value={itemForm.descAz} onChange={(e) => setItemForm({ ...itemForm, descAz: e.target.value })} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" rows={3} placeholder={t('menu_management.short_description_placeholder')} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">EN</span>
+                    <textarea value={itemForm.descEn} onChange={(e) => setItemForm({ ...itemForm, descEn: e.target.value })} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" rows={3} placeholder={t('menu_management.short_description_placeholder')} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">RU</span>
+                    <textarea value={itemForm.descRu} onChange={(e) => setItemForm({ ...itemForm, descRu: e.target.value })} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" rows={3} placeholder={t('menu_management.short_description_placeholder')} />
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -282,7 +325,7 @@ export default function AdminMenu() {
                 <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.category')}</label>
                 <select value={itemForm.category} onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })} className="w-full appearance-none px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                   <option value="">{t('common.select_placeholder')}</option>
-                  {menuCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {menuCategories.map((c) => <option key={c.id} value={c.id}>{localize(c.name, locale)}</option>)}
                 </select>
               </div>
               <div>
@@ -326,9 +369,9 @@ export default function AdminMenu() {
                 </button>
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-6 flex gap-3 flex-shrink-0">
               <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
-              <button onClick={handleSaveItem} disabled={!itemForm.name || !itemForm.category || itemForm.price <= 0} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
+              <button onClick={handleSaveItem} disabled={!itemForm.nameAz || !itemForm.category || itemForm.price <= 0} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
                 {modalMode === 'edit-item' ? t('common.save') : t('common.add')}
               </button>
             </div>
@@ -339,24 +382,37 @@ export default function AdminMenu() {
       {/* Category Add / Edit Modal */}
       {(modalMode === 'add-category' || modalMode === 'edit-category') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
-          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit-category' ? t('menu_management.edit_category') : t('menu_management.new_category')}</h3>
               <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg"><X className="w-5 h-5 text-text-muted" /></button>
             </div>
-            <div className="px-6 py-4 space-y-4">
+            <div className="px-6 py-4 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.category_name')}</label>
-                <input value={catName} onChange={(e) => setCatName(e.target.value)} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.category_name_placeholder')} />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">AZ</span>
+                    <input value={catNameAz} onChange={(e) => setCatNameAz(e.target.value)} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.category_name_placeholder')} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">EN</span>
+                    <input value={catNameEn} onChange={(e) => setCatNameEn(e.target.value)} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.category_name_placeholder')} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 text-center text-xs font-bold text-text-muted uppercase">RU</span>
+                    <input value={catNameRu} onChange={(e) => setCatNameRu(e.target.value)} className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.category_name_placeholder')} />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.icon')}</label>
                 <input value={catIcon} onChange={(e) => setCatIcon(e.target.value)} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.icon_placeholder')} />
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3">
+            <div className="px-6 pb-6 flex gap-3 flex-shrink-0">
               <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
-              <button onClick={handleSaveCategory} disabled={!catName.trim()} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
+              <button onClick={handleSaveCategory} disabled={!catNameAz.trim()} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
                 {modalMode === 'edit-category' ? t('common.save') : t('common.add')}
               </button>
             </div>
@@ -370,7 +426,7 @@ export default function AdminMenu() {
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="text-center mb-5">
               <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
-              <h3 className="text-lg font-bold text-text-primary mb-1">{t('menu_management.delete_category_confirmation', { name: deleteCatConfirm.name })}</h3>
+              <h3 className="text-lg font-bold text-text-primary mb-1">{t('menu_management.delete_category_confirmation', { name: localize(deleteCatConfirm.name, locale) })}</h3>
               <p className="text-sm text-text-secondary">
                 {t('menu_management.category_contains_items', { count: menuItems.filter((m) => m.category === deleteCatConfirm.id).length })}
               </p>
@@ -385,7 +441,7 @@ export default function AdminMenu() {
                 >
                   <option value="">{t('menu_management.delete_all')}</option>
                   {menuCategories.filter((c) => c.id !== deleteCatConfirm.id).map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>{localize(c.name, locale)}</option>
                   ))}
                 </select>
                 <p className="text-xs text-text-muted mt-1">{t('menu_management.delete_all_warning')}</p>
