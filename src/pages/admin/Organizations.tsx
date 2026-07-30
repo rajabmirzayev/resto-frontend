@@ -49,10 +49,10 @@ export default function AdminOrganizations() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-surface-secondary">
       <Header title="Super Admin" subtitle={t('organizations.subtitle')} showUser />
 
-      <div className="p-6 max-w-6xl">
+      <div className="p-6 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-bold text-text-primary">{t('organizations.title')}</h2>
