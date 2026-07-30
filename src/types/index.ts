@@ -176,6 +176,7 @@ export interface Table {
   currentOrderId?: string;
   section: string;
   reservation?: TableReservation;
+  orgId?: string;
 }
 
 export interface OrderItem {

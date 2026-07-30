@@ -4,7 +4,7 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
 import { ORDER_MODES } from '../../types';
 import type { OrderMode } from '../../types';
-import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Palette, Store, QrCode, Copy, Download, ExternalLink } from 'lucide-react';
+import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Store, QrCode, Copy, Download, ExternalLink } from 'lucide-react';
 import { useTheme } from '../../store/useTheme';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
 import type { CustomerThemeId } from '../../types';
