@@ -33,7 +33,7 @@ const en: Record<string, string> = {
   'time.minutes_abbreviation': 'min',
 
   // Table
-  'table.number_prefix': 'Table #',
+  'table.number_prefix': 'Table #{number}',
   'table.capacity_abbreviation': 'pax',
   'table.guests': 'pax',
   'table.status.available': 'Available',
@@ -122,6 +122,9 @@ const en: Record<string, string> = {
   'error.please_select_payment_method': 'Please select a payment method',
   'error.order_creation_failed': 'Failed to create order',
   'error.camera_permission_denied': 'Camera permission denied. Please enable camera access.',
+  'error.file_too_large': 'File is too large. Maximum size is 2MB.',
+  'error.file_type_not_supported': 'File type not supported. Please upload an image.',
+  'error.file_upload_failed': 'File upload failed. Please try again.',
 
   // Dashboard
   'dashboard.welcome_overview': 'Welcome, overview',
@@ -385,7 +388,7 @@ const en: Record<string, string> = {
   'order.payment_method_label': 'Payment method:',
   'order.waiter_coming': 'Waiter will be with you shortly.',
   'order.cancelled': 'Order cancelled',
-  'order.order_number_prefix': 'Order #',
+  'order.order_number_prefix': 'Order #{number}',
   'order.active_status': 'Active',
   'order.details': 'Order Details',
   'order.date_label': 'Date:',
@@ -448,6 +451,26 @@ const en: Record<string, string> = {
   'permission_group.roles': 'Roles',
   'permission_group.kitchen': 'Kitchen',
   'permission_group.settings': 'Settings',
+
+  // Header (missing)
+  'header.toggle_sidebar': 'Toggle sidebar',
+  'header.notifications': 'Notifications',
+  'header.profile': 'Profile',
+
+  // Login
+  'login.password_placeholder': 'password',
+
+  // Waiter order modal (missing)
+  'toast.order_created': 'Table #{number} order created',
+  'toast.items_added': 'Items added to order',
+  'toast.marked_served': 'Table #{number} marked as served',
+  'order.new_order': 'New Order',
+  'order.add_items': 'Add Items',
+  'order.add_to_order': 'Add to Order',
+  'order.mark_served': 'Mark as Served',
+
+  // Table
+  'table.status.ready': 'Ready',
 };
 
 export default en;

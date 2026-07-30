@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore';
 import type { MenuItem, MenuCategory } from '../../types';
 import { Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { useToast } from '../../store/useToast';
 
 type ModalMode = 'add-item' | 'edit-item' | 'add-category' | 'edit-category' | null;
 
@@ -21,6 +22,7 @@ const emptyItemForm: ItemForm = { name: '', description: '', price: 0, category:
 
 export default function AdminMenu() {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const { menuItems, menuCategories, addMenuItem, updateMenuItem, deleteMenuItem, addMenuCategory, updateMenuCategory, deleteMenuCategory } = useStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
@@ -52,10 +54,20 @@ export default function AdminMenu() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return;
+    if (file.size > 2 * 1024 * 1024) {
+      addToast(t('error.file_too_large'), 'error');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      addToast(t('error.file_type_not_supported'), 'error');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
-      setItemForm({ ...itemForm, image: reader.result as string });
+      setItemForm((prev) => ({ ...prev, image: reader.result as string }));
+    };
+    reader.onerror = () => {
+      addToast(t('error.file_upload_failed'), 'error');
     };
     reader.readAsDataURL(file);
   };

@@ -33,7 +33,7 @@ const ru: Record<string, string> = {
   'time.minutes_abbreviation': 'мин',
 
   // Table
-  'table.number_prefix': 'Стол #',
+  'table.number_prefix': 'Стол #{number}',
   'table.capacity_abbreviation': 'чел',
   'table.guests': 'чел',
   'table.status.available': 'Свободен',
@@ -122,6 +122,9 @@ const ru: Record<string, string> = {
   'error.please_select_payment_method': 'Пожалуйста, выберите способ оплаты',
   'error.order_creation_failed': 'Ошибка при создании заказа',
   'error.camera_permission_denied': 'Доступ к камере запрещён. Пожалуйста, включите камеру.',
+  'error.file_too_large': 'Файл слишком большой. Максимальный размер 2MB.',
+  'error.file_type_not_supported': 'Тип файла не поддерживается. Пожалуйста, загрузите изображение.',
+  'error.file_upload_failed': 'Ошибка загрузки файла. Попробуйте снова.',
 
   // Dashboard
   'dashboard.welcome_overview': 'Добро пожаловать, обзор',
@@ -385,7 +388,7 @@ const ru: Record<string, string> = {
   'order.payment_method_label': 'Способ оплаты:',
   'order.waiter_coming': 'Официант скоро подойдёт.',
   'order.cancelled': 'Заказ отменён',
-  'order.order_number_prefix': 'Заказ #',
+  'order.order_number_prefix': 'Заказ #{number}',
   'order.active_status': 'Активен',
   'order.details': 'Детали заказа',
   'order.date_label': 'Дата:',
@@ -448,6 +451,24 @@ const ru: Record<string, string> = {
   'permission_group.roles': 'Роли',
   'permission_group.kitchen': 'Кухня',
   'permission_group.settings': 'Настройки',
+
+  // Header (missing)
+  'header.toggle_sidebar': 'Открыть/закрыть сайдбар',
+  'header.notifications': 'Уведомления',
+  'header.profile': 'Профиль',
+
+  // Login
+  'login.password_placeholder': 'пароль',
+
+  // Waiter order modal (missing)
+  'toast.order_created': 'Заказ стола #{number} создан',
+  'toast.items_added': 'Блюда добавлены к заказу',
+  'toast.marked_served': 'Стол #{number} отмечен как обслуженный',
+  'order.new_order': 'Новый Заказ',
+  'order.add_items': 'Добавить Блюда',
+  'order.add_to_order': 'Добавить к Заказу',
+  'order.mark_served': 'Отметить как Обслужен',
+  'table.status.ready': 'Готов',
 };
 
 export default ru;

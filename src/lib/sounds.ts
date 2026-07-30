@@ -1,27 +1,45 @@
-const audioCtx = typeof window !== 'undefined' ? new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)() : null;
+let audioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (audioCtx) return audioCtx;
+  if (typeof window === 'undefined') return null;
+  try {
+    audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
 
 export function playNotificationSound(frequency = 880, duration = 150) {
-  if (!audioCtx) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
 
   try {
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {
+        // Audio context resume failed - user interaction may be required
+      });
     }
 
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
     oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    gainNode.connect(ctx.destination);
 
     oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
 
-    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration / 1000);
 
-    oscillator.start(audioCtx.currentTime);
-    oscillator.stop(audioCtx.currentTime + duration / 1000);
+    oscillator.onended = () => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    };
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + duration / 1000);
   } catch {
     // Silently fail if audio context is not available
   }

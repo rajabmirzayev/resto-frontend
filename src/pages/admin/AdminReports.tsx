@@ -8,14 +8,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminReports() {
-  const { t } = useTranslation();
+  const { t, formatDate } = useTranslation();
   const { orders, menuItems, menuCategories, users } = useStore();
 
-  const paidOrders = orders.filter((o) => o.paymentStatus === 'paid');
-  const totalRevenue = paidOrders.reduce((s, o) => s + o.totalAmount, 0);
-  const completedCount = orders.filter((o) => o.status === 'completed').length;
-  const cancelledCount = orders.filter((o) => o.status === 'cancelled').length;
-  const avgOrderValue = paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : 0;
+  const paidOrders = useMemo(() => orders.filter((o) => o.paymentStatus === 'paid'), [orders]);
+  const totalRevenue = useMemo(() => paidOrders.reduce((s, o) => s + o.totalAmount, 0), [paidOrders]);
+  const completedCount = useMemo(() => orders.filter((o) => o.status === 'completed').length, [orders]);
+  const cancelledCount = useMemo(() => orders.filter((o) => o.status === 'cancelled').length, [orders]);
+  const avgOrderValue = useMemo(() => paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : 0, [paidOrders, totalRevenue]);
 
   const dailyRevenue = useMemo(() => {
     const now = new Date();
@@ -24,13 +24,13 @@ export default function AdminReports() {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const dayStr = d.toISOString().split('T')[0];
-      const dayName = d.toLocaleDateString('az-AZ', { weekday: 'short' });
+      const dayName = formatDate(d, { weekday: 'short' });
       const dayOrders = paidOrders.filter((o) => o.createdAt.startsWith(dayStr));
       const revenue = dayOrders.reduce((s, o) => s + o.totalAmount, 0);
       days.push({ label: dayName, revenue, count: dayOrders.length });
     }
     return days;
-  }, [paidOrders]);
+  }, [paidOrders, formatDate]);
 
   const maxDailyRevenue = Math.max(...dailyRevenue.map((d) => d.revenue), 1);
 
@@ -183,7 +183,7 @@ export default function AdminReports() {
             <p className="text-xs text-text-muted mb-5">{t('reports.hourly_subtitle')}</p>
             <div className="flex items-end gap-0.5 h-48">
               {hourlyData.map((count, h) => (
-                <div key={h} className="flex-1 flex flex-col items-center justify-end h-full" title={`${h}:00 — ${count} sifariş`}>
+                <div key={h} className="flex-1 flex flex-col items-center justify-end h-full" title={`${h}:00 — ${count} ${t('order.items_suffix')}`}>
                   <div
                     className="w-full bg-warning-400 rounded-t-sm transition-all duration-300 hover:bg-warning-500"
                     style={{ height: `${(count / maxHourly) * 180}px`, minHeight: count > 0 ? '4px' : '0px' }}
@@ -230,7 +230,7 @@ export default function AdminReports() {
           <div className="bg-white dark:bg-surface rounded-2xl p-6 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-1 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary-500" />
-              {t('dashboard.top_selling_items')}
+              {t('reports.top_selling_items')}
             </h3>
             <p className="text-xs text-text-muted mb-5">{t('reports.top_8_by_quantity')}</p>
             <div className="space-y-3">
@@ -255,7 +255,7 @@ export default function AdminReports() {
                 </div>
               ))}
               {topItems.length === 0 && (
-                <p className="text-center text-text-muted py-4 text-sm">{t('dashboard.no_sales')}</p>
+                <p className="text-center text-text-muted py-4 text-sm">{t('reports.no_sales')}</p>
               )}
             </div>
           </div>

@@ -11,6 +11,7 @@ interface ThemeState {
 }
 
 function getSystemDark(): boolean {
+  if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
@@ -51,23 +52,34 @@ export const useTheme = create<ThemeState>()(
       name: 'tabler-theme',
       onRehydrateStorage: () => (state) => {
         if (state) {
-          const isDark = resolveDark(state.theme);
-          applyTheme(isDark);
-          state.isDark = isDark;
+          applyTheme(resolveDark(state.theme));
         }
+      },
+      merge: (persisted, current) => {
+        const base = { ...current, ...(typeof persisted === 'object' && persisted ? persisted : {}) };
+        if (typeof persisted === 'object' && persisted && 'theme' in persisted) {
+          const p = persisted as Record<string, unknown>;
+          if (p.theme === 'light' || p.theme === 'dark' || p.theme === 'system') {
+            base.isDark = resolveDark(p.theme as Theme);
+          }
+        }
+        return base;
       },
     }
   )
 );
 
 export function initTheme() {
-  const saved = localStorage.getItem('tabler-theme');
-  let theme: Theme = 'system';
-  if (saved) {
-    try {
-      theme = JSON.parse(saved).state.theme;
-    } catch {}
-  }
-  const isDark = resolveDark(theme);
-  applyTheme(isDark);
+  try {
+    const saved = localStorage.getItem('tabler-theme');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed?.state?.theme) {
+        const isDark = resolveDark(parsed.state.theme);
+        applyTheme(isDark);
+        return;
+      }
+    }
+  } catch {}
+  applyTheme(getSystemDark());
 }

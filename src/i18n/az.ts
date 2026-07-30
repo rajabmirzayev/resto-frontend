@@ -33,7 +33,7 @@ const az: Record<string, string> = {
   'time.minutes_abbreviation': 'dəq',
 
   // Table
-  'table.number_prefix': 'Masa #',
+  'table.number_prefix': 'Masa #{number}',
   'table.capacity_abbreviation': 'nəf.',
   'table.guests': 'nəfər',
   'table.status.available': 'Boş',
@@ -122,6 +122,9 @@ const az: Record<string, string> = {
   'error.please_select_payment_method': 'Zəhmət olmasa ödəniş üsulunu seçin',
   'error.order_creation_failed': 'Sifariş yaradılarkən xəta baş verdi',
   'error.camera_permission_denied': 'Kameraya icazə verilmədi. Zəhmət olmasa kamera icazəsini aktiv edin.',
+  'error.file_too_large': 'Fayl çox böyükdür. Maksimum ölçü 2MB.',
+  'error.file_type_not_supported': 'Fayl tipi dəstəklənmir. Zəhmət olmasa şəkil yükləyin.',
+  'error.file_upload_failed': 'Fayl yüklənərkən xəta baş verdi. Yenidən cəhd edin.',
 
   // Dashboard
   'dashboard.welcome_overview': 'Xoş gəlmisiniz, ümumi baxış',
@@ -385,7 +388,7 @@ const az: Record<string, string> = {
   'order.payment_method_label': 'Ödəniş üsulu:',
   'order.waiter_coming': 'Ofisant tezliklə gələcək.',
   'order.cancelled': 'Sifariş ləğv edilib',
-  'order.order_number_prefix': 'Sifariş #',
+  'order.order_number_prefix': 'Sifariş #{number}',
   'order.active_status': 'Aktiv',
   'order.details': 'Sifariş Detalları',
   'order.date_label': 'Tarix:',
@@ -448,6 +451,24 @@ const az: Record<string, string> = {
   'permission_group.roles': 'Rollar',
   'permission_group.kitchen': 'Mtbəx',
   'permission_group.settings': 'Tənzimləmələr',
+
+  // Header (missing)
+  'header.toggle_sidebar': 'Sidebarı aç/bağla',
+  'header.notifications': 'Bildirişlər',
+  'header.profile': 'Profil',
+
+  // Login
+  'login.password_placeholder': 'şifrə',
+
+  // Waiter order modal (missing)
+  'toast.order_created': 'Masa #{number} sifarişi yaradıldı',
+  'toast.items_added': 'Məhsullar sifarişə əlavə edildi',
+  'toast.marked_served': 'Masa #{number} verildi olaraq işarələndi',
+  'order.new_order': 'Yeni Sifariş',
+  'order.add_items': 'Məhsul Əlavə Et',
+  'order.add_to_order': 'Sifarişə Əlavə Et',
+  'order.mark_served': 'Verildi İşarələ',
+  'table.status.ready': 'Hazırdır',
 };
 
 export default az;

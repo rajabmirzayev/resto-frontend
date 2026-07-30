@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
@@ -21,6 +21,7 @@ export default function CustomerOrder() {
 
   const [, forceUpdate] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const showPaymentModalRef = useRef(showPaymentModal);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,21 +30,26 @@ export default function CustomerOrder() {
     return () => clearInterval(interval);
   }, []);
 
+  // Keep ref in sync with state (runs on every render)
+  useEffect(() => {
+    showPaymentModalRef.current = showPaymentModal;
+  });
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showPaymentModal) {
+      if (e.key === 'Escape' && showPaymentModalRef.current) {
         setShowPaymentModal(false);
       }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showPaymentModal]);
+  }, []);
 
   const order = orderId ? orders.find((o) => o.id === orderId) : null;
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-surface-secondary flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4">
         <CustomerHeader
           title={t('order.details')}
           showBack
@@ -65,12 +71,12 @@ export default function CustomerOrder() {
   }
 
   const statusConfig = [
-    { key: 'pending', label: t('order.status.pending'), sublabel: t('order.waiter_confirmation_pending'), icon: Clock, color: 'warning' },
-    { key: 'confirmed', label: t('order.status.confirmed'), sublabel: t('order.confirmed_by_waiter'), icon: CheckCircle, color: 'primary' },
-    { key: 'preparing', label: t('order.status.preparing'), sublabel: t('order.confirmed_by_waiter_detail'), icon: ChefHat, color: 'primary' },
-    { key: 'ready', label: t('order.status.ready'), sublabel: t('order.customer_order'), icon: UtensilsCrossed, color: 'success' },
-    { key: 'served', label: t('order.status.served'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
-    { key: 'completed', label: t('order.status.completed'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
+    { key: 'pending', label: t('order.status.pending.label'), sublabel: t('order.waiter_confirmation_pending'), icon: Clock, color: 'warning' },
+    { key: 'confirmed', label: t('order.status.confirmed.label'), sublabel: t('order.confirmed_by_waiter'), icon: CheckCircle, color: 'primary' },
+    { key: 'preparing', label: t('order.status.preparing.label'), sublabel: t('order.confirmed_by_waiter_detail'), icon: ChefHat, color: 'primary' },
+    { key: 'ready', label: t('order.status.ready.label'), sublabel: t('order.customer_order'), icon: UtensilsCrossed, color: 'success' },
+    { key: 'served', label: t('order.status.served.label'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
+    { key: 'completed', label: t('order.status.completed.label'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
   ];
 
   const activeIndex = statusConfig.findIndex((s) => s.key === order.status);

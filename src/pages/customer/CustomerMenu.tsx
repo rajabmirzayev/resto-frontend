@@ -16,7 +16,7 @@ export default function CustomerMenu() {
   const [showCamera, setShowCamera] = useState(false);
 
   const canOrder = orderMode === 'customer' || orderMode === 'customer-waiter-confirm';
-  const needsPhoto = canOrder && orderMode === 'customer' && customerPhotoRequired;
+  const needsPhoto = canOrder && customerPhotoRequired;
 
   const tableParam = urlTableId || searchParams.get('t');
   const initialTable = tableParam
@@ -35,6 +35,9 @@ export default function CustomerMenu() {
   const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const categoryTabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const showCameraRef = useRef(showCamera);
+  const showOrderModalRef = useRef(showOrderModal);
+  const showCartRef = useRef(showCart);
 
   const availableTables = tables.filter((t) => t.status === 'available');
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -135,17 +138,24 @@ export default function CustomerMenu() {
     return () => observer.disconnect();
   }, [menuCategories]);
 
+  // Keep refs in sync with state (no dependency array - runs on every render)
+  useEffect(() => {
+    showCameraRef.current = showCamera;
+    showOrderModalRef.current = showOrderModal;
+    showCartRef.current = showCart;
+  });
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showCamera) setShowCamera(false);
-        else if (showOrderModal) setShowOrderModal(false);
-        else if (showCart) setShowCart(false);
+        if (showCameraRef.current) setShowCamera(false);
+        else if (showOrderModalRef.current) setShowOrderModal(false);
+        else if (showCartRef.current) setShowCart(false);
       }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showCamera, showOrderModal, showCart]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-surface-secondary">

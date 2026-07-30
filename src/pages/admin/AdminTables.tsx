@@ -33,7 +33,7 @@ export default function AdminTables() {
     available: { label: t('table.status.available'), color: 'bg-success-500', badge: 'bg-success-500 text-white', bg: 'border-success-300 bg-success-50' },
     occupied: { label: t('table.status.occupied'), color: 'bg-danger-500', badge: 'bg-danger-500 text-white', bg: 'border-danger-300 bg-danger-50' },
     reserved: { label: t('table.status.reserved'), color: 'bg-warning-500', badge: 'bg-warning-500 text-white', bg: 'border-warning-300 bg-warning-50' },
-    cleaning: { label: t('table.status.cleaning'), color: 'bg-text-muted', badge: 'bg-text-muted text-white', bg: 'border-border bg-surface-secondary' },
+    cleaning: { label: t('table.status.cleaning'), color: 'bg-surface-secondary', badge: 'bg-surface-secondary text-text-secondary', bg: 'border-border bg-surface-secondary' },
   };
 
   const sections = tableSections;
@@ -250,7 +250,7 @@ export default function AdminTables() {
                             <span className="text-[10px] font-semibold text-primary-600">{t('tables.active_order')}</span>
                           </div>
                           <p className="text-xs font-bold text-text-primary">{activeOrder.totalAmount} ₼</p>
-                          <p className="text-[10px] text-text-muted">{activeOrder.items.length} məhsul</p>
+                          <p className="text-[10px] text-text-muted">{activeOrder.items.length} {t('order.items_suffix')}</p>
                         </div>
                       )}
 
@@ -258,7 +258,7 @@ export default function AdminTables() {
                         <div className="mt-3 bg-warning-50 rounded-xl p-2.5 border border-warning-200">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <Clock className="w-3.5 h-3.5 text-warning-600" />
-                            <span className="text-[10px] font-semibold text-warning-600">Rezervasiya</span>
+                            <span className="text-[10px] font-semibold text-warning-600">{t('table.status.reserved')}</span>
                           </div>
                           <p className="text-xs font-bold text-text-primary">{table.reservation.guestName}</p>
                           <p className="text-[10px] text-text-muted">{table.reservation.time} • {table.reservation.guestCount} {t('table.guests')}</p>

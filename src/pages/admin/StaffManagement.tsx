@@ -60,15 +60,23 @@ export default function StaffManagement() {
     setModalMode('edit');
   };
 
+  const deriveRoleFromRoleId = (roleId: string): UserRole => {
+    const r = roles.find((x) => x.id === roleId);
+    if (!r) return 'waiter';
+    if (r.isSystem) return 'admin';
+    if (r.permissions.some((p) => p.startsWith('kitchen.'))) return 'chef';
+    return 'waiter';
+  };
+
   const handleSave = () => {
     if (!form.name || !form.username || (!editingUser && !form.password)) return;
-    const selectedRole = roles.find((r) => r.id === form.roleId);
+    const derivedRole = deriveRoleFromRoleId(form.roleId);
     if (modalMode === 'edit' && editingUser) {
-      const updates: Partial<User> = { name: form.name, username: form.username, role: form.role, roleId: form.roleId };
+      const updates: Partial<User> = { name: form.name, username: form.username, role: derivedRole, roleId: form.roleId };
       if (form.password) updates.password = form.password;
       updateUser(editingUser.id, updates);
     } else {
-      addUser({ name: form.name, username: form.username, password: form.password, role: (selectedRole && (selectedRole.name.toLowerCase().includes('aşpaz') || selectedRole.name.toLowerCase().includes('chef')) ? 'chef' : 'waiter') as UserRole, roleId: form.roleId, avatar: '' });
+      addUser({ name: form.name, username: form.username, password: form.password, role: derivedRole, roleId: form.roleId, avatar: '' });
     }
     setModalMode(null);
     setEditingUser(null);

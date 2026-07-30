@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const { t } = useTranslation();
+  const { t, formatDate } = useTranslation();
   const ORDER_STATUS_LABELS = getOrderStatusLabels(t);
   const { orders, tables, menuItems, users } = useStore();
 
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <Header title={t('dashboard.welcome_overview')} subtitle={t('dashboard.welcome_overview')} showUser />
+      <Header title={t('dashboard.welcome_overview')} subtitle={''} showUser />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
                 <div key={order.id} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                   <div>
                     <p className="text-sm font-semibold text-text-primary">{t('table.number_prefix')}{order.tableNumber}</p>
-                    <p className="text-xs text-text-muted">{order.waiterName} • {new Date(order.createdAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-xs text-text-muted">{order.waiterName} • {formatDate(order.createdAt, { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-text-primary">{order.totalAmount} ₼</p>

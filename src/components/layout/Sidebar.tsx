@@ -13,7 +13,7 @@ const navItems: { to: string; labelKey: string; icon: typeof LayoutDashboard; pe
   { to: '/admin/reports', labelKey: 'nav.reports', icon: BarChart3, permission: 'reports.view' },
   { to: '/admin/staff', labelKey: 'nav.staff', icon: Users, permission: 'staff.view' },
   { to: '/admin/roles', labelKey: 'nav.roles', icon: Shield, permission: 'roles.view' },
-  { to: '/admin/settings', labelKey: 'nav.settings', icon: Settings, permission: 'dashboard.view' },
+  { to: '/admin/settings', labelKey: 'nav.settings', icon: Settings, permission: 'settings.view' },
 ];
 
 export default function Sidebar() {

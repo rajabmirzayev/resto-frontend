@@ -22,29 +22,27 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
     }
   }, []);
 
-  const startCamera = useCallback(async (facing: 'user' | 'environment') => {
-    try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      setFacingMode(facing);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch {
-      setError(t('error.camera_permission_denied'));
-    }
-  }, [t]);
-
   useEffect(() => {
-    startCamera(facingMode);
-    return () => stopCamera();
-  }, [startCamera, facingMode, stopCamera]);
+    let cancelled = false;
+    const init = async () => {
+      try {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch {
+        if (!cancelled) setError(t('error.camera_permission_denied'));
+      }
+    };
+    init();
+    return () => { cancelled = true; stopCamera(); };
+  }, [facingMode, stopCamera, t]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
@@ -70,8 +68,7 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
   };
 
   const toggleCamera = () => {
-    const newFacing = facingMode === 'user' ? 'environment' : 'user';
-    startCamera(newFacing);
+    setFacingMode((prev) => prev === 'user' ? 'environment' : 'user');
   };
 
   return (
@@ -108,7 +105,7 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
           onClick={capturePhoto}
           className="w-16 h-16 rounded-full bg-white border-4 border-white/50 flex items-center justify-center hover:scale-105 transition-transform"
         >
-          <div className="w-13 h-13 rounded-full border-2 border-gray-300 dark:border-slate-600" />
+          <div className="w-14 h-14 rounded-full border-2 border-gray-300 dark:border-slate-600" />
         </button>
         <div className="w-12 h-12" />
       </div>

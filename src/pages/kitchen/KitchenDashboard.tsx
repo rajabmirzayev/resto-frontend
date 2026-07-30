@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../i18n';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
@@ -11,13 +11,12 @@ export default function KitchenDashboard() {
   const { t } = useTranslation();
   const orders = useStore((s) => s.orders);
   const { addToast } = useToast();
-  const [, forceUpdate] = useState(0);
   const prevPendingCount = useRef(0);
+  const [, forceUpdate] = useState(0);
 
+  // Force re-render every 2 seconds so elapsed timers in KitchenOrderCard update in real time.
   useEffect(() => {
-    useStore.persist.rehydrate();
     const interval = setInterval(() => {
-      useStore.persist.rehydrate();
       forceUpdate((n) => n + 1);
     }, 2000);
     return () => clearInterval(interval);
@@ -33,7 +32,7 @@ export default function KitchenDashboard() {
     prevPendingCount.current = pendingCount;
   }, [orders, addToast, t]);
 
-  const newOrders = orders.filter((o) => o.status === 'pending' || (o.status === 'confirmed' && o.orderSource === 'customer'));
+  const newOrders = orders.filter((o) => o.status === 'pending' || (o.status === 'confirmed'));
   const preparingOrders = orders.filter((o) => o.status === 'preparing');
   const readyOrders = orders.filter((o) => o.status === 'ready');
 
@@ -116,7 +115,7 @@ export default function KitchenDashboard() {
               <span className="bg-success-100 text-success-700 text-xs font-bold px-2 py-0.5 rounded-full">{readyOrders.length}</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {readyOrders.map((order) => (
+              {readyOrders.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((order) => (
                 <KitchenOrderCard key={order.id} order={order} variant="ready" />
               ))}
             </div>

@@ -18,15 +18,14 @@ export default function WaiterDashboard() {
   const { addToast } = useToast();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [activeTab, setActiveTab] = useState<'tables' | 'pending' | 'payments'>('tables');
-  const [, forceUpdate] = useState(0);
   const prevReadyCount = useRef(0);
+  const prevPaymentCount = useRef(0);
+  const [, forceUpdate] = useState(0);
 
   const isConfirmMode = orderMode === 'customer-waiter-confirm';
 
   useEffect(() => {
-    useStore.persist.rehydrate();
     const interval = setInterval(() => {
-      useStore.persist.rehydrate();
       forceUpdate((n) => n + 1);
     }, 2000);
     return () => clearInterval(interval);
@@ -42,10 +41,11 @@ export default function WaiterDashboard() {
   }, [orders, addToast, t]);
 
   useEffect(() => {
-    const newPaymentRequests = orders.filter((o) => o.paymentRequested && o.paymentStatus === 'pending');
-    if (newPaymentRequests.length > 0) {
+    const paymentCount = orders.filter((o) => o.paymentRequested && o.paymentStatus === 'pending').length;
+    if (paymentCount > prevPaymentCount.current) {
       playOrderReadySound();
     }
+    prevPaymentCount.current = paymentCount;
   }, [orders]);
 
   const activeOrders = orders.filter((o) => !['completed', 'cancelled'].includes(o.status));
@@ -68,7 +68,7 @@ export default function WaiterDashboard() {
     if (order.status === 'pending' && !order.waiterConfirmed) return t('table.status.waiting_confirmation');
     if (order.status === 'pending') return t('table.status.waiting_order');
     if (order.status === 'confirmed' || order.status === 'preparing') return t('table.status.preparing');
-    if (order.status === 'ready') return t('table.status.bill_requested');
+    if (order.status === 'ready') return t('table.status.ready');
     if (order.status === 'served') return t('table.status.served');
     return t('table.status.occupied');
   };
@@ -81,7 +81,7 @@ export default function WaiterDashboard() {
     if (order.status === 'pending' && !order.waiterConfirmed) return 'bg-warning-50 border-warning-300 hover:border-warning-500 ring-1 ring-warning-200';
     if (order.status === 'pending') return 'bg-warning-50 border-warning-300 hover:border-warning-500 ring-1 ring-warning-200';
     if (order.status === 'confirmed' || order.status === 'preparing') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
-    if (order.status === 'ready') return 'bg-danger-50 border-danger-300 hover:border-danger-500 ring-1 ring-danger-200';
+    if (order.status === 'ready') return 'bg-success-50 border-success-300 hover:border-success-500 ring-1 ring-success-200';
     if (order.status === 'served') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
     return 'bg-danger-50 border-danger-200';
   };
@@ -94,7 +94,7 @@ export default function WaiterDashboard() {
     if (order.status === 'pending' && !order.waiterConfirmed) return 'bg-warning-500 text-white animate-pulse';
     if (order.status === 'pending') return 'bg-warning-500 text-white animate-pulse';
     if (order.status === 'confirmed' || order.status === 'preparing') return 'bg-primary-500 text-white';
-    if (order.status === 'ready') return 'bg-danger-500 text-white animate-pulse';
+    if (order.status === 'ready') return 'bg-success-500 text-white animate-pulse';
     return 'bg-primary-500 text-white';
   };
 
@@ -104,7 +104,7 @@ export default function WaiterDashboard() {
     return `${m} ${t('time.minutes_abbreviation')}`;
   };
 
-  const sections = [...new Set(tables.map((t) => t.section))];
+  const sections = [...new Set(tables.map((t) => t.section).filter(Boolean))];
 
   const handleConfirmCustomerOrder = (order: Order) => {
     confirmOrder(order.id, currentUser?.id || '', currentUser?.name || '');

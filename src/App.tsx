@@ -29,9 +29,11 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 
 function PermRoute({ children, permission }: { children: React.ReactNode; permission: Permission }) {
   const currentUser = useStore((s) => s.currentUser);
-  const hasPermission = useStore((s) => s.hasPermission);
+  const userPermissions = useStore(
+    (s) => s.currentUser ? s.getUserPermissions(s.currentUser.id) : [] as Permission[],
+  );
   if (!currentUser) return <Navigate to="/login" replace />;
-  if (!hasPermission(permission)) return <Navigate to="/admin" replace />;
+  if (!userPermissions.includes(permission)) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 

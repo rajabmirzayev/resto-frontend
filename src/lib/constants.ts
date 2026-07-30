@@ -22,7 +22,7 @@ export const ORDER_STATUS_STYLES: Record<OrderStatus, string> = {
   cancelled: 'bg-danger-50 text-danger-600',
 };
 
-export const getOrderItemStatusLabels = (t: TFunc): Record<string, { label: string; color: string }> => ({
+export const getOrderItemStatusLabels = (t: TFunc): Record<OrderStatus, { label: string; color: string }> => ({
   pending: { label: t('item_status.pending'), color: 'bg-warning-50 text-warning-600' },
   confirmed: { label: t('item_status.confirmed'), color: 'bg-primary-50 text-primary-600' },
   preparing: { label: t('item_status.preparing'), color: 'bg-primary-50 text-primary-700' },

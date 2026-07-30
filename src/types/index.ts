@@ -28,12 +28,14 @@ export type Permission =
   | 'kitchen.view' | 'kitchen.manage'
   | 'settings.view' | 'settings.edit';
 
-export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission; label: string }[] }[] = [
+export const PERMISSION_GROUPS: { id: string; label: string; permissions: { key: Permission; label: string }[] }[] = [
   {
+    id: 'dashboard',
     label: 'Dashboard',
     permissions: [{ key: 'dashboard.view', label: 'Baxış' }],
   },
   {
+    id: 'menu',
     label: 'Menyu',
     permissions: [
       { key: 'menu.view', label: 'Görüntüləmə' },
@@ -43,6 +45,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     ],
   },
   {
+    id: 'tables',
     label: 'Masalar',
     permissions: [
       { key: 'tables.view', label: 'Görüntüləmə' },
@@ -51,6 +54,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     ],
   },
   {
+    id: 'orders',
     label: 'Sifarişlər',
     permissions: [
       { key: 'orders.view', label: 'Görüntüləmə' },
@@ -59,10 +63,12 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     ],
   },
   {
+    id: 'reports',
     label: 'Hesabatlar',
     permissions: [{ key: 'reports.view', label: 'Görüntüləmə' }],
   },
   {
+    id: 'staff',
     label: 'Personal',
     permissions: [
       { key: 'staff.view', label: 'Görüntüləmə' },
@@ -72,6 +78,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     ],
   },
   {
+    id: 'roles',
     label: 'Rollar',
     permissions: [
       { key: 'roles.view', label: 'Görüntüləmə' },
@@ -81,6 +88,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     ],
   },
   {
+    id: 'kitchen',
     label: 'Mtbəx',
     permissions: [
       { key: 'kitchen.view', label: 'Panelə baxış' },
@@ -88,6 +96,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: { key: Permission;
     ],
   },
   {
+    id: 'settings',
     label: 'Tənzimləmələr',
     permissions: [
       { key: 'settings.view', label: 'Baxış' },

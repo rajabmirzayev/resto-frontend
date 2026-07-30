@@ -12,7 +12,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   const { t } = useTranslation();
   const { updateOrderItemStatus, updateOrderStatus } = useStore();
 
-  const readyCount = order.items.filter((i) => i.status === 'ready').length;
+  const readyCount = order.items.filter((i) => i.status === 'ready' || i.status === 'served' || i.status === 'completed').length;
   const totalCount = order.items.length;
   const allReady = readyCount === totalCount;
 
@@ -26,16 +26,18 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   };
 
   const getPrepTime = () => {
+    if (order.items.length === 0) return 15;
     const maxTime = Math.max(...order.items.map((i) => {
       const item = menuItems.find((m) => m.id === i.menuItemId);
       return item?.preparationTime || 15;
     }));
-    return maxTime;
+    return Math.max(1, maxTime);
   };
 
   const getElapsedPercent = () => {
     const diff = (Date.now() - new Date(order.createdAt).getTime()) / 60000;
-    return Math.min(100, (diff / getPrepTime()) * 100);
+    const prepTime = getPrepTime();
+    return Math.min(100, (diff / Math.max(1, prepTime)) * 100);
   };
 
   const handleStartPreparing = () => {
@@ -203,7 +205,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
       )}
 
       <div className="px-4 pb-4 space-y-2">
-        {variant === 'new' && (
+        {variant === 'new' && !allReady && (
           <button
             onClick={handleStartPreparing}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -229,6 +231,12 @@ export default function KitchenOrderCard({ order, variant }: Props) {
             <ArrowRight className="w-4 h-4" />
             {t('kitchen.hand_off')}
           </button>
+        )}
+        {variant === 'ready' && (
+          <div className="w-full text-center py-2.5 rounded-xl bg-success-50 border border-success-200 text-sm font-semibold text-success-700 flex items-center justify-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            {t('kitchen.badge_ready')}
+          </div>
         )}
       </div>
     </div>

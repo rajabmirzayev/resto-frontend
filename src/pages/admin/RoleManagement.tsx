@@ -19,6 +19,16 @@ export default function RoleManagement() {
 
   const getUserCount = (roleId: string) => users.filter((u) => u.roleId === roleId).length;
 
+const permissionActionKey = (key: Permission): string => {
+  const map: Record<string, string> = {
+    'tables.status': 'status_change',
+    'orders.cancel': 'cancel',
+    'kitchen.view': 'kitchen_view',
+    'kitchen.manage': 'kitchen_manage',
+  };
+  return map[key] || key.split('.').pop() || key;
+};
+
   const openAdd = () => {
     setEditingRole(null);
     setFormName('');
@@ -98,7 +108,7 @@ export default function RoleManagement() {
                   </div>
                   {role.isSystem && (
                     <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary-50 text-primary-600">
-                      {t('roles.system')}
+                      {t('roles.system_badge')}
                     </span>
                   )}
                 </div>
@@ -111,10 +121,10 @@ export default function RoleManagement() {
                       if (activeCount === 0) return null;
                       return (
                         <span
-                          key={group.label}
+                          key={group.id}
                           className="text-[10px] font-medium px-2 py-1 rounded-md bg-surface-secondary text-text-secondary"
                         >
-                          {group.label} ({activeCount}/{group.permissions.length})
+                          {t(`permission_group.${group.id}`)} ({activeCount}/{group.permissions.length})
                         </span>
                       );
                     })}
@@ -191,7 +201,7 @@ export default function RoleManagement() {
                     const someSelected = groupPerms.some((p) => formPermissions.includes(p));
 
                     return (
-                      <div key={group.label} className="bg-surface-secondary rounded-xl p-3">
+                      <div key={group.id} className="bg-surface-secondary rounded-xl p-3">
                         <button
                           onClick={() => toggleGroup(groupPerms)}
                           className="flex items-center gap-2 mb-2 w-full text-left"
@@ -208,7 +218,7 @@ export default function RoleManagement() {
                             {allSelected && <Check className="w-3 h-3 text-white" />}
                             {someSelected && !allSelected && <div className="w-2 h-0.5 bg-primary-600 rounded" />}
                           </div>
-                          <span className="text-sm font-semibold text-text-primary">{group.label}</span>
+                          <span className="text-sm font-semibold text-text-primary">{t(`permission_group.${group.id}`)}</span>
                         </button>
                         <div className="flex flex-wrap gap-1.5 pl-7">
                           {group.permissions.map((perm) => {
@@ -223,7 +233,7 @@ export default function RoleManagement() {
                                     : 'bg-white dark:bg-surface border-border text-text-muted hover:border-primary-200'
                                 }`}
                               >
-                                {perm.label}
+                                {t(`permission.${permissionActionKey(perm.key)}`)}
                               </button>
                             );
                           })}

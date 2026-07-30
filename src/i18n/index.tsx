@@ -8,6 +8,7 @@ import ru from './ru';
 export type Locale = 'az' | 'en' | 'ru';
 
 const translations: Record<Locale, Record<string, string>> = { az, en, ru };
+const LOCALE_MAP: Record<Locale, string> = { az: 'az-AZ', en: 'en-GB', ru: 'ru-RU' };
 
 interface I18nState {
   locale: Locale;
@@ -51,9 +52,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const formatDate = useCallback(
     (date: string | Date, options?: Intl.DateTimeFormatOptions): string => {
-      const localeMap: Record<Locale, string> = { az: 'az-AZ', en: 'en-GB', ru: 'ru-RU' };
       const d = typeof date === 'string' ? new Date(date) : date;
-      return d.toLocaleString(localeMap[locale], options);
+      if (isNaN(d.getTime())) return String(date);
+      return d.toLocaleString(LOCALE_MAP[locale], options);
     },
     [locale]
   );

@@ -43,6 +43,7 @@ interface StoreActions {
 
   createOrder: (tableId: string, waiterId: string, waiterName: string) => Order | null;
   createCustomerOrder: (tableId: string, customerPhoto?: string) => Order | null;
+  addItemsToOrder: (orderId: string, items: Omit<OrderItem, 'id'>[]) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateOrderItemStatus: (orderId: string, itemId: string, status: OrderStatus) => void;
   confirmOrder: (orderId: string, waiterId: string, waiterName: string) => void;
@@ -141,7 +142,7 @@ export const useStore = create<Store>()(
       },
 
       addTableSection: (name) => {
-        const trimmed = name.trim();
+        const trimmed = name?.trim() ?? '';
         if (!trimmed) return;
         set((state) => {
           if (state.tableSections.includes(trimmed)) return state;
@@ -150,7 +151,7 @@ export const useStore = create<Store>()(
       },
 
       updateTableSection: (oldName, newName) => {
-        const trimmed = newName.trim();
+        const trimmed = newName?.trim() ?? '';
         if (!trimmed || oldName === trimmed) return;
         set((state) => {
           if (state.tableSections.includes(trimmed)) return state;
@@ -162,10 +163,14 @@ export const useStore = create<Store>()(
       },
 
       deleteTableSection: (name) => {
-        set((state) => ({
-          tableSections: state.tableSections.filter((s) => s !== name),
-          tables: state.tables.map((t) => (t.section === name ? { ...t, section: state.tableSections.find((s) => s !== name) || '' } : t)),
-        }));
+        set((state) => {
+          const remaining = state.tableSections.filter((s) => s !== name);
+          const fallback = remaining[0] || '';
+          return {
+            tableSections: remaining,
+            tables: state.tables.map((t) => (t.section === name ? { ...t, section: fallback } : t)),
+          };
+        });
       },
 
       addUser: (user) => {
@@ -174,9 +179,13 @@ export const useStore = create<Store>()(
       },
 
       updateUser: (id, user) => {
-        const updates = user.password ? { ...user, password: hashPassword(user.password) } : user;
+        const { password: pwd, ...rest } = user;
         set((state) => ({
-          users: state.users.map((u) => (u.id === id ? { ...u, ...updates } : u)),
+          users: state.users.map((u) =>
+            u.id === id
+              ? { ...u, ...rest, ...(pwd ? { password: hashPassword(pwd) } : {}) }
+              : u
+          ),
         }));
       },
 
@@ -196,7 +205,11 @@ export const useStore = create<Store>()(
       },
 
       deleteRole: (id) => {
-        set((state) => ({ roles: state.roles.filter((r) => r.id !== id) }));
+        set((state) => {
+          const target = state.roles.find((r) => r.id === id);
+          if (target?.isSystem) return state;
+          return { roles: state.roles.filter((r) => r.id !== id) };
+        });
       },
 
       getUserPermissions: (userId) => {
@@ -208,38 +221,31 @@ export const useStore = create<Store>()(
           if (role) return role.permissions;
         }
         if (user.role === 'admin') {
-          const superAdmin = roles.find((r) => r.name.toLowerCase().includes('super') || r.name.toLowerCase().includes('admin'));
-          if (superAdmin) return superAdmin.permissions;
+          const adminRole = roles.find((r) => r.isSystem);
+          if (adminRole) return adminRole.permissions;
         }
         return [];
       },
 
       hasPermission: (permission) => {
-        const { currentUser, roles } = get();
-        if (!currentUser) return false;
-        if (currentUser.roleId) {
-          const role = roles.find((r) => r.id === currentUser.roleId);
-          if (role) return role.permissions.includes(permission);
-        }
-        if (currentUser.role === 'admin') {
-          const superAdmin = roles.find((r) => r.name.toLowerCase().includes('super') || r.name.toLowerCase().includes('admin'));
-          if (superAdmin) return superAdmin.permissions.includes(permission);
-        }
-        return false;
+        const state = get();
+        if (!state.currentUser) return false;
+        const perms = state.getUserPermissions(state.currentUser.id);
+        return perms.includes(permission);
       },
 
       addToCart: (item) => {
-        const { cart } = get();
-        const existing = cart.find((c) => c.menuItemId === item.menuItemId);
-        if (existing) {
-          set({
-            cart: cart.map((c) =>
-              c.menuItemId === item.menuItemId ? { ...c, quantity: c.quantity + item.quantity } : c
-            ),
-          });
-        } else {
-          set({ cart: [...cart, item] });
-        }
+        set((state) => {
+          const existing = state.cart.find((c) => c.menuItemId === item.menuItemId);
+          if (existing) {
+            return {
+              cart: state.cart.map((c) =>
+                c.menuItemId === item.menuItemId ? { ...c, quantity: c.quantity + item.quantity, notes: item.notes || c.notes } : c
+              ),
+            };
+          }
+          return { cart: [...state.cart, item] };
+        });
       },
 
       removeFromCart: (menuItemId) => {
@@ -248,7 +254,7 @@ export const useStore = create<Store>()(
 
       updateCartQuantity: (menuItemId, quantity) => {
         if (quantity <= 0) {
-          get().removeFromCart(menuItemId);
+          set((state) => ({ cart: state.cart.filter((c) => c.menuItemId !== menuItemId) }));
           return;
         }
         set((state) => ({
@@ -263,7 +269,7 @@ export const useStore = create<Store>()(
         if (cart.length === 0) return null;
 
         const table = tables.find((t) => t.id === tableId);
-        if (!table) return null;
+        if (!table || table.status === 'occupied') return null;
 
         const orderItems: OrderItem[] = cart.map((item) => ({
           id: uuidv4(),
@@ -302,6 +308,7 @@ export const useStore = create<Store>()(
             t.id === tableId ? { ...t, status: 'occupied' as TableStatus, currentOrderId: newOrder.id } : t
           ),
           cart: [],
+          currentOrderId: newOrder.id,
         }));
 
         return newOrder;
@@ -312,7 +319,7 @@ export const useStore = create<Store>()(
         if (cart.length === 0) return null;
 
         const table = tables.find((t) => t.id === tableId);
-        if (!table) return null;
+        if (!table || table.status === 'occupied') return null;
 
         const orderItems: OrderItem[] = cart.map((item) => ({
           id: uuidv4(),
@@ -361,6 +368,19 @@ export const useStore = create<Store>()(
         return newOrder;
       },
 
+      addItemsToOrder: (orderId, items) => {
+        const order = get().orders.find((o) => o.id === orderId);
+        if (!order) return;
+        set((state) => ({
+          orders: state.orders.map((o) => {
+            if (o.id !== orderId) return o;
+            const newItems: OrderItem[] = items.map((item) => ({ ...item, id: uuidv4(), status: 'pending' as OrderStatus }));
+            const totalAmount = [...o.items, ...newItems].reduce((s, i) => s + i.price * i.quantity, 0);
+            return { ...o, items: [...o.items, ...newItems], totalAmount, updatedAt: new Date().toISOString() };
+          }),
+        }));
+      },
+
       updateOrderStatus: (orderId, status) => {
         set((state) => ({
           orders: state.orders.map((o) =>
@@ -384,6 +404,8 @@ export const useStore = create<Store>()(
       },
 
       confirmOrder: (orderId, waiterId, waiterName) => {
+        const order = get().orders.find((o) => o.id === orderId);
+        if (!order || order.status !== 'pending') return;
         set((state) => ({
           orders: state.orders.map((o) =>
             o.id === orderId
@@ -395,7 +417,7 @@ export const useStore = create<Store>()(
 
       cancelOrder: (orderId) => {
         const order = get().orders.find((o) => o.id === orderId);
-        if (!order) return;
+        if (!order || order.status === 'cancelled' || order.status === 'completed') return;
 
         set((state) => ({
           orders: state.orders.map((o) =>
@@ -409,7 +431,7 @@ export const useStore = create<Store>()(
 
       completePayment: (orderId) => {
         const order = get().orders.find((o) => o.id === orderId);
-        if (!order) return;
+        if (!order || order.paymentStatus === 'paid') return;
 
         set((state) => ({
           orders: state.orders.map((o) =>
@@ -464,6 +486,19 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'tabler-storage',
+      version: 1,
+      partialize: (state) => ({
+        menuItems: state.menuItems,
+        menuCategories: state.menuCategories,
+        tables: state.tables,
+        tableSections: state.tableSections,
+        orders: state.orders,
+        orderMode: state.orderMode,
+        customerPhotoRequired: state.customerPhotoRequired,
+        paymentTiming: state.paymentTiming,
+        cart: state.cart,
+        currentOrderId: state.currentOrderId,
+      }),
     }
   )
 );

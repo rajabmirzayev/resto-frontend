@@ -18,6 +18,7 @@ export function sanitizeInput(input: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;')
+    .replace(/`/g, '&#x60;')
     .trim();
 }
 
@@ -29,7 +30,7 @@ export function validateRequired(value: string, fieldName: string): string | nul
 }
 
 export function validateMinLength(value: string, min: number, fieldName: string): string | null {
-  if (value.length < min) {
+  if (value.trim().length < min) {
     return `${fieldName} ən azı ${min} simvol olmalıdır`;
   }
   return null;

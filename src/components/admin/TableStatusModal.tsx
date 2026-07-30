@@ -7,7 +7,7 @@ const getTableStatusLabels = (t: (key: string) => string): Record<TableStatus, {
   available: { label: t('table.status.available'), color: 'bg-success-500', badge: 'bg-success-500 text-white', bg: 'border-success-300 bg-success-50' },
   occupied: { label: t('table.status.occupied'), color: 'bg-danger-500', badge: 'bg-danger-500 text-white', bg: 'border-danger-300 bg-danger-50' },
   reserved: { label: t('table.status.reserved'), color: 'bg-warning-500', badge: 'bg-warning-500 text-white', bg: 'border-warning-300 bg-warning-50' },
-  cleaning: { label: t('table.status.cleaning'), color: 'bg-text-muted', badge: 'bg-text-muted text-white', bg: 'border-border bg-surface-secondary' },
+  cleaning: { label: t('table.status.cleaning'), color: 'bg-surface-secondary', badge: 'bg-surface-secondary text-text-secondary', bg: 'border-border bg-surface-secondary' },
 });
 
 interface Props {
@@ -27,6 +27,13 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
     guestCount: table.reservation?.guestCount || 2,
     notes: table.reservation?.notes || '',
   });
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+
+  const markTouched = (field: string) => {
+    if (!touched.has(field)) {
+      setTouched((prev) => new Set(prev).add(field));
+    }
+  };
 
   const statusConfig = getTableStatusLabels(t);
 
@@ -99,31 +106,31 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
             <div>
               <input
                 value={reservationForm.guestName}
-                onChange={(e) => setReservationForm({ ...reservationForm, guestName: e.target.value })}
+                onChange={(e) => { setReservationForm({ ...reservationForm, guestName: e.target.value }); markTouched("guestName"); }}
                 className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder={`${t('order.customer')} *`}
                 autoFocus
               />
-              {!reservationForm.guestName.trim() && <p className="text-[11px] text-danger-500 mt-1">{t('common.unknown')}</p>}
+              {touched.has("guestName") && !reservationForm.guestName.trim() && <p className="text-[11px] text-danger-500 mt-1">{t('reservation.name_required')}</p>}
             </div>
             <div>
               <input
                 value={reservationForm.phone}
-                onChange={(e) => setReservationForm({ ...reservationForm, phone: e.target.value })}
+                onChange={(e) => { setReservationForm({ ...reservationForm, phone: e.target.value }); markTouched("phone"); }}
                 className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder={`${t('order.customer')} *`}
               />
-              {!reservationForm.phone.trim() && <p className="text-[11px] text-danger-500 mt-1">{t('common.unknown')}</p>}
+              {touched.has("phone") && !reservationForm.phone.trim() && <p className="text-[11px] text-danger-500 mt-1">{t('reservation.phone_required')}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <input
                   type="time"
                   value={reservationForm.time}
-                  onChange={(e) => setReservationForm({ ...reservationForm, time: e.target.value })}
+                  onChange={(e) => { setReservationForm({ ...reservationForm, time: e.target.value }); markTouched("time"); }}
                   className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
-                {!reservationForm.time && <p className="text-[11px] text-danger-500 mt-1">{t('common.unknown')}</p>}
+                {touched.has("time") && !reservationForm.time && <p className="text-[11px] text-danger-500 mt-1">{t('reservation.time_required')}</p>}
               </div>
               <input
                 type="number"
