@@ -233,7 +233,7 @@ export default function AdminTables() {
                       </div>
 
                       <div className="mb-2 cursor-pointer" onClick={() => openStatus(table)}>
-                        <div className="text-3xl font-bold text-text-primary mb-1">{t('table.number_prefix')}{table.number}</div>
+                        <div className="text-3xl font-bold text-text-primary mb-1">{t('table.number_prefix', { number: table.number })}</div>
                         <div className="flex items-center justify-center gap-1.5 text-text-secondary mb-3">
                           <Armchair className="w-4 h-4" />
                           <span className="text-sm">{table.capacity} {t('table.guests')}</span>

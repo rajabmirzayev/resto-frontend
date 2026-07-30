@@ -160,7 +160,7 @@ export default function AdminDashboard() {
               {orders.slice(-6).reverse().map((order) => (
                 <div key={order.id} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                   <div>
-                    <p className="text-sm font-semibold text-text-primary">{t('table.number_prefix')}{order.tableNumber}</p>
+                    <p className="text-sm font-semibold text-text-primary">{t('table.number_prefix', { number: order.tableNumber })}</p>
                     <p className="text-xs text-text-muted">{order.waiterName} • {formatDate(order.createdAt, { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <div className="text-right">
