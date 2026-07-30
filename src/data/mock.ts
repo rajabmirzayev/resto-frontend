@@ -27,11 +27,31 @@ export const initialData: AppState = {
     { id: 'r3', name: 'Ofisant', permissions: ['dashboard.view', 'tables.view', 'tables.status', 'orders.view', 'orders.manage', 'kitchen.view'], isSystem: false },
     { id: 'r4', name: 'Aşpaz', permissions: ['kitchen.view', 'kitchen.manage', 'orders.view'], isSystem: false },
   ],
+  organizations: [
+    {
+      id: 'org1',
+      name: 'Nərimanov Restoranı',
+      slug: 'nerimanov-restoran',
+      adminName: 'Orxan Əliyev',
+      adminEmail: 'orxan@nerimanov.az',
+      createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    },
+    {
+      id: 'org2',
+      name: 'Bakı Baltası',
+      slug: 'baki-baltasi',
+      adminName: 'Tural Həsənov',
+      adminEmail: 'tural@bakibalta.az',
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    },
+  ],
   users: [
     { id: 'u1', name: 'Əli Məmmədov', role: 'admin', roleId: 'r1', username: 'admin', password: hashPassword('admin123'), avatar: '' },
     { id: 'u2', name: 'Leyla Hüseynova', role: 'waiter', roleId: 'r3', username: 'waiter1', password: hashPassword('waiter123'), avatar: '' },
     { id: 'u3', name: 'Kamil Əliyev', role: 'waiter', roleId: 'r3', username: 'waiter2', password: hashPassword('waiter123'), avatar: '' },
     { id: 'u4', name: 'Rəşad Nəsirov', role: 'chef', roleId: 'r4', username: 'chef1', password: hashPassword('chef123'), avatar: '' },
+    { id: 'u5', name: 'Orxan Əliyev', role: 'org_admin', roleId: 'r1', username: 'orxan@nerimanov.az', email: 'orxan@nerimanov.az', password: hashPassword('orxan123'), orgId: 'org1', avatar: '' },
+    { id: 'u6', name: 'Tural Həsənov', role: 'org_admin', roleId: 'r1', username: 'tural@bakibalta.az', email: 'tural@bakibalta.az', password: hashPassword('tural123'), orgId: 'org2', avatar: '' },
   ],
   menuCategories: [
     { id: 'c1', name: 'Şorbalar', icon: 'soup' },

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User } from '../types';
+import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, Organization, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User } from '../types';
 import { initialData } from '../data/mock';
 import { hashPassword, verifyPassword } from '../lib/validation';
 
@@ -50,6 +50,8 @@ interface StoreActions {
   cancelOrder: (orderId: string) => void;
   completePayment: (orderId: string) => void;
   requestPayment: (orderId: string, method: PaymentMethod) => void;
+  createOrganization: (name: string, adminName: string, adminEmail: string, adminPassword: string) => Organization;
+  getOrgById: (id: string) => Organization | undefined;
   setOrderMode: (mode: OrderMode) => void;
   setCustomerPhotoRequired: (required: boolean) => void;
   setPaymentTiming: (timing: PaymentTiming) => void;
@@ -70,7 +72,7 @@ export const useStore = create<Store>()(
 
       login: (username: string, password: string) => {
         const { users } = get();
-        const user = users.find((u) => u.username === username && (verifyPassword(password, u.password) || u.password === password));
+        const user = users.find((u) => (u.username === username || u.email === username) && (verifyPassword(password, u.password) || u.password === password));
         if (user) {
           const needsRehash = user.password !== hashPassword(password);
           if (needsRehash) {
@@ -480,6 +482,38 @@ export const useStore = create<Store>()(
         set({ paymentTiming: timing });
       },
 
+      createOrganization: (name, adminName, adminEmail, adminPassword) => {
+        const id = uuidv4();
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + id.slice(0, 8);
+        const org: Organization = { id, name, slug, adminName, adminEmail, createdAt: new Date().toISOString() };
+        const orgRole: Role = {
+          id: uuidv4(),
+          name: `${name} Admin`,
+          permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'tables.view', 'tables.manage', 'tables.status', 'orders.view', 'orders.manage', 'orders.cancel', 'kitchen.view'],
+          isSystem: false,
+        };
+        const orgUser: User = {
+          id: uuidv4(),
+          name: adminName,
+          role: 'org_admin',
+          roleId: orgRole.id,
+          username: adminEmail,
+          email: adminEmail,
+          password: hashPassword(adminPassword),
+          orgId: id,
+        };
+        set((state) => ({
+          organizations: [...(state.organizations || []), org],
+          roles: [...state.roles, orgRole],
+          users: [...state.users, orgUser],
+        }));
+        return org;
+      },
+
+      getOrgById: (id) => {
+        return get().organizations.find((o) => o.id === id);
+      },
+
       resetData: () => {
         set({ ...initialData, currentUser: null });
       },
@@ -498,6 +532,9 @@ export const useStore = create<Store>()(
         paymentTiming: state.paymentTiming,
         cart: state.cart,
         currentOrderId: state.currentOrderId,
+        users: state.users,
+        organizations: state.organizations,
+        roles: state.roles,
       }),
     }
   )

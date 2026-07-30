@@ -19,6 +19,9 @@ export default function LoginPage() {
     if (user) {
       switch (user.role) {
         case 'admin':
+          navigate('/super-admin');
+          break;
+        case 'org_admin':
           navigate('/admin');
           break;
         case 'waiter':

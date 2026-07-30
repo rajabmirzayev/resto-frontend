@@ -22,9 +22,15 @@ const en: Record<string, string> = {
   'common.no_data': 'No data',
   'common.select_placeholder': 'Select...',
   'common.irreversible_warning': 'This action cannot be undone.',
+  'common.copy': 'Copy',
+  'common.download': 'Download',
+  'common.open': 'Open',
+  'common.qr_code': 'QR Code',
+  'common.download_qr': 'Download QR',
 
   // Roles
   'role.admin': 'Admin',
+  'role.org_admin': 'Restaurant Admin',
   'role.waiter': 'Waiter',
   'role.chef': 'Chef',
   'role.customer': 'Customer',
@@ -102,6 +108,7 @@ const en: Record<string, string> = {
   'nav.reports': 'Reports',
   'nav.staff': 'Staff',
   'nav.roles': 'Roles',
+  'nav.organizations': 'Organizations',
   'nav.settings': 'Settings',
   'sidebar.admin_panel': 'Admin Panel',
 
@@ -125,6 +132,27 @@ const en: Record<string, string> = {
   'error.file_too_large': 'File is too large. Maximum size is 2MB.',
   'error.file_type_not_supported': 'File type not supported. Please upload an image.',
   'error.file_upload_failed': 'File upload failed. Please try again.',
+
+  // Organizations
+  'organizations.title': 'Organizations',
+  'organizations.subtitle': 'Restaurant management',
+  'organizations.new_org': 'New Organization',
+  'organizations.org_name': 'Organization name',
+  'organizations.org_name_placeholder': 'e.g. Narimanov Restaurant',
+  'organizations.admin_name': 'Admin name',
+  'organizations.admin_name_placeholder': 'Full Name',
+  'organizations.admin_email': 'Admin email',
+  'organizations.admin_email_placeholder': 'email@example.com',
+  'organizations.admin_password': 'Admin password',
+  'organizations.create': 'Create Organization',
+  'organizations.created': 'Organization created successfully',
+  'organizations.url': 'Menu URL',
+  'organizations.copy_url': 'Copy',
+  'organizations.copied': 'Copied!',
+  'organizations.qr_code': 'QR Code',
+  'organizations.download_qr': 'Download',
+  'organizations.no_orgs': 'No organizations yet',
+  'organizations.menu_link': 'Menu link',
 
   // Dashboard
   'dashboard.welcome_overview': 'Welcome, overview',

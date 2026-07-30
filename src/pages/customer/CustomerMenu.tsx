@@ -12,21 +12,28 @@ export default function CustomerMenu() {
   const { t } = useTranslation();
   const { menuItems, menuCategories, tables, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, createCustomerOrder, requestPayment, orderMode, customerPhotoRequired, paymentTiming } = useStore();
   const navigate = useNavigate();
-  const { tableId: urlTableId } = useParams();
+  const params = useParams();
   const [searchParams] = useSearchParams();
   const [showCamera, setShowCamera] = useState(false);
 
   const { theme: customerTheme } = useCustomerTheme();
 
+  const orgId = params.orgId || searchParams.get('org');
+  const urlTableId = params.tableId || undefined;
+
   const canOrder = orderMode === 'customer' || orderMode === 'customer-waiter-confirm';
   const needsPhoto = canOrder && customerPhotoRequired;
 
+  const orgMenuItems = orgId ? menuItems.filter((m) => !m.orgId || m.orgId === orgId) : menuItems;
+  const orgCategories = orgId ? menuCategories.filter((c) => !c.orgId || c.orgId === orgId) : menuCategories;
+  const orgTables = orgId ? tables.filter((t) => !t.orgId || t.orgId === orgId) : tables;
+
   const tableParam = urlTableId || searchParams.get('t');
   const initialTable = tableParam
-    ? (tables.find((t) => t.id === tableParam)?.id || tables.find((t) => t.number === Number(tableParam))?.id || '')
+    ? (orgTables.find((t) => t.id === tableParam)?.id || orgTables.find((t) => t.number === Number(tableParam))?.id || '')
     : '';
   const [selectedTableId, setSelectedTableId] = useState<string>(initialTable);
-  const [activeCategory, setActiveCategory] = useState<string>(menuCategories[0]?.id || '');
+  const [activeCategory, setActiveCategory] = useState<string>(orgCategories[0]?.id || '');
   const [showCart, setShowCart] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderError, setOrderError] = useState('');
@@ -42,11 +49,11 @@ export default function CustomerMenu() {
   const showOrderModalRef = useRef(showOrderModal);
   const showCartRef = useRef(showCart);
 
-  const availableTables = tables.filter((t) => t.status === 'available');
+  const availableTables = orgTables.filter((t) => t.status === 'available');
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleAddToCart = (item: (typeof menuItems)[0]) => {
+  const handleAddToCart = (item: (typeof orgMenuItems)[0]) => {
     addToCart({
       menuItemId: item.id,
       menuItemName: item.name,
@@ -139,7 +146,7 @@ export default function CustomerMenu() {
 
     categoryRefs.current.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [menuCategories]);
+  }, [orgCategories]);
 
   // Keep refs in sync with state (no dependency array - runs on every render)
   useEffect(() => {
@@ -168,7 +175,7 @@ export default function CustomerMenu() {
           <div className="flex items-center gap-2">
             {selectedTableId && (
               <span className="text-xs bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full font-medium">
-                {t('table.number_prefix', { number: tables.find((t) => t.id === selectedTableId)?.number || '?' })}
+                {t('table.number_prefix', { number: orgTables.find((t) => t.id === selectedTableId)?.number || '?' })}
               </span>
             )}
             {canOrder && (
@@ -192,7 +199,7 @@ export default function CustomerMenu() {
         <div className="bg-white dark:bg-surface border-b border-border px-4 py-4">
           <p className="text-sm text-text-secondary mb-2 font-medium">{t('menu.please_select_your_table')}</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {tables.map((table) => {
+            {orgTables.map((table) => {
               const isSelected = selectedTableId === table.id;
               const isOccupied = table.status !== 'available';
               return (
@@ -283,8 +290,8 @@ export default function CustomerMenu() {
         className="flex gap-2 px-4 py-3 overflow-x-auto bg-white dark:bg-surface border-b border-border sticky top-[57px] z-20 scrollbar-none"
         style={{ scrollbarWidth: 'none' }}
       >
-        {menuCategories.map((cat) => {
-          const itemCount = menuItems.filter((m) => m.category === cat.id && m.isAvailable).length;
+        {orgCategories.map((cat) => {
+          const itemCount = orgMenuItems.filter((m) => m.category === cat.id && m.isAvailable).length;
           return (
             <button
               key={cat.id}
@@ -312,8 +319,8 @@ export default function CustomerMenu() {
       )}
 
       <div className="px-4 py-4 space-y-8">
-        {menuCategories.map((cat) => {
-          const categoryItems = menuItems.filter((m) => m.category === cat.id && m.isAvailable);
+        {orgCategories.map((cat) => {
+          const categoryItems = orgMenuItems.filter((m) => m.category === cat.id && m.isAvailable);
           if (categoryItems.length === 0) return null;
           return (
             <div

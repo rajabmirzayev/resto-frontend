@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'waiter' | 'chef' | 'customer';
+export type UserRole = 'admin' | 'org_admin' | 'waiter' | 'chef' | 'customer';
 
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning';
 
@@ -114,6 +114,15 @@ export interface Role {
   isSystem: boolean;
 }
 
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  adminName: string;
+  adminEmail: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -121,6 +130,8 @@ export interface User {
   roleId: string;
   username: string;
   password: string;
+  email?: string;
+  orgId?: string;
   avatar?: string;
 }
 
@@ -133,12 +144,14 @@ export interface MenuItem {
   image?: string;
   isAvailable: boolean;
   preparationTime: number;
+  orgId?: string;
 }
 
 export interface MenuCategory {
   id: string;
   name: string;
   icon: string;
+  orgId?: string;
 }
 
 export interface TableReservation {
@@ -192,6 +205,7 @@ export interface Order {
 export interface AppState {
   users: User[];
   roles: Role[];
+  organizations: Organization[];
   menuItems: MenuItem[];
   menuCategories: MenuCategory[];
   tables: Table[];

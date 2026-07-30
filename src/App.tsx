@@ -14,6 +14,7 @@ import AdminReports from './pages/admin/AdminReports';
 import StaffManagement from './pages/admin/StaffManagement';
 import RoleManagement from './pages/admin/RoleManagement';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminOrganizations from './pages/admin/Organizations';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
 import KitchenDashboard from './pages/kitchen/KitchenDashboard';
 import CustomerMenu from './pages/customer/CustomerMenu';
@@ -49,7 +50,7 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['admin', 'org_admin']}>
                 <AppLayout />
               </ProtectedRoute>
             }
@@ -83,8 +84,19 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/super-admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminOrganizations />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/menu" element={<CustomerMenu />} />
           <Route path="/menu/:tableId" element={<CustomerMenu />} />
+          <Route path="/org/:orgId/menu" element={<CustomerMenu />} />
+          <Route path="/org/:orgId/menu/:tableId" element={<CustomerMenu />} />
           <Route path="/order" element={<CustomerOrder />} />
 
           <Route path="/" element={<Navigate to="/login" replace />} />

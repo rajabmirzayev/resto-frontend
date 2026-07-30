@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
 import { ORDER_MODES } from '../../types';
 import type { OrderMode } from '../../types';
-import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Palette } from 'lucide-react';
+import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Palette, Store, QrCode, Copy, Download, ExternalLink } from 'lucide-react';
 import { useTheme } from '../../store/useTheme';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
 import type { CustomerThemeId } from '../../types';
@@ -31,9 +32,36 @@ const modeDescKeys: Record<OrderMode, string> = {
 
 export default function AdminSettings() {
   const { t } = useTranslation();
-  const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming } = useStore();
+  const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming, currentUser, organizations } = useStore();
   const { theme, setTheme } = useTheme();
   const { theme: customerTheme, setTheme: setCustomerTheme } = useCustomerTheme();
+  const [showOrgQr, setShowOrgQr] = useState(false);
+  const [orgCopied, setOrgCopied] = useState(false);
+
+  const org = currentUser?.orgId ? organizations.find((o) => o.id === currentUser.orgId) : null;
+  const orgMenuUrl = org ? `${window.location.origin}/org/${org.id}/menu` : '';
+
+  const copyOrgUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(orgMenuUrl);
+      setOrgCopied(true);
+      setTimeout(() => setOrgCopied(false), 2000);
+    } catch {}
+  };
+
+  const downloadOrgQr = async () => {
+    if (!org) return;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(orgMenuUrl)}`;
+    try {
+      const res = await fetch(qrUrl);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${org.name.replace(/\s+/g, '_')}_menu_qr.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {}
+  };
 
   const customerThemeColors: Record<CustomerThemeId, string[]> = {
     classic: ['#0ea5e9', '#0284c7', '#0369a1'],
@@ -51,6 +79,74 @@ export default function AdminSettings() {
       <Header title={t('settings.title')} subtitle={t('settings.subtitle')} showUser />
 
       <div className="p-6 max-w-4xl">
+
+        {org && (
+          <div className="mb-8 bg-white dark:bg-surface rounded-2xl border border-border p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
+                <Store className="w-6 h-6 text-primary-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-text-primary">{org.name}</h2>
+                <p className="text-sm text-text-secondary mt-1 break-all">{orgMenuUrl}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={copyOrgUrl}
+                  className="w-10 h-10 rounded-xl bg-surface-secondary hover:bg-surface-tertiary transition-colors flex items-center justify-center relative"
+                  title={t('common.copy')}
+                >
+                  {orgCopied ? <Check className="w-5 h-5 text-success-500" /> : <Copy className="w-5 h-5 text-text-muted" />}
+                </button>
+                <button
+                  onClick={downloadOrgQr}
+                  className="w-10 h-10 rounded-xl bg-surface-secondary hover:bg-surface-tertiary transition-colors flex items-center justify-center"
+                  title={t('common.download')}
+                >
+                  <Download className="w-5 h-5 text-text-muted" />
+                </button>
+                <a
+                  href={orgMenuUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl bg-surface-secondary hover:bg-surface-tertiary transition-colors flex items-center justify-center"
+                  title={t('common.open')}
+                >
+                  <ExternalLink className="w-5 h-5 text-text-muted" />
+                </a>
+                <button
+                  onClick={() => setShowOrgQr(!showOrgQr)}
+                  className={`w-10 h-10 rounded-xl transition-colors flex items-center justify-center ${
+                    showOrgQr ? 'bg-primary-100 text-primary-600' : 'bg-surface-secondary hover:bg-surface-tertiary text-text-muted'
+                  }`}
+                  title={t('common.qr_code')}
+                >
+                  <QrCode className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {showOrgQr && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex flex-col items-center gap-3">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(orgMenuUrl)}`}
+                    alt={`${org.name} QR code`}
+                    className="w-40 h-40 rounded-xl border border-border"
+                  />
+                  <button
+                    onClick={downloadOrgQr}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    {t('common.download_qr')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-lg font-bold text-text-primary mb-1">{t('settings.order_mode')}</h2>
           <p className="text-sm text-text-secondary">{t('settings.order_mode_description')}</p>

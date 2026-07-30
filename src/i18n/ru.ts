@@ -22,9 +22,15 @@ const ru: Record<string, string> = {
   'common.no_data': 'Нет данных',
   'common.select_placeholder': 'Выбрать...',
   'common.irreversible_warning': 'Это действие нельзя отменить.',
+  'common.copy': 'Копировать',
+  'common.download': 'Скачать',
+  'common.open': 'Открыть',
+  'common.qr_code': 'QR-код',
+  'common.download_qr': 'Скачать QR-код',
 
   // Roles
   'role.admin': 'Админ',
+  'role.org_admin': 'Администратор ресторана',
   'role.waiter': 'Официант',
   'role.chef': 'Повар',
   'role.customer': 'Клиент',
@@ -102,6 +108,7 @@ const ru: Record<string, string> = {
   'nav.reports': 'Отчёты',
   'nav.staff': 'Персонал',
   'nav.roles': 'Роли',
+  'nav.organizations': 'Организации',
   'nav.settings': 'Настройки',
   'sidebar.admin_panel': 'Панель админа',
 
@@ -125,6 +132,27 @@ const ru: Record<string, string> = {
   'error.file_too_large': 'Файл слишком большой. Максимальный размер 2MB.',
   'error.file_type_not_supported': 'Тип файла не поддерживается. Пожалуйста, загрузите изображение.',
   'error.file_upload_failed': 'Ошибка загрузки файла. Попробуйте снова.',
+
+  // Organizations
+  'organizations.title': 'Организации',
+  'organizations.subtitle': 'Управление ресторанами',
+  'organizations.new_org': 'Новая Организация',
+  'organizations.org_name': 'Название организации',
+  'organizations.org_name_placeholder': 'Напр: Ресторан Нариманов',
+  'organizations.admin_name': 'Имя администратора',
+  'organizations.admin_name_placeholder': 'Имя Фамилия',
+  'organizations.admin_email': 'Email администратора',
+  'organizations.admin_email_placeholder': 'email@example.com',
+  'organizations.admin_password': 'Пароль администратора',
+  'organizations.create': 'Создать Организацию',
+  'organizations.created': 'Организация успешно создана',
+  'organizations.url': 'URL меню',
+  'organizations.copy_url': 'Копировать',
+  'organizations.copied': 'Скопировано!',
+  'organizations.qr_code': 'QR Код',
+  'organizations.download_qr': 'Скачать',
+  'organizations.no_orgs': 'Организаций пока нет',
+  'organizations.menu_link': 'Ссылка на меню',
 
   // Dashboard
   'dashboard.welcome_overview': 'Добро пожаловать, обзор',

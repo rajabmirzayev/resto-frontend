@@ -22,9 +22,15 @@ const az: Record<string, string> = {
   'common.no_data': 'Məlumat yoxdur',
   'common.select_placeholder': 'Seçin...',
   'common.irreversible_warning': 'Bu əməliyyat geri alına bilməz.',
+  'common.copy': 'Kopyala',
+  'common.download': 'Yüklə',
+  'common.open': 'Aç',
+  'common.qr_code': 'QR Kod',
+  'common.download_qr': 'QR Kodunu Yüklə',
 
   // Roles
   'role.admin': 'Admin',
+  'role.org_admin': 'Restoran Administratoru',
   'role.waiter': 'Ofisant',
   'role.chef': 'Aşpaz',
   'role.customer': 'Müştəri',
@@ -102,6 +108,7 @@ const az: Record<string, string> = {
   'nav.reports': 'Hesabatlar',
   'nav.staff': 'Personal',
   'nav.roles': 'Rollar',
+  'nav.organizations': 'Təşkilatlar',
   'nav.settings': 'Tənzimləmələr',
   'sidebar.admin_panel': 'Admin Panel',
 
@@ -125,6 +132,27 @@ const az: Record<string, string> = {
   'error.file_too_large': 'Fayl çox böyükdür. Maksimum ölçü 2MB.',
   'error.file_type_not_supported': 'Fayl tipi dəstəklənmir. Zəhmət olmasa şəkil yükləyin.',
   'error.file_upload_failed': 'Fayl yüklənərkən xəta baş verdi. Yenidən cəhd edin.',
+
+  // Organizations
+  'organizations.title': 'Təşkilatlar',
+  'organizations.subtitle': 'Restoranların idarəsi',
+  'organizations.new_org': 'Yeni Təşkilat',
+  'organizations.org_name': 'Təşkilat adı',
+  'organizations.org_name_placeholder': 'Məs: Nərimanov Restoranı',
+  'organizations.admin_name': 'Admin adı',
+  'organizations.admin_name_placeholder': 'Ad Soyad',
+  'organizations.admin_email': 'Admin email',
+  'organizations.admin_email_placeholder': 'email@example.com',
+  'organizations.admin_password': 'Admin şifrə',
+  'organizations.create': 'Təşkilat Yarat',
+  'organizations.created': 'Təşkilat uğurla yaradıldı',
+  'organizations.url': 'Menyu URL-i',
+  'organizations.copy_url': 'Köçür',
+  'organizations.copied': 'Köçürüldü!',
+  'organizations.qr_code': 'QR Kod',
+  'organizations.download_qr': 'Yüklə',
+  'organizations.no_orgs': 'Hələ təşkilat yaradılmayıb',
+  'organizations.menu_link': 'Menyu linki',
 
   // Dashboard
   'dashboard.welcome_overview': 'Xoş gəlmisiniz, ümumi baxış',
