@@ -98,7 +98,10 @@ const ru: Record<string, string> = {
   'login.username_placeholder': 'имя пользователя',
   'login.password': 'Пароль',
   'login.submit': 'Войти',
+  'login.loading': 'Вход...',
   'error.invalid_credentials': 'Неверное имя пользователя или пароль',
+  'error.network': 'Не удалось подключиться к серверу. Пожалуйста, попробуйте еще раз.',
+  'error.auth_unavailable': 'Сервис аутентификации временно недоступен. Пожалуйста, попробуйте позже.',
 
   // Sidebar / Nav
   'nav.dashboard': 'Панель',

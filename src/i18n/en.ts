@@ -98,7 +98,10 @@ const en: Record<string, string> = {
   'login.username_placeholder': 'username',
   'login.password': 'Password',
   'login.submit': 'Sign In',
+  'login.loading': 'Signing in...',
   'error.invalid_credentials': 'Invalid username or password',
+  'error.network': 'Unable to connect to the server. Please try again.',
+  'error.auth_unavailable': 'Authentication service is temporarily unavailable. Please try again later.',
 
   // Sidebar / Nav
   'nav.dashboard': 'Dashboard',

@@ -1,13 +1,40 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, Organization, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User } from '../types';
+import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, Organization, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User, UserRole } from '../types';
 import { initialData } from '../data/mock';
-import { hashPassword, verifyPassword } from '../lib/validation';
+import { hashPassword } from '../lib/validation';
+import { authApi } from '../api/auth';
+
+interface AuthState {
+  accessToken: string | null;
+  refreshToken: string | null;
+  tokenExpiresAt: number | null;
+  userRoles: string[];
+}
+
+function mapRolesToUserRole(roles: string[]): UserRole {
+  if (roles.includes('SUPER_ADMIN')) return 'admin';
+  if (roles.includes('waiter')) return 'waiter';
+  if (roles.includes('chef')) return 'chef';
+  return 'org_admin';
+}
+
+function buildUserFromLogin(username: string, roles: string[]): User {
+  return {
+    id: username,
+    name: username,
+    role: mapRolesToUserRole(roles),
+    roleId: '',
+    username,
+    password: '',
+    email: username,
+  };
+}
 
 interface StoreActions {
-  login: (username: string, password: string) => User | null;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<User | null>;
+  logout: () => Promise<void>;
 
   addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
   updateMenuItem: (id: string, item: Partial<MenuItem>) => void;
@@ -63,33 +90,40 @@ interface StoreActions {
   resetData: () => void;
 }
 
-type Store = AppState & StoreActions;
+type Store = AppState & StoreActions & AuthState;
 
 export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       ...initialData,
+      accessToken: null,
+      refreshToken: null,
+      tokenExpiresAt: null,
+      userRoles: [],
 
-      login: (username: string, password: string) => {
-        const { users } = get();
-        const user = users.find((u) => (u.username === username || u.email === username) && (verifyPassword(password, u.password) || u.password === password));
-        if (user) {
-          const needsRehash = user.password !== hashPassword(password);
-          if (needsRehash) {
-            set((state) => ({
-              users: state.users.map((u) =>
-                u.id === user.id ? { ...u, password: hashPassword(password) } : u
-              ),
-            }));
-          }
-          set({ currentUser: user });
-          return user;
-        }
-        return null;
+      login: async (username: string, password: string) => {
+        const response = await authApi.login({ username, password });
+        const user = buildUserFromLogin(username, response.roles);
+        set({
+          currentUser: user,
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+          tokenExpiresAt: Date.now() + response.expiresIn * 1000,
+          userRoles: response.roles,
+        });
+        return user;
       },
 
-      logout: () => {
-        set({ currentUser: null, cart: [] });
+      logout: async () => {
+        const { refreshToken } = get();
+        if (refreshToken) {
+          try {
+            await authApi.logout({ refreshToken });
+          } catch {
+            // best-effort server-side logout
+          }
+        }
+        set({ currentUser: null, cart: [], accessToken: null, refreshToken: null, tokenExpiresAt: null, userRoles: [] });
       },
 
       addMenuItem: (item) => {
@@ -215,8 +249,10 @@ export const useStore = create<Store>()(
       },
 
       getUserPermissions: (userId) => {
-        const { users, roles } = get();
-        const user = users.find((u) => u.id === userId);
+        const { users, roles, currentUser } = get();
+        const user =
+          users.find((u) => u.id === userId) ??
+          (currentUser && currentUser.id === userId ? currentUser : undefined);
         if (!user) return [];
         if (user.roleId) {
           const role = roles.find((r) => r.id === user.roleId);
@@ -226,6 +262,9 @@ export const useStore = create<Store>()(
           const adminRole = roles.find((r) => r.isSystem);
           if (adminRole) return adminRole.permissions;
         }
+        const fallbackRoleId = user.role === 'waiter' ? 'r3' : user.role === 'chef' ? 'r4' : 'r1';
+        const fallbackRole = roles.find((r) => r.id === fallbackRoleId);
+        if (fallbackRole) return fallbackRole.permissions;
         return [];
       },
 
@@ -535,6 +574,11 @@ export const useStore = create<Store>()(
         users: state.users,
         organizations: state.organizations,
         roles: state.roles,
+        currentUser: state.currentUser,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        tokenExpiresAt: state.tokenExpiresAt,
+        userRoles: state.userRoles,
       }),
     }
   )

@@ -48,8 +48,8 @@ export default function Header({ title, subtitle, showUser, showSidebarButton = 
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 

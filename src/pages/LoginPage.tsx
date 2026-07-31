@@ -2,39 +2,57 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useTranslation } from '../i18n';
-import { LogIn, User, Lock } from 'lucide-react';
+import { ApiError } from '../api/client';
+import { LogIn, User, Lock, Loader2 } from 'lucide-react';
+
+function getRedirectPath(role: string): string {
+  switch (role) {
+    case 'admin':
+      return '/super-admin';
+    case 'waiter':
+      return '/waiter';
+    case 'chef':
+      return '/kitchen';
+    default:
+      return '/admin';
+  }
+}
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const login = useStore((s) => s.login);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setError('');
-    const user = login(username, password);
-    if (user) {
-      switch (user.role) {
-        case 'admin':
-          navigate('/super-admin');
-          break;
-        case 'org_admin':
-          navigate('/admin');
-          break;
-        case 'waiter':
-          navigate('/waiter');
-          break;
-        case 'chef':
-          navigate('/kitchen');
-          break;
-        default:
-          navigate('/');
+    setIsLoading(true);
+    try {
+      const user = await login(username, password);
+      if (!user) {
+        setError(t('error.unexpected'));
+        return;
       }
-    } else {
-      setError(t('error.invalid_credentials'));
+      navigate(getRedirectPath(user.role), { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401 || err.key === 'AUTH_001') {
+          setError(t('error.invalid_credentials'));
+        } else if (err.status === 502 || err.key === 'AUTH_005') {
+          setError(t('error.auth_unavailable'));
+        } else {
+          setError(err.detail || t('error.unexpected'));
+        }
+      } else {
+        setError(t('error.network'));
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -67,7 +85,9 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-text-primary"
+                  autoComplete="username"
+                  disabled={isLoading}
+                  className="w-full pl-10 pr-4 py-2.5 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-text-primary disabled:opacity-60"
                   placeholder={t('login.username_placeholder')}
                   required
                 />
@@ -82,8 +102,10 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-text-primary"
-                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                  className="w-full pl-10 pr-4 py-2.5 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-text-primary disabled:opacity-60"
+                  placeholder={t('login.password_placeholder')}
                   required
                 />
               </div>
@@ -91,10 +113,11 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-200 hover:shadow-primary-300"
+              disabled={isLoading}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-200 hover:shadow-primary-300 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <LogIn className="w-5 h-5" />
-              {t('login.submit')}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
+              {isLoading ? t('login.loading') : t('login.submit')}
             </button>
           </form>
         </div>

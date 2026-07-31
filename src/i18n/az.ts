@@ -98,7 +98,10 @@ const az: Record<string, string> = {
   'login.username_placeholder': 'istifadəçi adı',
   'login.password': 'Şifrə',
   'login.submit': 'Daxil ol',
+  'login.loading': 'Giriş edilir...',
   'error.invalid_credentials': 'İstifadəçi adı və ya şifrə yanlışdır',
+  'error.network': 'Serverə qoşulmaq mümkün olmadı. Zəhmət olmasa yenidən cəhd edin.',
+  'error.auth_unavailable': 'Server müvəqqəti mövcud deyil. Zəhmət olmasa biraz sonra yenidən cəhd edin.',
 
   // Sidebar / Nav
   'nav.dashboard': 'Dashboard',
