@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { X } from 'lucide-react';
-import type { Table, TableStatus } from '../../types';
+import type { RestaurantTableDto, TableStatusEnum, UpdateReservationRequest } from '../../api/types';
 
-const getTableStatusLabels = (t: (key: string) => string): Record<TableStatus, { label: string; color: string; badge: string; bg: string }> => ({
+const LOCAL_KEY: Record<TableStatusEnum, 'available' | 'occupied' | 'reserved' | 'cleaning'> = {
+  AVAILABLE: 'available',
+  OCCUPIED: 'occupied',
+  RESERVED: 'reserved',
+  CLEANING: 'cleaning',
+};
+
+const STATUS_ORDER: TableStatusEnum[] = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'CLEANING'];
+
+const getTableStatusLabels = (t: (key: string) => string): Record<'available' | 'occupied' | 'reserved' | 'cleaning', { label: string; color: string; badge: string; bg: string }> => ({
   available: { label: t('table.status.available'), color: 'bg-success-500', badge: 'bg-success-500 text-white', bg: 'border-success-300 bg-success-50' },
   occupied: { label: t('table.status.occupied'), color: 'bg-danger-500', badge: 'bg-danger-500 text-white', bg: 'border-danger-300 bg-danger-50' },
   reserved: { label: t('table.status.reserved'), color: 'bg-warning-500', badge: 'bg-warning-500 text-white', bg: 'border-warning-300 bg-warning-50' },
@@ -11,13 +20,14 @@ const getTableStatusLabels = (t: (key: string) => string): Record<TableStatus, {
 });
 
 interface Props {
-  table: Table;
-  onSave: (tableId: string, updates: Partial<Table>) => void;
-  onUpdateStatus: (tableId: string, status: TableStatus) => void;
+  table: RestaurantTableDto;
+  onUpdateStatus: (id: string, status: TableStatusEnum) => void;
+  onUpdateReservation: (id: string, reservation: UpdateReservationRequest) => void;
+  onRemoveReservation: (id: string) => void;
   onClose: () => void;
 }
 
-export default function TableStatusModal({ table, onSave, onUpdateStatus, onClose }: Props) {
+export default function TableStatusModal({ table, onUpdateStatus, onUpdateReservation, onRemoveReservation, onClose }: Props) {
   const { t } = useTranslation();
   const [showReservationForm, setShowReservationForm] = useState(false);
   const [reservationForm, setReservationForm] = useState({
@@ -37,27 +47,24 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
 
   const statusConfig = getTableStatusLabels(t);
 
-  const handleStatusChange = (status: TableStatus) => {
-    if (status === 'reserved') {
+  const handleStatusChange = (status: TableStatusEnum) => {
+    if (status === 'RESERVED') {
       setShowReservationForm(true);
     } else {
-      onSave(table.id, { status, reservation: undefined });
       onUpdateStatus(table.id, status);
       onClose();
     }
   };
 
   const handleReservationSave = () => {
-    onSave(table.id, {
-      status: 'reserved',
-      reservation: {
-        guestName: reservationForm.guestName.trim(),
-        phone: reservationForm.phone.trim(),
-        time: reservationForm.time,
-        guestCount: reservationForm.guestCount || 1,
-        notes: reservationForm.notes.trim() || undefined,
-      },
+    onUpdateReservation(table.id, {
+      guestName: reservationForm.guestName.trim(),
+      phone: reservationForm.phone.trim(),
+      time: reservationForm.time,
+      guestCount: reservationForm.guestCount || 1,
+      notes: reservationForm.notes.trim() || undefined,
     });
+    onUpdateStatus(table.id, 'RESERVED');
     onClose();
   };
 
@@ -65,16 +72,16 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="text-lg font-bold text-text-primary">{t('table.status_modal_title', { number: table.number })}</h3>
+          <h3 className="text-lg font-bold text-text-primary">{t('table.status_modal_title', { number: table.tableNumber })}</h3>
           <button onClick={onClose} className="p-1 hover:bg-surface-secondary rounded-lg">
             <X className="w-5 h-5 text-text-muted" />
           </button>
         </div>
 
-        {!showReservationForm && table.status !== 'reserved' && (
+        {!showReservationForm && table.status !== 'RESERVED' && (
           <div className="px-6 py-4 space-y-2">
-            {(['available', 'occupied', 'reserved', 'cleaning'] as const).map((s) => {
-              const cfg = statusConfig[s];
+            {STATUS_ORDER.map((s) => {
+              const cfg = statusConfig[LOCAL_KEY[s]];
               const active = table.status === s;
               return (
                 <button
@@ -88,7 +95,7 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
                   <div className="text-left flex-1">
                     <p className="text-sm font-semibold text-text-primary">{cfg.label}</p>
                     <p className="text-xs text-text-muted">
-                      {t(`table.status.${s}`)}
+                      {t(`table.status.${LOCAL_KEY[s]}`)}
                     </p>
                   </div>
                   {active && (
@@ -100,7 +107,7 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
           </div>
         )}
 
-        {showReservationForm && table.status !== 'reserved' && (
+        {showReservationForm && table.status !== 'RESERVED' && (
           <div className="px-6 py-4 space-y-3">
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t('table.reservation_info')}</p>
             <div>
@@ -166,7 +173,7 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
           </div>
         )}
 
-        {table.status === 'reserved' && table.reservation && (
+        {table.status === 'RESERVED' && table.reservation && (
           <div className="px-6 py-4 space-y-3">
             <div className="bg-warning-50 border border-warning-200 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 mb-2">
@@ -181,7 +188,7 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => { onSave(table.id, { status: 'available', reservation: undefined }); onUpdateStatus(table.id, 'available'); onClose(); }}
+                onClick={() => { onRemoveReservation(table.id); onUpdateStatus(table.id, 'AVAILABLE'); onClose(); }}
                 className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 {t('common.delete')}
@@ -193,14 +200,14 @@ export default function TableStatusModal({ table, onSave, onUpdateStatus, onClos
           </div>
         )}
 
-        {table.status === 'reserved' && !table.reservation && (
+        {table.status === 'RESERVED' && !table.reservation && (
           <div className="px-6 py-4 space-y-3">
             <div className="bg-warning-50 border border-warning-200 rounded-xl p-4 text-center">
               <p className="text-sm text-text-muted">{t('table.no_active_order')}</p>
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => { onSave(table.id, { status: 'available' }); onUpdateStatus(table.id, 'available'); onClose(); }}
+                onClick={() => { onUpdateStatus(table.id, 'AVAILABLE'); onClose(); }}
                 className="flex-1 px-4 py-2.5 bg-danger-500 hover:bg-danger-600 text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 {t('table.free_table')}
