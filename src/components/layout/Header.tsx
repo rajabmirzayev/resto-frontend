@@ -188,6 +188,27 @@ export default function Header({ title, subtitle, showUser, showSidebarButton = 
                       <p className="text-xs text-text-muted">@{currentUser.username}</p>
                     </div>
                   )}
+                  <div className="py-1.5 border-b border-border">
+                    <button
+                      onClick={toggleDark}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-text-secondary hover:bg-surface-secondary transition-colors"
+                    >
+                      {isDark ? (
+                        <Sun className="w-4 h-4 text-warning-500" />
+                      ) : (
+                        <Moon className="w-4 h-4" />
+                      )}
+                      <span className="font-medium">{isDark ? t('header.light_mode') : t('header.dark_mode')}</span>
+                    </button>
+                    <button
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-text-secondary hover:bg-surface-secondary transition-colors relative"
+                      aria-label={t('header.notifications')}
+                    >
+                      <Bell className="w-4 h-4" />
+                      <span className="font-medium">{t('header.notifications')}</span>
+                      <span className="absolute top-3 right-3 w-2 h-2 bg-danger-500 rounded-full" />
+                    </button>
+                  </div>
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-danger-600 hover:bg-danger-50 transition-colors"
