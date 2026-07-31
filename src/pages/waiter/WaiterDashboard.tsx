@@ -113,7 +113,7 @@ export default function WaiterDashboard() {
 
   return (
     <div>
-      <Header title={t('waiter.title')} subtitle={isConfirmMode ? t('waiter.confirm_mode') : undefined} showUser />
+      <Header title={t('waiter.title')} subtitle={isConfirmMode ? t('waiter.confirm_mode') : undefined} showUser showSidebarButton={false} />
 
       <div className="p-6">
         {(isConfirmMode || paymentRequests.length > 0) && (

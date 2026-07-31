@@ -38,7 +38,7 @@ export default function KitchenDashboard() {
 
   return (
     <div>
-      <Header title={t('kitchen.title')} subtitle={`${newOrders.length + preparingOrders.length} ${t('kitchen.active')}, ${readyOrders.length} ${t('kitchen.ready')}`} showUser />
+      <Header title={t('kitchen.title')} subtitle={`${newOrders.length + preparingOrders.length} ${t('kitchen.active')}, ${readyOrders.length} ${t('kitchen.ready')}`} showUser showSidebarButton={false} />
 
       <div className="p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

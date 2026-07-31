@@ -13,6 +13,7 @@ interface HeaderProps {
   title: string;
   subtitle?: string;
   showUser?: boolean;
+  showSidebarButton?: boolean;
 }
 
 const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
@@ -21,7 +22,7 @@ const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
   { code: 'ru', label: 'Русский', flag: ruFlag },
 ];
 
-export default function Header({ title, subtitle, showUser }: HeaderProps) {
+export default function Header({ title, subtitle, showUser, showSidebarButton = true }: HeaderProps) {
   const toggleSidebar = useSidebar((s) => s.toggle);
   const currentUser = useStore((s) => s.currentUser);
   const logout = useStore((s) => s.logout);
@@ -66,7 +67,7 @@ export default function Header({ title, subtitle, showUser }: HeaderProps) {
   return (
     <header className="bg-white dark:bg-surface border-b border-border px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center gap-3">
-        {!showUser && (
+        {showSidebarButton && (
           <button
             onClick={toggleSidebar}
             className="p-2 rounded-xl hover:bg-surface-secondary transition-colors lg:hidden"
