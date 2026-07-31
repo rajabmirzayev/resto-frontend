@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
-import type { MenuItem, MenuCategory } from '../../types';
-import { Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera, Loader2 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { localize } from '../../utils/localize';
 import { useToast } from '../../store/useToast';
+import { useMenuItems, useMenuCategories, useCreateMenuItem, useUpdateMenuItem, useDeleteMenuItem, useUploadItemImage, useCreateMenuCategory, useUpdateMenuCategory, useDeleteMenuCategory } from '../../api/hooks/useMenu';
+import { ApiError } from '../../api/client';
+import type { MenuItemDto, MenuCategoryDto, CreateMenuItemRequest } from '../../api/types';
 
 type ModalMode = 'add-item' | 'edit-item' | 'add-category' | 'edit-category' | null;
 
@@ -25,36 +27,60 @@ interface ItemForm {
 
 const emptyItemForm: ItemForm = { nameAz: '', nameEn: '', nameRu: '', descAz: '', descEn: '', descRu: '', price: 0, category: '', preparationTime: 15, isAvailable: true, image: '' };
 
+function fileFromDataUrl(dataUrl: string): Promise<File> {
+  return fetch(dataUrl)
+    .then((res) => res.blob())
+    .then((blob) => new File([blob], 'image.png', { type: blob.type }));
+}
+
 export default function AdminMenu() {
   const { t, locale } = useTranslation();
   const { addToast } = useToast();
-  const { menuItems, menuCategories, addMenuItem, updateMenuItem, deleteMenuItem, addMenuCategory, updateMenuCategory, deleteMenuCategory } = useStore();
+  const currentUser = useStore((s) => s.currentUser);
+  const orgId = currentUser?.orgId;
+
+  const itemsQuery = useMenuItems(orgId);
+  const categoriesQuery = useMenuCategories(orgId);
+  const createItem = useCreateMenuItem(orgId);
+  const updateItem = useUpdateMenuItem(orgId);
+  const deleteItem = useDeleteMenuItem(orgId);
+  const uploadImage = useUploadItemImage();
+  const createCategory = useCreateMenuCategory(orgId);
+  const updateCategory = useUpdateMenuCategory(orgId);
+  const deleteCategory = useDeleteMenuCategory(orgId);
+
+  const menuItems = itemsQuery.data ?? [];
+  const menuCategories = categoriesQuery.data ?? [];
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingItem, setEditingItem] = useState<MenuItemDto | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm>(emptyItemForm);
   const [catNameAz, setCatNameAz] = useState('');
   const [catNameEn, setCatNameEn] = useState('');
   const [catNameRu, setCatNameRu] = useState('');
   const [catIcon, setCatIcon] = useState('utensils');
-  const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<MenuCategoryDto | null>(null);
   const [deleteItemConfirm, setDeleteItemConfirm] = useState<string | null>(null);
-  const [deleteCatConfirm, setDeleteCatConfirm] = useState<MenuCategory | null>(null);
+  const [deleteCatConfirm, setDeleteCatConfirm] = useState<MenuCategoryDto | null>(null);
   const [deleteCatMoveTo, setDeleteCatMoveTo] = useState('');
+  const [formError, setFormError] = useState('');
 
   const filtered = selectedCategory === 'all'
     ? menuItems
-    : menuItems.filter((m) => m.category === selectedCategory);
+    : menuItems.filter((m) => m.categoryId === selectedCategory);
 
   const openAddItem = () => {
     setEditingItem(null);
     setItemForm({ ...emptyItemForm, category: selectedCategory === 'all' ? menuCategories[0]?.id || '' : selectedCategory });
+    setFormError('');
     setModalMode('add-item');
   };
 
-  const openEditItem = (item: MenuItem) => {
+  const openEditItem = (item: MenuItemDto) => {
     setEditingItem(item);
-    setItemForm({ nameAz: item.name.az, nameEn: item.name.en, nameRu: item.name.ru, descAz: item.description.az, descEn: item.description.en, descRu: item.description.ru, price: item.price, category: item.category, preparationTime: item.preparationTime, isAvailable: item.isAvailable, image: item.image || '' });
+    setItemForm({ nameAz: item.name.az, nameEn: item.name.en, nameRu: item.name.ru, descAz: item.description.az, descEn: item.description.en, descRu: item.description.ru, price: item.price, category: item.categoryId, preparationTime: item.preparationTime, isAvailable: item.isAvailable, image: item.imageUrl || '' });
+    setFormError('');
     setModalMode('edit-item');
   };
 
@@ -79,19 +105,39 @@ export default function AdminMenu() {
     reader.readAsDataURL(file);
   };
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (!itemForm.nameAz || !itemForm.category || itemForm.price <= 0) return;
+    setFormError('');
     const localizedName = { az: itemForm.nameAz, en: itemForm.nameEn || itemForm.nameAz, ru: itemForm.nameRu || itemForm.nameAz };
     const localizedDesc = { az: itemForm.descAz || itemForm.descEn || itemForm.descRu || '', en: itemForm.descEn || itemForm.descAz || '', ru: itemForm.descRu || itemForm.descAz || '' };
-    const payload = { name: localizedName, description: localizedDesc, price: itemForm.price, category: itemForm.category, preparationTime: itemForm.preparationTime, isAvailable: itemForm.isAvailable, image: itemForm.image };
-    if (modalMode === 'edit-item' && editingItem) {
-      updateMenuItem(editingItem.id, payload);
-    } else {
-      addMenuItem(payload);
+    const isNewImage = itemForm.image.startsWith('data:');
+    const payload = {
+      name: localizedName,
+      description: localizedDesc,
+      price: itemForm.price,
+      categoryId: itemForm.category,
+      preparationTime: itemForm.preparationTime,
+      isAvailable: itemForm.isAvailable,
+      imageUrl: itemForm.image && !isNewImage ? itemForm.image : undefined,
+    };
+    try {
+      if (modalMode === 'edit-item' && editingItem) {
+        const res = await updateItem.mutateAsync({ id: editingItem.id, payload });
+        if (isNewImage) {
+          await uploadImage.mutateAsync({ id: res.data.id, file: await fileFromDataUrl(itemForm.image) });
+        }
+      } else {
+        const res = await createItem.mutateAsync({ ...payload, orgId: orgId ?? '' } as CreateMenuItemRequest);
+        if (isNewImage) {
+          await uploadImage.mutateAsync({ id: res.data.id, file: await fileFromDataUrl(itemForm.image) });
+        }
+      }
+      setModalMode(null);
+      setEditingItem(null);
+      setItemForm(emptyItemForm);
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network'));
     }
-    setModalMode(null);
-    setEditingItem(null);
-    setItemForm(emptyItemForm);
   };
 
   const openAddCategory = () => {
@@ -100,25 +146,34 @@ export default function AdminMenu() {
     setCatNameEn('');
     setCatNameRu('');
     setCatIcon('utensils');
+    setFormError('');
     setModalMode('add-category');
   };
 
-  const openEditCategory = (cat: MenuCategory) => {
+  const openEditCategory = (cat: MenuCategoryDto) => {
     setEditingCategory(cat);
     setCatNameAz(cat.name.az);
     setCatNameEn(cat.name.en);
     setCatNameRu(cat.name.ru);
     setCatIcon(cat.icon);
+    setFormError('');
     setModalMode('edit-category');
   };
 
   const handleSaveCategory = () => {
     if (!catNameAz.trim()) return;
+    setFormError('');
     const localizedName = { az: catNameAz.trim(), en: catNameEn.trim() || catNameAz.trim(), ru: catNameRu.trim() || catNameAz.trim() };
     if (modalMode === 'edit-category' && editingCategory) {
-      updateMenuCategory(editingCategory.id, { name: localizedName, icon: catIcon });
+      updateCategory.mutate(
+        { id: editingCategory.id, payload: { name: localizedName, icon: catIcon } },
+        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+      );
     } else {
-      addMenuCategory({ name: localizedName, icon: catIcon });
+      createCategory.mutate(
+        { name: localizedName, icon: catIcon, sortOrder: menuCategories.length, orgId: orgId ?? '' },
+        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+      );
     }
     setModalMode(null);
     setEditingCategory(null);
@@ -128,36 +183,56 @@ export default function AdminMenu() {
     setCatIcon('utensils');
   };
 
-  const openDeleteCategory = (cat: MenuCategory) => {
-    const itemsInCat = menuItems.filter((m) => m.category === cat.id);
+  const openDeleteCategory = (cat: MenuCategoryDto) => {
+    const itemsInCat = menuItems.filter((m) => m.categoryId === cat.id);
     setDeleteCatConfirm(cat);
     setDeleteCatMoveTo(itemsInCat.length > 0 ? (menuCategories.find((c) => c.id !== cat.id)?.id || '') : '');
   };
 
   const handleDeleteCategory = () => {
     if (!deleteCatConfirm) return;
-    const itemsInCat = menuItems.filter((m) => m.category === deleteCatConfirm.id);
-    if (itemsInCat.length > 0 && deleteCatMoveTo) {
-      itemsInCat.forEach((item) => updateMenuItem(item.id, { category: deleteCatMoveTo }));
-    } else if (itemsInCat.length > 0) {
-      itemsInCat.forEach((item) => deleteMenuItem(item.id));
-    }
-    deleteMenuCategory(deleteCatConfirm.id);
+    deleteCategory.mutate({ id: deleteCatConfirm.id, payload: deleteCatMoveTo ? { moveItemsTo: deleteCatMoveTo } : undefined });
     if (selectedCategory === deleteCatConfirm.id) setSelectedCategory('all');
     setDeleteCatConfirm(null);
     setDeleteCatMoveTo('');
   };
 
   const handleDeleteItem = (id: string) => {
-    deleteMenuItem(id);
+    deleteItem.mutate(id);
     setDeleteItemConfirm(null);
   };
+
+  if ((itemsQuery.isLoading && !itemsQuery.data) || (categoriesQuery.isLoading && !categoriesQuery.data)) {
+    return (
+      <div>
+        <Header title={t('menu_management.title', { items: menuItems.length, categories: menuCategories.length })} showUser />
+        <div className="p-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-sm text-text-secondary">...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <Header title={t('menu_management.title', { items: menuItems.length, categories: menuCategories.length })} showUser />
 
       <div className="p-6">
+        {(itemsQuery.isError || categoriesQuery.isError) && (
+          <div className="bg-danger-50 border border-danger-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <p className="text-sm text-danger-700">{t('error.unexpected')}</p>
+            <button
+              onClick={() => { itemsQuery.refetch(); categoriesQuery.refetch(); }}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button onClick={openAddItem} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary-200">
             <Plus className="w-4 h-4" />
@@ -173,7 +248,7 @@ export default function AdminMenu() {
               {t('common.all')} ({menuItems.length})
             </button>
             {menuCategories.map((cat) => {
-              const count = menuItems.filter((m) => m.category === cat.id).length;
+              const count = menuItems.filter((m) => m.categoryId === cat.id).length;
               const isActive = selectedCategory === cat.id;
               return (
                 <div key={cat.id} className={`flex items-center gap-1 rounded-lg transition-colors group/cat ${isActive ? 'bg-primary-600' : 'bg-surface-secondary hover:bg-border'}`}>
@@ -217,13 +292,13 @@ export default function AdminMenu() {
               </thead>
               <tbody>
                 {filtered.map((item) => {
-                  const cat = menuCategories.find((c) => c.id === item.category);
+                  const cat = menuCategories.find((c) => c.id === item.categoryId);
                   return (
                     <tr key={item.id} className="border-b border-border last:border-0 hover:bg-surface-secondary/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {item.image ? (
-                            <img src={item.image} alt={localize(item.name, locale)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={localize(item.name, locale)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           ) : (
                             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center flex-shrink-0">
                               <Camera className="w-4 h-4 text-primary-400" />
@@ -241,7 +316,7 @@ export default function AdminMenu() {
                       <td className="px-6 py-4 text-sm font-semibold text-text-primary">{item.price} ₼</td>
                       <td className="px-6 py-4 text-sm text-text-secondary">{item.preparationTime} {t('time.minutes_abbreviation')}</td>
                       <td className="px-6 py-4">
-                        <button onClick={() => updateMenuItem(item.id, { isAvailable: !item.isAvailable })} className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${item.isAvailable ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600'}`}>
+                        <button onClick={() => updateItem.mutate({ id: item.id, payload: { isAvailable: !item.isAvailable } })} className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${item.isAvailable ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600'}`}>
                           {item.isAvailable ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                           {item.isAvailable ? t('common.active') : t('common.hidden')}
                         </button>
@@ -369,11 +444,14 @@ export default function AdminMenu() {
                 </button>
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3 flex-shrink-0">
-              <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
-              <button onClick={handleSaveItem} disabled={!itemForm.nameAz || !itemForm.category || itemForm.price <= 0} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
-                {modalMode === 'edit-item' ? t('common.save') : t('common.add')}
-              </button>
+            <div className="px-6 pb-6 flex flex-col gap-2 flex-shrink-0">
+              {formError && <p className="text-sm text-danger-600">{formError}</p>}
+              <div className="flex gap-3">
+                <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
+                <button onClick={handleSaveItem} disabled={!itemForm.nameAz || !itemForm.category || itemForm.price <= 0 || createItem.isPending || updateItem.isPending} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
+                  {modalMode === 'edit-item' ? t('common.save') : t('common.add')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -410,11 +488,14 @@ export default function AdminMenu() {
                 <input value={catIcon} onChange={(e) => setCatIcon(e.target.value)} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={t('menu_management.icon_placeholder')} />
               </div>
             </div>
-            <div className="px-6 pb-6 flex gap-3 flex-shrink-0">
-              <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
-              <button onClick={handleSaveCategory} disabled={!catNameAz.trim()} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
-                {modalMode === 'edit-category' ? t('common.save') : t('common.add')}
-              </button>
+            <div className="px-6 pb-6 flex flex-col gap-2 flex-shrink-0">
+              {formError && <p className="text-sm text-danger-600">{formError}</p>}
+              <div className="flex gap-3">
+                <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
+                <button onClick={handleSaveCategory} disabled={!catNameAz.trim() || createCategory.isPending || updateCategory.isPending} className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors">
+                  {modalMode === 'edit-category' ? t('common.save') : t('common.add')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -428,10 +509,10 @@ export default function AdminMenu() {
               <Trash2 className="w-10 h-10 mx-auto text-danger-500 mb-3" />
               <h3 className="text-lg font-bold text-text-primary mb-1">{t('menu_management.delete_category_confirmation', { name: localize(deleteCatConfirm.name, locale) })}</h3>
               <p className="text-sm text-text-secondary">
-                {t('menu_management.category_contains_items', { count: menuItems.filter((m) => m.category === deleteCatConfirm.id).length })}
+                {t('menu_management.category_contains_items', { count: menuItems.filter((m) => m.categoryId === deleteCatConfirm.id).length })}
               </p>
             </div>
-            {menuItems.filter((m) => m.category === deleteCatConfirm.id).length > 0 && (
+            {menuItems.filter((m) => m.categoryId === deleteCatConfirm.id).length > 0 && (
               <div className="mb-5">
                 <label className="block text-sm font-medium text-text-secondary mb-1.5">{t('menu_management.move_items')}</label>
                 <select
