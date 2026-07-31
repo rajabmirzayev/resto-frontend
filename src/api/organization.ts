@@ -1,5 +1,5 @@
 import { request } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, CreateOrganizationRequest, CreateOrganizationResponse, OrganizationDto, QrCodeDto } from './types';
 
 const BASE = '/api/organization-ms/v1';

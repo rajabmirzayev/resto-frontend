@@ -1,5 +1,5 @@
 import { request, buildQuery } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, DashboardStatsDto, RecentOrderDto, StaffListDto, TopItemDto } from './types';
 
 const BASE = '/api/dashboard-ms/v1';

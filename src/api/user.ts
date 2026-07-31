@@ -1,5 +1,5 @@
 import { request, buildQuery } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, CreateUserRequest, StaffPerformanceDto, UpdateUserRequest, UserDto } from './types';
 
 const BASE = '/api/user-ms/v1';

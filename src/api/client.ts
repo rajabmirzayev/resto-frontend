@@ -1,3 +1,5 @@
+import { clearSession, getAccessToken, getRefreshToken, setSession } from './session';
+
 const API_BASE_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8001';
 
 export type QueryParams = Record<string, string | number | boolean | null | undefined>;
@@ -46,8 +48,50 @@ interface RequestOptions {
   token?: string;
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, token } = options;
+let refreshPromise: Promise<string | null> | null = null;
+
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+    window.location.assign('/login');
+  }
+}
+
+async function performRefresh(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    clearSession();
+    return null;
+  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth-ms/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!response.ok) {
+      clearSession();
+      return null;
+    }
+    const data = (await response.json()) as { accessToken: string; refreshToken: string; expiresIn: number };
+    setSession(data.accessToken, data.refreshToken, data.expiresIn);
+    return data.accessToken;
+  } catch {
+    clearSession();
+    return null;
+  }
+}
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = performRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+async function fetchRequest(path: string, options: RequestOptions, token: string | null, allowRefresh: boolean): Promise<Response> {
+  const { method = 'GET', body } = options;
 
   const headers: Record<string, string> = { Accept: 'application/json' };
   const isFormData = body instanceof FormData;
@@ -60,6 +104,25 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
   });
 
+  if (response.status === 401 && allowRefresh && token) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      return fetchRequest(path, options, newToken, false);
+    }
+    redirectToLogin();
+  }
+
+  return response;
+}
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { token } = options;
+  const effectiveToken = token ?? getAccessToken();
+  const response = await fetchRequest(path, options, effectiveToken, true);
+  return parseResponse<T>(response);
+}
+
+async function parseResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') ?? '';
   const isJson = contentType.includes('application/json');
 

@@ -1,5 +1,5 @@
 import { request, buildQuery } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, CreateRoleRequest, PermissionGroupsDto, RoleDto, UpdateRoleRequest } from './types';
 
 const BASE = '/api/role-ms/v1';

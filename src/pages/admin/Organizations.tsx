@@ -1,28 +1,49 @@
 import { useState } from 'react';
-import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
+import { useToast } from '../../store/useToast';
+import { ApiError } from '../../api/client';
+import { useOrganizations, useOrganizationQrCode, useCreateOrganization } from '../../api/hooks/useOrganizations';
 import Header from '../../components/layout/Header';
-import { Building2, Plus, X, QrCode, Copy, Check, Download, ExternalLink } from 'lucide-react';
+import { Building2, Plus, X, QrCode, Copy, Check, Download, ExternalLink, Loader2 } from 'lucide-react';
 
 export default function AdminOrganizations() {
   const { t } = useTranslation();
-  const { organizations, createOrganization } = useStore();
+  const addToast = useToast((s) => s.addToast);
+  const { data, isLoading, isError, refetch } = useOrganizations();
+  const createMutation = useCreateOrganization();
   const [showCreate, setShowCreate] = useState(false);
   const [showQr, setShowQr] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', adminName: '', adminEmail: '', adminPassword: '' });
   const [formError, setFormError] = useState('');
 
-  const handleCreate = (e: React.FormEvent) => {
+  const organizations = data ?? [];
+  const qrQuery = useOrganizationQrCode(showQr);
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     if (!form.name.trim() || !form.adminName.trim() || !form.adminEmail.trim() || !form.adminPassword.trim()) {
       setFormError(t('common.irreversible_warning'));
       return;
     }
-    createOrganization(form.name.trim(), form.adminName.trim(), form.adminEmail.trim(), form.adminPassword);
-    setForm({ name: '', adminName: '', adminEmail: '', adminPassword: '' });
-    setShowCreate(false);
+    try {
+      await createMutation.mutateAsync({
+        name: form.name.trim(),
+        adminName: form.adminName.trim(),
+        adminEmail: form.adminEmail.trim(),
+        adminPassword: form.adminPassword,
+      });
+      setForm({ name: '', adminName: '', adminEmail: '', adminPassword: '' });
+      setShowCreate(false);
+      addToast(t('organizations.created'), 'success');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setFormError(err.detail || t('error.unexpected'));
+      } else {
+        setFormError(t('error.network'));
+      }
+    }
   };
 
   const copyUrl = async (orgId: string) => {
@@ -34,11 +55,16 @@ export default function AdminOrganizations() {
     } catch {}
   };
 
+  const getQrSrc = (orgId: string, menuUrl: string) =>
+    showQr === orgId && qrQuery.data?.qrCodeUrl
+      ? qrQuery.data.qrCodeUrl
+      : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`;
+
   const downloadQr = async (orgId: string, orgName: string) => {
-    const url = `${window.location.origin}/org/${orgId}/menu`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(url)}`;
+    const menuUrl = `${window.location.origin}/org/${orgId}/menu`;
+    const qrSrc = getQrSrc(orgId, menuUrl);
     try {
-      const res = await fetch(qrUrl);
+      const res = await fetch(qrSrc);
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -60,6 +86,7 @@ export default function AdminOrganizations() {
           </div>
           <button
             onClick={() => setShowCreate(true)}
+            disabled={createMutation.isPending}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -67,7 +94,22 @@ export default function AdminOrganizations() {
           </button>
         </div>
 
-        {organizations.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-sm text-text-secondary">...</p>
+          </div>
+        ) : isError ? (
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 text-center">
+            <p className="text-text-secondary mb-4">{t('error.unexpected')}</p>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          </div>
+        ) : organizations.length === 0 ? (
           <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 text-center">
             <div className="w-16 h-16 bg-surface-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Building2 className="w-8 h-8 text-text-muted" />
@@ -124,12 +166,16 @@ export default function AdminOrganizations() {
                   {showQr === org.id && (
                     <div className="mt-4 pt-4 border-t border-border">
                       <div className="flex flex-col items-center gap-3">
-                        <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(menuUrl)}`}
-                          alt={`QR ${org.name}`}
-                          className="rounded-xl border border-border"
-                          style={{ width: 200, height: 200 }}
-                        />
+                        {qrQuery.isLoading && !qrQuery.data ? (
+                          <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+                        ) : (
+                          <img
+                            src={getQrSrc(org.id, menuUrl)}
+                            alt={`QR ${org.name}`}
+                            className="rounded-xl border border-border"
+                            style={{ width: 200, height: 200 }}
+                          />
+                        )}
                         <button
                           onClick={() => downloadQr(org.id, org.name)}
                           className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
@@ -207,9 +253,10 @@ export default function AdminOrganizations() {
 
                 <button
                   type="submit"
-                  className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors"
+                  disabled={createMutation.isPending}
+                  className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {t('organizations.create')}
+                  {createMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('organizations.create')}
                 </button>
               </form>
             </div>

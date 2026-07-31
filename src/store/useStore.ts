@@ -5,13 +5,7 @@ import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, Orde
 import { initialData } from '../data/mock';
 import { hashPassword } from '../lib/validation';
 import { authApi } from '../api/auth';
-
-interface AuthState {
-  accessToken: string | null;
-  refreshToken: string | null;
-  tokenExpiresAt: number | null;
-  userRoles: string[];
-}
+import { clearSession, getRefreshToken, setSession } from '../api/session';
 
 function mapRolesToUserRole(roles: string[]): UserRole {
   if (roles.includes('SUPER_ADMIN')) return 'admin';
@@ -90,32 +84,23 @@ interface StoreActions {
   resetData: () => void;
 }
 
-type Store = AppState & StoreActions & AuthState;
+type Store = AppState & StoreActions;
 
 export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       ...initialData,
-      accessToken: null,
-      refreshToken: null,
-      tokenExpiresAt: null,
-      userRoles: [],
 
       login: async (username: string, password: string) => {
         const response = await authApi.login({ username, password });
+        setSession(response.accessToken, response.refreshToken, response.expiresIn);
         const user = buildUserFromLogin(username, response.roles);
-        set({
-          currentUser: user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          tokenExpiresAt: Date.now() + response.expiresIn * 1000,
-          userRoles: response.roles,
-        });
+        set({ currentUser: user });
         return user;
       },
 
       logout: async () => {
-        const { refreshToken } = get();
+        const refreshToken = getRefreshToken();
         if (refreshToken) {
           try {
             await authApi.logout({ refreshToken });
@@ -123,7 +108,8 @@ export const useStore = create<Store>()(
             // best-effort server-side logout
           }
         }
-        set({ currentUser: null, cart: [], accessToken: null, refreshToken: null, tokenExpiresAt: null, userRoles: [] });
+        clearSession();
+        set({ currentUser: null, cart: [] });
       },
 
       addMenuItem: (item) => {
@@ -575,10 +561,6 @@ export const useStore = create<Store>()(
         organizations: state.organizations,
         roles: state.roles,
         currentUser: state.currentUser,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        tokenExpiresAt: state.tokenExpiresAt,
-        userRoles: state.userRoles,
       }),
     }
   )

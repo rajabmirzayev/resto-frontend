@@ -1,5 +1,5 @@
 import { request } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, CreateCustomerOrderRequest, CustomerMenuDto, CustomerTableDto, OrderDto, RequestBillRequest } from './types';
 
 const BASE = '/api/customer-ms/v1';

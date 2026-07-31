@@ -1,6 +1,6 @@
 export * from './client';
 export * from './types';
-export * from './token';
+export * from './session';
 export * from './auth';
 export * from './organization';
 export * from './user';

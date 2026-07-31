@@ -1,5 +1,5 @@
 import { request, buildQuery } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, OrgSettingDto, UpdateSettingsRequest } from './types';
 
 const BASE = '/api/setting-ms/v1';

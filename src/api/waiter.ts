@@ -1,5 +1,5 @@
 import { request, buildQuery } from './client';
-import { getAccessToken } from './token';
+import { getAccessToken } from './session';
 import type { ApiResponse, OrderDto, WaiterTablesDto } from './types';
 
 const BASE = '/api/waiter-ms/v1';
