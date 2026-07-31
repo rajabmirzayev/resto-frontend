@@ -1,23 +1,16 @@
 import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
-import type { Permission, Role } from '../../types';
-import { PERMISSION_GROUPS } from '../../types';
-import { Plus, Edit2, Trash2, X, Shield, Check, Lock } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from '../../api/hooks/useRoles';
+import { useUsers } from '../../api/hooks/useUsers';
+import { ApiError } from '../../api/client';
+import type { Permission } from '../../types';
+import type { RoleDto } from '../../api/types';
+import { PERMISSION_GROUPS } from '../../types';
+import { Plus, Edit2, Trash2, X, Shield, Check, Lock, Loader2 } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | null;
-
-export default function RoleManagement() {
-  const { t } = useTranslation();
-  const { roles, addRole, updateRole, deleteRole, users } = useStore();
-  const [modalMode, setModalMode] = useState<ModalMode>(null);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [formName, setFormName] = useState('');
-  const [formPermissions, setFormPermissions] = useState<Permission[]>([]);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  const getUserCount = (roleId: string) => users.filter((u) => u.roleId === roleId).length;
 
 const permissionActionKey = (key: Permission): string => {
   const map: Record<string, string> = {
@@ -29,17 +22,42 @@ const permissionActionKey = (key: Permission): string => {
   return map[key] || key.split('.').pop() || key;
 };
 
+export default function RoleManagement() {
+  const { t } = useTranslation();
+  const currentUser = useStore((s) => s.currentUser);
+  const orgId = currentUser?.orgId;
+
+  const rolesQuery = useRoles(orgId);
+  const usersQuery = useUsers(orgId);
+  const createRole = useCreateRole(orgId);
+  const updateRole = useUpdateRole(orgId);
+  const deleteRole = useDeleteRole(orgId);
+
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [editingRole, setEditingRole] = useState<RoleDto | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formPermissions, setFormPermissions] = useState<Permission[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
+
+  const roles = rolesQuery.data ?? [];
+  const users = usersQuery.data ?? [];
+
+  const getUserCount = (roleId: string) => users.filter((u) => u.roleId === roleId).length;
+
   const openAdd = () => {
     setEditingRole(null);
     setFormName('');
     setFormPermissions([]);
+    setFormError('');
     setModalMode('add');
   };
 
-  const openEdit = (role: Role) => {
+  const openEdit = (role: RoleDto) => {
     setEditingRole(role);
     setFormName(role.name);
-    setFormPermissions([...role.permissions]);
+    setFormPermissions([...role.permissions] as Permission[]);
+    setFormError('');
     setModalMode('edit');
   };
 
@@ -60,24 +78,56 @@ const permissionActionKey = (key: Permission): string => {
   const handleSave = () => {
     if (!formName.trim()) return;
     if (modalMode === 'edit' && editingRole) {
-      updateRole(editingRole.id, { name: formName.trim(), permissions: formPermissions });
+      updateRole.mutate(
+        { id: editingRole.id, payload: { name: formName.trim(), permissions: formPermissions } },
+        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+      );
     } else {
-      addRole({ name: formName.trim(), permissions: formPermissions, isSystem: false });
+      createRole.mutate(
+        { name: formName.trim(), permissions: formPermissions, orgId: orgId ?? '' },
+        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+      );
     }
     setModalMode(null);
     setEditingRole(null);
   };
 
   const handleDelete = (id: string) => {
-    deleteRole(id);
+    deleteRole.mutate(id);
     setDeleteConfirm(null);
   };
+
+  if (rolesQuery.isLoading && !rolesQuery.data) {
+    return (
+      <div>
+        <Header title={t('roles.title')} subtitle={''} showUser />
+        <div className="p-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-sm text-text-secondary">...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <Header title={t('roles.title')} subtitle={`${roles.length} ${t('roles.roles_suffix')}`} showUser />
 
       <div className="p-6">
+        {rolesQuery.isError && (
+          <div className="bg-danger-50 border border-danger-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <p className="text-sm text-danger-700">{t('error.unexpected')}</p>
+            <button
+              onClick={() => rolesQuery.refetch()}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={openAdd}
@@ -243,6 +293,10 @@ const permissionActionKey = (key: Permission): string => {
                   })}
                 </div>
               </div>
+
+              {formError && (
+                <p className="text-sm text-danger-600">{formError}</p>
+              )}
             </div>
 
             <div className="px-6 pb-6 flex gap-3 shrink-0 pt-4 border-t border-border">
