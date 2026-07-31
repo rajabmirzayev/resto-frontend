@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
-import type { User, UserRole } from '../../types';
-import { Plus, Edit2, Trash2, X, Users, Shield, UtensilsCrossed, ChefHat } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { useUsers, useStaffPerformance, useCreateUser, useUpdateUser, useDeleteUser } from '../../api/hooks/useUsers';
+import { useRoles } from '../../api/hooks/useRoles';
+import { ApiError } from '../../api/client';
+import type { UserDto, UserRoleEnum } from '../../api/types';
+import { Plus, Edit2, Trash2, X, Users, Shield, UtensilsCrossed, ChefHat, Loader2 } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | null;
 
@@ -11,35 +14,49 @@ interface StaffForm {
   name: string;
   username: string;
   password: string;
-  role: UserRole;
   roleId: string;
 }
 
-const emptyForm: StaffForm = { name: '', username: '', password: '', role: 'waiter', roleId: '' };
+const emptyForm: StaffForm = { name: '', username: '', password: '', roleId: '' };
 
-const iconMap: Record<string, typeof Shield> = {
-  admin: Shield,
-  waiter: UtensilsCrossed,
-  chef: ChefHat,
-};
+function roleIcon(role: UserRoleEnum) {
+  if (role === 'WAITER') return UtensilsCrossed;
+  if (role === 'CHEF') return ChefHat;
+  return Shield;
+}
+
+function roleIconFromName(name: string) {
+  const lower = name.toLowerCase();
+  if (lower.includes('waiter')) return UtensilsCrossed;
+  if (lower.includes('chef')) return ChefHat;
+  return Shield;
+}
 
 export default function StaffManagement() {
   const { t } = useTranslation();
-  const { users, orders, roles, addUser, updateUser, deleteUser } = useStore();
+  const currentUser = useStore((s) => s.currentUser);
+  const orgId = currentUser?.orgId;
+
+  const usersQuery = useUsers(orgId);
+  const rolesQuery = useRoles(orgId);
+  const perfQuery = useStaffPerformance(orgId);
+  const createUser = useCreateUser(orgId);
+  const updateUser = useUpdateUser(orgId);
+  const deleteUser = useDeleteUser(orgId);
+
   const [modalMode, setModalMode] = useState<ModalMode>(null);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserDto | null>(null);
   const [form, setForm] = useState<StaffForm>(emptyForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
-  const staff = users.filter((u) => u.role !== 'customer');
+  const users = usersQuery.data ?? [];
+  const roles = rolesQuery.data ?? [];
+  const perfByUser = new Map((perfQuery.data ?? []).map((p) => [p.userId, p]));
+
+  const staff = users.filter((u) => u.role !== 'CUSTOMER');
   const filtered = roleFilter === 'all' ? staff : staff.filter((u) => u.roleId === roleFilter);
-
-  const getOrderCount = (userId: string) =>
-    orders.filter((o) => o.waiterId === userId && !['completed', 'cancelled'].includes(o.status)).length;
-
-  const getTotalRevenue = (userId: string) =>
-    orders.filter((o) => o.waiterId === userId && o.paymentStatus === 'paid').reduce((s, o) => s + o.totalAmount, 0);
 
   const getRoleBadgeColor = (roleName: string) => {
     const colors = ['bg-primary-100 text-primary-700', 'bg-warning-100 text-warning-700', 'bg-success-100 text-success-700', 'bg-danger-100 text-danger-700', 'bg-primary-200 text-primary-800'];
@@ -51,45 +68,85 @@ export default function StaffManagement() {
   const openAdd = () => {
     setEditingUser(null);
     setForm(emptyForm);
+    setFormError('');
     setModalMode('add');
   };
 
-  const openEdit = (user: User) => {
+  const openEdit = (user: UserDto) => {
     setEditingUser(user);
-    setForm({ name: user.name, username: user.username, password: '', role: user.role, roleId: user.roleId });
+    setForm({ name: user.name, username: user.username, password: '', roleId: user.roleId });
+    setFormError('');
     setModalMode('edit');
   };
 
-  const deriveRoleFromRoleId = (roleId: string): UserRole => {
-    const r = roles.find((x) => x.id === roleId);
-    if (!r) return 'waiter';
-    if (r.isSystem) return 'admin';
-    if (r.permissions.some((p) => p.startsWith('kitchen.'))) return 'chef';
-    return 'waiter';
-  };
-
   const handleSave = () => {
-    if (!form.name || !form.username || (!editingUser && !form.password)) return;
-    const derivedRole = deriveRoleFromRoleId(form.roleId);
+    if (!form.name || !form.username || !form.roleId || (!editingUser && !form.password)) return;
     if (modalMode === 'edit' && editingUser) {
-      const updates: Partial<User> = { name: form.name, username: form.username, role: derivedRole, roleId: form.roleId };
-      if (form.password) updates.password = form.password;
-      updateUser(editingUser.id, updates);
+      updateUser.mutate(
+        {
+          id: editingUser.id,
+          payload: {
+            name: form.name,
+            username: form.username,
+            roleId: form.roleId,
+            ...(form.password ? { password: form.password } : {}),
+          },
+        },
+        { onError: () => setFormError(t('error.network')) }
+      );
     } else {
-      addUser({ name: form.name, username: form.username, password: form.password, role: derivedRole, roleId: form.roleId, avatar: '' });
+      createUser.mutate(
+        {
+          name: form.name,
+          username: form.username,
+          password: form.password,
+          roleId: form.roleId,
+          orgId: orgId ?? '',
+        },
+        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+      );
     }
     setModalMode(null);
     setEditingUser(null);
     setForm(emptyForm);
   };
 
-  const handleDelete = (id: string) => { deleteUser(id); setDeleteConfirm(null); };
+  const handleDelete = (id: string) => {
+    deleteUser.mutate(id);
+    setDeleteConfirm(null);
+  };
+
+  if (usersQuery.isLoading && !usersQuery.data) {
+    return (
+      <div>
+        <Header title={t('staff.title')} subtitle={''} showUser />
+        <div className="p-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-sm text-text-secondary">...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <Header title={t('staff.title')} subtitle={`${staff.length} ${t('staff.staff_suffix')}`} showUser />
 
       <div className="p-6">
+        {usersQuery.isError && (
+          <div className="bg-danger-50 border border-danger-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <p className="text-sm text-danger-700">{t('error.unexpected')}</p>
+            <button
+              onClick={() => usersQuery.refetch()}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button onClick={openAdd} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary-200">
             <Plus className="w-4 h-4" />
@@ -112,9 +169,10 @@ export default function StaffManagement() {
           {filtered.map((user) => {
             const role = roles.find((r) => r.id === user.roleId);
             const badgeColor = getRoleBadgeColor(role?.name || '');
-            const Icon = iconMap[user.role] || Shield;
-            const orderCount = getOrderCount(user.id);
-            const revenue = getTotalRevenue(user.id);
+            const Icon = roleIcon(user.role);
+            const perf = perfByUser.get(user.id);
+            const orderCount = perf?.activeOrders ?? 0;
+            const revenue = perf?.revenue ?? 0;
 
             return (
               <div key={user.id} className="bg-white dark:bg-surface rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow">
@@ -193,7 +251,7 @@ export default function StaffManagement() {
                 <label className="block text-sm font-medium text-text-secondary mb-2">{t('staff.role')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {roles.map((role) => {
-                    const Icon = iconMap[role.name.toLowerCase()] || Shield;
+                    const Icon = roleIconFromName(role.name);
                     return (
                       <button key={role.id} onClick={() => setForm({ ...form, roleId: role.id })} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${form.roleId === role.id ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'}`}>
                         <Icon className="w-4 h-4" />
@@ -203,6 +261,9 @@ export default function StaffManagement() {
                   })}
                 </div>
               </div>
+              {formError && (
+                <p className="text-sm text-danger-600">{formError}</p>
+              )}
             </div>
             <div className="px-6 pb-6 flex gap-3">
               <button onClick={() => setModalMode(null)} className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors">{t('common.cancel')}</button>
