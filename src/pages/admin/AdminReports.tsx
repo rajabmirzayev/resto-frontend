@@ -1,103 +1,77 @@
-import { useMemo } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
 import { localize } from '../../utils/localize';
 import {
+  useReportSummary, useDailyRevenue, useHourlyReport,
+  useSalesByCategory, useTopItemsReport, useStaffPerformance,
+} from '../../api/hooks/useReports';
+import type { UserRoleEnum } from '../../api/types';
+import {
   DollarSign, TrendingUp, BarChart3, PieChart, Users, ShoppingBag,
-  ArrowUpRight, ArrowDownRight,
+  ArrowUpRight, ArrowDownRight, Loader2,
 } from 'lucide-react';
+
+function staffRoleKey(role: UserRoleEnum): string {
+  return role.toLowerCase();
+}
 
 export default function AdminReports() {
   const { t, locale, formatDate } = useTranslation();
-  const { orders, menuItems, menuCategories, users } = useStore();
+  const currentUser = useStore((s) => s.currentUser);
+  const orgId = currentUser?.orgId;
 
-  const paidOrders = useMemo(() => orders.filter((o) => o.paymentStatus === 'paid'), [orders]);
-  const totalRevenue = useMemo(() => paidOrders.reduce((s, o) => s + o.totalAmount, 0), [paidOrders]);
-  const completedCount = useMemo(() => orders.filter((o) => o.status === 'completed').length, [orders]);
-  const cancelledCount = useMemo(() => orders.filter((o) => o.status === 'cancelled').length, [orders]);
-  const avgOrderValue = useMemo(() => paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : 0, [paidOrders, totalRevenue]);
+  const summaryQuery = useReportSummary(orgId);
+  const dailyQuery = useDailyRevenue(orgId);
+  const hourlyQuery = useHourlyReport(orgId);
+  const categoriesQuery = useSalesByCategory(orgId);
+  const topItemsQuery = useTopItemsReport(orgId);
+  const staffQuery = useStaffPerformance(orgId);
 
-  const dailyRevenue = useMemo(() => {
-    const now = new Date();
-    const days: { label: string; revenue: number; count: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dayStr = d.toISOString().split('T')[0];
-      const dayName = formatDate(d, { weekday: 'short' });
-      const dayOrders = paidOrders.filter((o) => o.createdAt.startsWith(dayStr));
-      const revenue = dayOrders.reduce((s, o) => s + o.totalAmount, 0);
-      days.push({ label: dayName, revenue, count: dayOrders.length });
-    }
-    return days;
-  }, [paidOrders, formatDate]);
+  const isLoading =
+    !summaryQuery.data &&
+    (summaryQuery.isLoading || dailyQuery.isLoading || hourlyQuery.isLoading || categoriesQuery.isLoading || topItemsQuery.isLoading || staffQuery.isLoading);
+  const isError =
+    summaryQuery.isError || dailyQuery.isError || hourlyQuery.isError || categoriesQuery.isError || topItemsQuery.isError || staffQuery.isError;
 
+  const summary = summaryQuery.data;
+  const totalRevenue = summary?.totalRevenue ?? 0;
+  const completedCount = summary?.completed ?? 0;
+  const cancelledCount = summary?.cancelled ?? 0;
+  const avgOrderValue = summary?.avgOrderValue ?? 0;
+
+  const rawDaily = dailyQuery.data ?? [];
+  const dailyRevenue = rawDaily
+    .slice(-7)
+    .map((d) => ({ label: formatDate(d.date, { weekday: 'short' }), revenue: d.revenue, count: d.orderCount }));
   const maxDailyRevenue = Math.max(...dailyRevenue.map((d) => d.revenue), 1);
 
-  const categoryStats = useMemo(() => {
-    const stats: Record<string, number> = {};
-    orders.forEach((o) => {
-      o.items.forEach((item) => {
-        const mi = menuItems.find((m) => m.id === item.menuItemId);
-        if (mi) {
-          stats[mi.category] = (stats[mi.category] || 0) + item.quantity;
-        }
-      });
-    });
-    return Object.entries(stats)
-      .map(([catId, count]) => {
-        const cat = menuCategories.find((c) => c.id === catId);
-        return { name: cat ? localize(cat.name, locale) : t('common.unknown'), count };
-      })
-      .sort((a, b) => b.count - a.count);
-  }, [orders, menuItems, menuCategories, t]);
-
+  const categoryStats = (categoriesQuery.data ?? []).map((c) => ({
+    name: localize(c.name, locale),
+    count: c.count,
+  }));
   const maxCatCount = Math.max(...categoryStats.map((c) => c.count), 1);
 
-  const topItems = useMemo(() => {
-    const counts: Record<string, { name: string; count: number; revenue: number }> = {};
-    orders.forEach((o) => {
-      o.items.forEach((item) => {
-        if (!counts[item.menuItemId]) {
-          counts[item.menuItemId] = { name: item.menuItemName, count: 0, revenue: 0 };
-        }
-        counts[item.menuItemId].count += item.quantity;
-        counts[item.menuItemId].revenue += item.price * item.quantity;
-      });
-    });
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 8);
-  }, [orders]);
-
+  const topItems = (topItemsQuery.data ?? []).map((i) => ({
+    name: localize(i.name, locale),
+    count: i.count,
+    revenue: i.revenue,
+  }));
   const maxItemCount = Math.max(...topItems.map((i) => i.count), 1);
 
-  const staffPerformance = useMemo(() => {
-    const staff = users.filter((u) => u.role !== 'customer');
-    return staff.map((s) => {
-      const staffOrders = orders.filter((o) => o.waiterId === s.id);
-      const completed = staffOrders.filter((o) => o.status === 'completed');
-      const revenue = completed.reduce((s, o) => s + o.totalAmount, 0);
-      return {
-        name: s.name,
-        role: s.role === 'admin' ? t('role.admin') : s.role === 'waiter' ? t('role.waiter') : t('role.chef'),
-        totalOrders: staffOrders.length,
-        completedOrders: completed.length,
-        revenue,
-      };
-    }).sort((a, b) => b.revenue - a.revenue);
-  }, [orders, users, t]);
-
+  const staffPerformance = (staffQuery.data ?? [])
+    .map((s) => ({
+      id: s.userId,
+      name: s.name,
+      role: s.role,
+      totalOrders: s.totalOrders,
+      completedOrders: s.completedOrders,
+      revenue: s.revenue,
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
   const maxStaffRevenue = Math.max(...staffPerformance.map((s) => s.revenue), 1);
 
-  const hourlyData = useMemo(() => {
-    const hours: number[] = new Array(24).fill(0);
-    orders.forEach((o) => {
-      const h = new Date(o.createdAt).getHours();
-      hours[h]++;
-    });
-    return hours;
-  }, [orders]);
-
+  const hourlyData = hourlyQuery.data?.hourly ?? new Array(24).fill(0);
   const maxHourly = Math.max(...hourlyData, 1);
 
   const colors = [
@@ -105,11 +79,46 @@ export default function AdminReports() {
     'bg-primary-400', 'bg-success-400', 'bg-warning-400', 'bg-danger-400',
   ];
 
+  const refetchAll = () => {
+    summaryQuery.refetch();
+    dailyQuery.refetch();
+    hourlyQuery.refetch();
+    categoriesQuery.refetch();
+    topItemsQuery.refetch();
+    staffQuery.refetch();
+  };
+
+  if (isLoading) {
+    return (
+      <div>
+        <Header title={t('reports.title')} subtitle={t('reports.subtitle')} showUser />
+        <div className="p-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-sm text-text-secondary">...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <Header title={t('reports.title')} subtitle={t('reports.subtitle')} showUser />
 
       <div className="p-6">
+        {isError && (
+          <div className="bg-danger-50 border border-danger-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <p className="text-sm text-danger-700">{t('error.unexpected')}</p>
+            <button
+              onClick={refetchAll}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white dark:bg-surface rounded-2xl p-5 border border-border hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-3">
@@ -236,7 +245,7 @@ export default function AdminReports() {
             <p className="text-xs text-text-muted mb-5">{t('reports.top_8_by_quantity')}</p>
             <div className="space-y-3">
               {topItems.map((item, i) => (
-                <div key={item.name} className="flex items-center gap-3">
+                <div key={i} className="flex items-center gap-3">
                   <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                     {i + 1}
                   </span>
@@ -269,45 +278,50 @@ export default function AdminReports() {
           </h3>
           <p className="text-xs text-text-muted mb-5">{t('reports.staff_performance_subtitle')}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {staffPerformance.map((staff, i) => (
-              <div key={staff.name} className="bg-surface-secondary rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    staff.role === t('role.admin') ? 'bg-primary-100' : staff.role === t('role.waiter') ? 'bg-warning-100' : 'bg-success-100'
-                  }`}>
-                    <span className={`text-sm font-bold ${
-                      staff.role === t('role.admin') ? 'text-primary-700' : staff.role === t('role.waiter') ? 'text-warning-700' : 'text-success-700'
-                    }`}>{staff.name.charAt(0)}</span>
+            {staffPerformance.map((staff, i) => {
+              const roleKey = staffRoleKey(staff.role);
+              const isAdmin = roleKey === 'admin' || roleKey === 'org_admin';
+              const isWaiter = roleKey === 'waiter';
+              return (
+                <div key={staff.id} className="bg-surface-secondary rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      isAdmin ? 'bg-primary-100' : isWaiter ? 'bg-warning-100' : 'bg-success-100'
+                    }`}>
+                      <span className={`text-sm font-bold ${
+                        isAdmin ? 'text-primary-700' : isWaiter ? 'text-warning-700' : 'text-success-700'
+                      }`}>{staff.name.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-text-primary">{staff.name}</p>
+                      <p className="text-[10px] text-text-muted">{t(`role.${roleKey}`)}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
+                      <p className="text-lg font-bold text-text-primary">{staff.totalOrders}</p>
+                      <p className="text-[10px] text-text-muted">{t('reports.total')}</p>
+                    </div>
+                    <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
+                      <p className="text-lg font-bold text-success-600">{staff.completedOrders}</p>
+                      <p className="text-[10px] text-text-muted">{t('common.active')}</p>
+                    </div>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-text-primary">{staff.name}</p>
-                    <p className="text-[10px] text-text-muted">{staff.role}</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-text-muted">{t('reports.revenue')}</span>
+                      <span className="text-xs font-bold text-primary-600">{staff.revenue} ₼</span>
+                    </div>
+                    <div className="w-full h-2 bg-white dark:bg-surface rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${colors[i % colors.length]}`}
+                        style={{ width: `${(staff.revenue / maxStaffRevenue) * 100}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-text-primary">{staff.totalOrders}</p>
-                    <p className="text-[10px] text-text-muted">{t('reports.total')}</p>
-                  </div>
-                  <div className="bg-white dark:bg-surface rounded-lg p-2 text-center">
-                    <p className="text-lg font-bold text-success-600">{staff.completedOrders}</p>
-                    <p className="text-[10px] text-text-muted">{t('common.active')}</p>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-text-muted">{t('reports.revenue')}</span>
-                    <span className="text-xs font-bold text-primary-600">{staff.revenue} ₼</span>
-                  </div>
-                  <div className="w-full h-2 bg-white dark:bg-surface rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${colors[i % colors.length]}`}
-                      style={{ width: `${(staff.revenue / maxStaffRevenue) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
