@@ -1,11 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
 import { useToast } from '../../store/useToast';
-import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ReceiptText, UserCheck, Banknote, CreditCard, X } from 'lucide-react';
-import type { PaymentMethod } from '../../types';
+import { useGetCustomerOrder, useRequestCustomerBill } from '../../api/hooks/useCustomer';
+import { useOrgSettings } from '../../api/hooks/useSettings';
+import { Clock, ChefHat, CheckCircle, UtensilsCrossed, ReceiptText, UserCheck, Banknote, CreditCard, X, Loader2, AlertTriangle } from 'lucide-react';
+import type { OrderStatus } from '../../types';
+import type { PaymentMethodEnum } from '../../api/types';
+import type { CustomerThemeId } from '../../store/useCustomerTheme';
 import { getOrderItemStatusLabels } from '../../lib/constants';
 import CustomerHeader from '../../components/customer/CustomerHeader';
 
@@ -14,23 +18,25 @@ export default function CustomerOrder() {
   const ORDER_ITEM_STATUS_LABELS = getOrderItemStatusLabels(t);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { theme: customerTheme } = useCustomerTheme();
-  const orderId = searchParams.get('id');
-  const orders = useStore((s) => s.orders);
-  const requestPayment = useStore((s) => s.requestPayment);
   const paymentTiming = useStore((s) => s.paymentTiming);
+  const { theme: storeTheme } = useCustomerTheme();
   const { addToast } = useToast();
 
-  const [, forceUpdate] = useState(0);
+  const orderId = searchParams.get('id');
+
+  const orderQuery = useGetCustomerOrder(orderId, { refetchInterval: 5000 });
+  const order = orderQuery.data;
+
+  const settingsQuery = useOrgSettings(order?.orgId);
+  const settings = settingsQuery.data;
+
+  const requestBillMutation = useRequestCustomerBill(orderId ?? undefined);
+
+  const customerTheme: CustomerThemeId = settings?.customerTheme ? (settings.customerTheme.toLowerCase() as CustomerThemeId) : storeTheme;
+  const effectivePaymentTiming: 'before' | 'after' = settings?.paymentTiming ? (settings.paymentTiming === 'BEFORE' ? 'before' : 'after') : paymentTiming;
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const showPaymentModalRef = useRef(showPaymentModal);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate((n) => n + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Keep ref in sync with state (runs on every render)
   useEffect(() => {
@@ -47,7 +53,17 @@ export default function CustomerOrder() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const order = orderId ? orders.find((o) => o.id === orderId) : null;
+  if (orderQuery.isLoading && !orderQuery.data) {
+    return (
+      <div className={`min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4 theme-${customerTheme}`}>
+        <CustomerHeader title={t('order.details')} showBack onBack={() => navigate('/menu')} />
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary-500 animate-spin mx-auto" />
+          <p className="text-sm text-text-secondary mt-4">{t('error.title')}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -58,9 +74,21 @@ export default function CustomerOrder() {
           onBack={() => navigate('/menu')}
         />
         <div className="text-center">
-          <ChefHat className="w-16 h-16 mx-auto text-text-muted mb-4 opacity-40" />
+          {orderQuery.isError ? (
+            <AlertTriangle className="w-16 h-16 mx-auto text-danger-500 mb-4 opacity-60" />
+          ) : (
+            <ChefHat className="w-16 h-16 mx-auto text-text-muted mb-4 opacity-40" />
+          )}
           <h2 className="text-xl font-semibold text-text-primary">{t('order.not_found')}</h2>
           <p className="text-text-secondary mt-2 text-sm">{t('order.no_active_order')}</p>
+          {orderQuery.isError && (
+            <button
+              onClick={() => orderQuery.refetch()}
+              className="mt-6 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          )}
           <button
             onClick={() => navigate('/menu')}
             className="mt-6 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -81,10 +109,10 @@ export default function CustomerOrder() {
     { key: 'completed', label: t('order.status.completed.label'), sublabel: t('order.confirmed_by_waiter_detail'), icon: CheckCircle, color: 'success' },
   ];
 
-  const activeIndex = statusConfig.findIndex((s) => s.key === order.status);
-  const isCancelled = order.status === 'cancelled';
-  const isCompleted = order.status === 'completed';
-  const canRequestPayment = paymentTiming === 'after' && !isCancelled && !isCompleted && !order.paymentRequested && order.paymentStatus === 'pending';
+  const activeIndex = statusConfig.findIndex((s) => s.key === order.status.toLowerCase());
+  const isCancelled = order.status === 'CANCELLED';
+  const isCompleted = order.status === 'COMPLETED';
+  const canRequestPayment = effectivePaymentTiming === 'after' && !isCancelled && !isCompleted && !order.paymentRequested && order.paymentStatus === 'PENDING';
 
   const statusColorMap: Record<string, string> = {
     warning: 'bg-warning-500 text-white',
@@ -92,10 +120,20 @@ export default function CustomerOrder() {
     success: 'bg-success-500 text-white',
   };
 
-  const handleRequestPayment = (method: PaymentMethod) => {
-    requestPayment(order.id, method);
-    setShowPaymentModal(false);
-    addToast(t('toast.bill_requested'), 'success');
+  const handleRequestPayment = (method: 'cash' | 'card') => {
+    requestBillMutation.mutate(
+      { method: method.toUpperCase() as PaymentMethodEnum },
+      {
+        onSuccess: () => {
+          setShowPaymentModal(false);
+          addToast(t('toast.bill_requested'), 'success');
+        },
+        onError: () => {
+          setShowPaymentModal(false);
+          addToast(t('error.network'), 'error');
+        },
+      }
+    );
   };
 
   return (
@@ -108,7 +146,7 @@ export default function CustomerOrder() {
       />
 
       <div className="p-4 max-w-md mx-auto space-y-4">
-        {order.orderSource === 'customer' && !order.waiterConfirmed && (
+        {order.orderSource === 'CUSTOMER' && !order.waiterConfirmed && (
           <div className="bg-warning-50 border border-warning-200 rounded-2xl p-4 flex items-start gap-3">
             <UserCheck className="w-5 h-5 text-warning-600 mt-0.5 flex-shrink-0" />
             <div>
@@ -118,7 +156,7 @@ export default function CustomerOrder() {
           </div>
         )}
 
-        {order.orderSource === 'customer' && order.waiterConfirmed && order.status === 'confirmed' && (
+        {order.orderSource === 'CUSTOMER' && order.waiterConfirmed && order.status === 'CONFIRMED' && (
           <div className="bg-success-50 border border-success-200 rounded-2xl p-4 flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-success-600 mt-0.5 flex-shrink-0" />
             <div>
@@ -134,8 +172,8 @@ export default function CustomerOrder() {
             <div>
               <p className="text-sm font-semibold text-primary-700">{t('order.bill_requested')}</p>
               <p className="text-xs text-primary-600 mt-1">
-                {t('payment.method')}: {order.paymentMethod === 'cash' ? t('payment.cash') : t('payment.card')}
-                {order.paymentMethod === 'cash' ? ' 💵' : ' 💳'}
+                {t('payment.method')}: {order.paymentMethod === 'CASH' ? t('payment.cash') : t('payment.card')}
+                {order.paymentMethod === 'CASH' ? ' 💵' : ' 💳'}
               </p>
               <p className="text-xs text-primary-500 mt-1">{t('order.waiter_coming')}</p>
             </div>
@@ -204,7 +242,7 @@ export default function CustomerOrder() {
           <h3 className="text-sm font-semibold text-text-primary mb-3">{t('order.details')}</h3>
           <div className="space-y-2">
             {order.items.map((item) => {
-              const statusInfo = ORDER_ITEM_STATUS_LABELS[item.status] || ORDER_ITEM_STATUS_LABELS.pending;
+              const statusInfo = ORDER_ITEM_STATUS_LABELS[item.status.toLowerCase() as OrderStatus] || ORDER_ITEM_STATUS_LABELS.pending;
               return (
                 <div key={item.id} className="flex items-center justify-between p-3 bg-surface-secondary rounded-xl">
                   <div className="flex-1 min-w-0">
@@ -240,6 +278,7 @@ export default function CustomerOrder() {
         {canRequestPayment && (
           <button
             onClick={() => setShowPaymentModal(true)}
+            disabled={requestBillMutation.isPending}
             className="w-full bg-success-500 hover:bg-success-600 text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
             <ReceiptText className="w-4 h-4" />

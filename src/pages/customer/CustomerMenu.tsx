@@ -4,43 +4,69 @@ import { useTranslation } from '../../i18n';
 import { localize } from '../../utils/localize';
 import { useStore } from '../../store/useStore';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
+import { useCustomerMenu, useCustomerTables, useCreateCustomerOrder } from '../../api/hooks/useCustomer';
+import { useOrgSettings } from '../../api/hooks/useSettings';
+import { ApiError } from '../../api/client';
 import CameraCapture from '../../components/customer/CameraCapture';
 import CustomerHeader from '../../components/customer/CustomerHeader';
-import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Banknote, CreditCard } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Trash2, X, Check, ChevronDown, Camera, Banknote, CreditCard, Loader2, AlertTriangle } from 'lucide-react';
 import type { PaymentMethod } from '../../types';
+import type { OrderModeEnum, PaymentMethodEnum } from '../../api/types';
+import type { CustomerThemeId } from '../../store/useCustomerTheme';
 
 export default function CustomerMenu() {
   const { t, locale } = useTranslation();
-  const { menuItems, menuCategories, tables, cart, addToCart, removeFromCart, updateCartQuantity, clearCart, createCustomerOrder, requestPayment, orderMode, customerPhotoRequired, paymentTiming } = useStore();
+  const { cart, addToCart, removeFromCart, updateCartQuantity, clearCart, currentUser, orderMode: storeOrderMode, customerPhotoRequired: storePhotoRequired, paymentTiming: storePaymentTiming } = useStore();
   const navigate = useNavigate();
   const params = useParams();
   const [searchParams] = useSearchParams();
   const [showCamera, setShowCamera] = useState(false);
 
-  const { theme: customerTheme } = useCustomerTheme();
+  const { theme: storeTheme } = useCustomerTheme();
 
-  const orgId = params.orgId || searchParams.get('org');
+  const orgId = params.orgId || searchParams.get('org') || currentUser?.orgId || undefined;
+
+  const menuQuery = useCustomerMenu(orgId);
+  const tablesQuery = useCustomerTables(orgId);
+  const settingsQuery = useOrgSettings(orgId);
+  const createOrderMutation = useCreateCustomerOrder();
+
+  const settings = settingsQuery.data;
+  const customerTheme: CustomerThemeId = settings?.customerTheme ? (settings.customerTheme.toLowerCase() as CustomerThemeId) : storeTheme;
+
+  const orderMode: OrderModeEnum = settings?.orderMode ??
+    (storeOrderMode === 'customer' ? 'CUSTOMER' : storeOrderMode === 'customer-waiter-confirm' ? 'CUSTOMER_WAITER_CONFIRM' : storeOrderMode === 'kitchen' ? 'KITCHEN' : 'WAITER');
+  const canOrder = orderMode === 'CUSTOMER' || orderMode === 'CUSTOMER_WAITER_CONFIRM';
+  const needsPhoto = canOrder && (settings?.customerPhotoRequired ?? storePhotoRequired);
+  const isBeforePayment = (settings?.paymentTiming ?? (storePaymentTiming === 'before' ? 'BEFORE' : 'AFTER')) === 'BEFORE';
+
+  const orgMenuItems = menuQuery.data?.items ?? [];
+  const orgCategories = menuQuery.data?.categories ?? [];
+  const orgTables = tablesQuery.data ?? [];
+
   const urlTableId = params.tableId || undefined;
+  const tableParam = urlTableId || searchParams.get('t') || '';
 
-  const canOrder = orderMode === 'customer' || orderMode === 'customer-waiter-confirm';
-  const needsPhoto = canOrder && customerPhotoRequired;
-
-  const orgMenuItems = orgId ? menuItems.filter((m) => !m.orgId || m.orgId === orgId) : menuItems;
-  const orgCategories = orgId ? menuCategories.filter((c) => !c.orgId || c.orgId === orgId) : menuCategories;
-  const orgTables = orgId ? tables.filter((t) => !t.orgId || t.orgId === orgId) : tables;
-
-  const tableParam = urlTableId || searchParams.get('t');
-  const initialTable = tableParam
-    ? (orgTables.find((t) => t.id === tableParam)?.id || orgTables.find((t) => t.number === Number(tableParam))?.id || '')
-    : '';
-  const [selectedTableId, setSelectedTableId] = useState<string>(initialTable);
-  const [activeCategory, setActiveCategory] = useState<string>(orgCategories[0]?.id || '');
+  const [selectedTableId, setSelectedTableId] = useState<string>('');
+  const [activeCategory, setActiveCategory] = useState<string>('');
   const [showCart, setShowCart] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [customerPhoto, setCustomerPhoto] = useState<string | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(null);
-  const isBeforePayment = paymentTiming === 'before';
+
+  useEffect(() => {
+    if (!tableParam || selectedTableId || orgTables.length === 0) return;
+    const found = orgTables.find((t) => t.id === tableParam) || orgTables.find((t) => t.tableNumber === Number(tableParam));
+    if (found) setSelectedTableId(found.id);
+  }, [tableParam, selectedTableId, orgTables]);
+
+  useEffect(() => {
+    if (orgCategories.length === 0) return;
+    if (!orgCategories.some((c) => c.id === activeCategory)) {
+      setActiveCategory(orgCategories[0].id);
+    }
+  }, [orgCategories, activeCategory]);
 
   const isScrollingRef = useRef(false);
   const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -50,7 +76,7 @@ export default function CustomerMenu() {
   const showOrderModalRef = useRef(showOrderModal);
   const showCartRef = useRef(showCart);
 
-  const availableTables = orgTables.filter((t) => t.status === 'available');
+  const availableTables = orgTables;
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -81,7 +107,7 @@ export default function CustomerMenu() {
     setShowCamera(false);
   }, []);
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
     if (!selectedTableId) {
       setOrderError(t('error.please_select_table'));
       return;
@@ -94,17 +120,27 @@ export default function CustomerMenu() {
       setOrderError(t('error.please_select_payment_method'));
       return;
     }
-    const order = createCustomerOrder(selectedTableId, customerPhoto || undefined);
-    if (order) {
-      if (isBeforePayment && selectedPaymentMethod) {
-        requestPayment(order.id, selectedPaymentMethod);
-      }
+    try {
+      const res = await createOrderMutation.mutateAsync({
+        orgId: orgId ?? '',
+        tableId: selectedTableId,
+        items: cart.map((c) => ({
+          menuItemId: c.menuItemId,
+          menuItemName: c.menuItemName,
+          quantity: c.quantity,
+          price: c.price,
+          notes: c.notes,
+        })),
+        customerPhoto: customerPhoto || undefined,
+        ...(isBeforePayment && selectedPaymentMethod ? { paymentMethod: selectedPaymentMethod.toUpperCase() as PaymentMethodEnum } : {}),
+      });
+      clearCart();
       setShowOrderModal(false);
       setCustomerPhoto(null);
       setSelectedPaymentMethod(null);
-      navigate(`/order?id=${order.id}`);
-    } else {
-      setOrderError(t('error.order_creation_failed'));
+      navigate(`/order?id=${res.data.id}`);
+    } catch (err) {
+      setOrderError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network'));
     }
   };
 
@@ -168,6 +204,50 @@ export default function CustomerMenu() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
+  if (!orgId) {
+    return (
+      <div className={`min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4 theme-${customerTheme}`}>
+        <CustomerHeader title={t('menu.title')} showBack onBack={() => navigate('/')} />
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 mx-auto text-warning-500 mb-4 opacity-60" />
+          <h2 className="text-xl font-semibold text-text-primary">{t('error.page_not_found')}</h2>
+          <p className="text-text-secondary mt-2 text-sm">{t('error.unexpected')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if ((menuQuery.isLoading && !menuQuery.data) || (tablesQuery.isLoading && !tablesQuery.data)) {
+    return (
+      <div className={`min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4 theme-${customerTheme}`}>
+        <CustomerHeader title={t('menu.title')} showBack onBack={() => navigate('/')} />
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary-500 animate-spin mx-auto" />
+          <p className="text-sm text-text-secondary mt-4">{t('error.title')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (menuQuery.isError || tablesQuery.isError) {
+    return (
+      <div className={`min-h-screen bg-surface-secondary flex flex-col items-center justify-center p-4 theme-${customerTheme}`}>
+        <CustomerHeader title={t('menu.title')} showBack onBack={() => navigate('/')} />
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 mx-auto text-danger-500 mb-4 opacity-60" />
+          <h2 className="text-xl font-semibold text-text-primary">{t('error.title')}</h2>
+          <p className="text-text-secondary mt-2 text-sm">{t('error.unexpected')}</p>
+          <button
+            onClick={() => { menuQuery.refetch(); tablesQuery.refetch(); settingsQuery.refetch(); }}
+            className="mt-6 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            {t('error.retry')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen bg-surface-secondary theme-${customerTheme}`}>
       <CustomerHeader
@@ -176,7 +256,7 @@ export default function CustomerMenu() {
           <div className="flex items-center gap-2">
             {selectedTableId && (
               <span className="text-xs bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full font-medium">
-                {t('table.number_prefix', { number: orgTables.find((t) => t.id === selectedTableId)?.number || '?' })}
+                {t('table.number_prefix', { number: orgTables.find((t) => t.id === selectedTableId)?.tableNumber || '?' })}
               </span>
             )}
             {canOrder && (
@@ -202,21 +282,17 @@ export default function CustomerMenu() {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {orgTables.map((table) => {
               const isSelected = selectedTableId === table.id;
-              const isOccupied = table.status !== 'available';
               return (
                 <button
                   key={table.id}
-                  onClick={() => !isOccupied && setSelectedTableId(table.id)}
-                  disabled={isOccupied}
+                  onClick={() => setSelectedTableId(table.id)}
                   className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
                     isSelected
                       ? 'border-primary-600 bg-primary-50 text-primary-700'
-                      : isOccupied
-                      ? 'border-border bg-surface-secondary text-text-muted cursor-not-allowed opacity-50'
                       : 'border-border bg-white dark:bg-surface text-text-secondary hover:border-primary-300 hover:bg-primary-50'
                   }`}
                 >
-                  #{table.number}
+                  #{table.tableNumber}
                   <span className="text-xs ml-1 opacity-70">({table.capacity} {t('table.capacity_abbreviation')})</span>
                 </button>
               );
@@ -292,7 +368,7 @@ export default function CustomerMenu() {
         style={{ scrollbarWidth: 'none' }}
       >
         {orgCategories.map((cat) => {
-          const itemCount = orgMenuItems.filter((m) => m.category === cat.id && m.isAvailable).length;
+          const itemCount = orgMenuItems.filter((m) => m.categoryId === cat.id && m.isAvailable).length;
           return (
             <button
               key={cat.id}
@@ -321,7 +397,7 @@ export default function CustomerMenu() {
 
       <div className="px-4 py-4 space-y-8">
         {orgCategories.map((cat) => {
-          const categoryItems = orgMenuItems.filter((m) => m.category === cat.id && m.isAvailable);
+          const categoryItems = orgMenuItems.filter((m) => m.categoryId === cat.id && m.isAvailable);
           if (categoryItems.length === 0) return null;
           return (
             <div
@@ -342,8 +418,8 @@ export default function CustomerMenu() {
                   return (
                     <div key={item.id} className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
                       <div className="h-32 bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 flex items-center justify-center">
-                        {item.image ? (
-                          <img src={item.image} alt={localize(item.name, locale)} className="w-full h-full object-cover" />
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={localize(item.name, locale)} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-4xl">🍽️</span>
                         )}
@@ -413,7 +489,7 @@ export default function CustomerMenu() {
                     <option value="">{t('order.select_table_placeholder')}</option>
                     {availableTables.map((tbl) => (
                       <option key={tbl.id} value={tbl.id}>
-                        {t('table.number_prefix', { number: tbl.number })} — {tbl.capacity} {t('table.guests')} ({tbl.section})
+                        {t('table.number_prefix', { number: tbl.tableNumber })} — {tbl.capacity} {t('table.guests')} ({tbl.sectionId})
                       </option>
                     ))}
                   </select>
@@ -531,10 +607,10 @@ export default function CustomerMenu() {
               </button>
               <button
                 onClick={handleConfirmOrder}
-                disabled={availableTables.length === 0}
+                disabled={availableTables.length === 0 || createOrderMutation.isPending}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
               >
-                <Check className="w-4 h-4" />
+                {createOrderMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 {t('common.confirm')}
               </button>
             </div>
