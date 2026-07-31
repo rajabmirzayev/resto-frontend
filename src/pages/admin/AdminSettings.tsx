@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
 import { ORDER_MODES } from '../../types';
-import type { OrderMode } from '../../types';
-import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Store, QrCode, Copy, Download, ExternalLink } from 'lucide-react';
+import type { OrderMode, PaymentTiming, CustomerThemeId } from '../../types';
+import type { OrderModeEnum, PaymentTimingEnum, CustomerThemeEnum } from '../../api/types';
+import { useOrganization, useOrganizationQrCode } from '../../api/hooks/useOrganizations';
+import { useOrgSettings, useUpdateOrgSettings } from '../../api/hooks/useSettings';
+import { useToast } from '../../store/useToast';
+import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Store, QrCode, Copy, Download, ExternalLink, Loader2 } from 'lucide-react';
 import { useTheme } from '../../store/useTheme';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
-import type { CustomerThemeId } from '../../types';
 
 const modeIcons: Record<OrderMode, typeof Settings> = {
   'waiter': UtensilsCrossed,
@@ -30,16 +33,76 @@ const modeDescKeys: Record<OrderMode, string> = {
   'kitchen': 'mode.kitchen.description',
 };
 
+function localToApiMode(mode: OrderMode): OrderModeEnum {
+  switch (mode) {
+    case 'waiter': return 'WAITER';
+    case 'customer': return 'CUSTOMER';
+    case 'customer-waiter-confirm': return 'CUSTOMER_WAITER_CONFIRM';
+    case 'kitchen': return 'KITCHEN';
+  }
+}
+
+function apiToLocalMode(mode: OrderModeEnum): OrderMode {
+  switch (mode) {
+    case 'WAITER': return 'waiter';
+    case 'CUSTOMER': return 'customer';
+    case 'CUSTOMER_WAITER_CONFIRM': return 'customer-waiter-confirm';
+    case 'KITCHEN': return 'kitchen';
+  }
+}
+
+function localToApiTiming(timing: PaymentTiming): PaymentTimingEnum {
+  return timing === 'before' ? 'BEFORE' : 'AFTER';
+}
+
+function apiToLocalTiming(timing: PaymentTimingEnum): PaymentTiming {
+  return timing === 'BEFORE' ? 'before' : 'after';
+}
+
 export default function AdminSettings() {
   const { t } = useTranslation();
-  const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming, currentUser, organizations } = useStore();
+  const addToast = useToast((s) => s.addToast);
+  const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming, currentUser } = useStore();
   const { theme, setTheme } = useTheme();
   const { theme: customerTheme, setTheme: setCustomerTheme } = useCustomerTheme();
   const [showOrgQr, setShowOrgQr] = useState(false);
   const [orgCopied, setOrgCopied] = useState(false);
 
-  const org = currentUser?.orgId ? organizations.find((o) => o.id === currentUser.orgId) : null;
+  const orgId = currentUser?.orgId;
+  const orgQuery = useOrganization(orgId ?? null);
+  const qrQuery = useOrganizationQrCode(orgId ?? null);
+  const settingsQuery = useOrgSettings(orgId);
+  const updateSettingsMutation = useUpdateOrgSettings(orgId);
+
+  const org = orgQuery.data;
   const orgMenuUrl = org ? `${window.location.origin}/org/${org.id}/menu` : '';
+
+  const syncedRef = useRef(false);
+  useEffect(() => {
+    const data = settingsQuery.data;
+    if (data && !syncedRef.current) {
+      syncedRef.current = true;
+      setOrderMode(apiToLocalMode(data.orderMode));
+      setCustomerPhotoRequired(data.customerPhotoRequired);
+      setPaymentTiming(apiToLocalTiming(data.paymentTiming));
+      setCustomerTheme(data.customerTheme.toLowerCase() as CustomerThemeId);
+    }
+  }, [settingsQuery.data, setOrderMode, setCustomerPhotoRequired, setPaymentTiming, setCustomerTheme]);
+
+  const persistSettings = (patch: Partial<{ orderMode: OrderModeEnum; customerPhotoRequired: boolean; paymentTiming: PaymentTimingEnum; customerTheme: CustomerThemeEnum }>) => {
+    if (!orgId) return;
+    updateSettingsMutation.mutate(
+      {
+        orgId,
+        orderMode: localToApiMode(orderMode),
+        customerPhotoRequired,
+        paymentTiming: localToApiTiming(paymentTiming),
+        customerTheme: customerTheme.toUpperCase() as CustomerThemeEnum,
+        ...patch,
+      },
+      { onError: () => addToast(t('error.network'), 'error') }
+    );
+  };
 
   const copyOrgUrl = async () => {
     try {
@@ -49,9 +112,16 @@ export default function AdminSettings() {
     } catch {}
   };
 
+  const getOrgQrSrc = () => {
+    const qrUrl = `${window.location.origin}/org/${org?.id}/menu`;
+    return qrQuery.data?.qrCodeUrl
+      ? qrQuery.data.qrCodeUrl
+      : `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrUrl)}`;
+  };
+
   const downloadOrgQr = async () => {
     if (!org) return;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(orgMenuUrl)}`;
+    const qrUrl = getOrgQrSrc();
     try {
       const res = await fetch(qrUrl);
       const blob = await res.blob();
@@ -129,11 +199,15 @@ export default function AdminSettings() {
             {showOrgQr && (
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex flex-col items-center gap-3">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(orgMenuUrl)}`}
-                    alt={`${org.name} QR code`}
-                    className="w-40 h-40 rounded-xl border border-border"
-                  />
+                  {qrQuery.isLoading && !qrQuery.data ? (
+                    <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+                  ) : (
+                    <img
+                      src={getOrgQrSrc()}
+                      alt={`${org.name} QR code`}
+                      className="w-40 h-40 rounded-xl border border-border"
+                    />
+                  )}
                   <button
                     onClick={downloadOrgQr}
                     className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
@@ -160,7 +234,10 @@ export default function AdminSettings() {
             return (
               <button
                 key={mode.value}
-                onClick={() => setOrderMode(mode.value)}
+                onClick={() => {
+                  setOrderMode(mode.value);
+                  persistSettings({ orderMode: localToApiMode(mode.value) });
+                }}
                 className={`relative text-left p-6 rounded-2xl border-2 transition-all ${
                   isActive
                     ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100'
@@ -227,7 +304,11 @@ export default function AdminSettings() {
                     </p>
                   </div>
                   <button
-                    onClick={() => setCustomerPhotoRequired(!customerPhotoRequired)}
+                    onClick={() => {
+                      const next = !customerPhotoRequired;
+                      setCustomerPhotoRequired(next);
+                      persistSettings({ customerPhotoRequired: next });
+                    }}
                     className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
                       customerPhotoRequired ? 'bg-success-500' : 'bg-border'
                     }`}
@@ -271,7 +352,10 @@ export default function AdminSettings() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setPaymentTiming('before')}
+                    onClick={() => {
+                      setPaymentTiming('before');
+                      persistSettings({ paymentTiming: 'BEFORE' });
+                    }}
                     className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
                       paymentTiming === 'before'
                         ? 'border-primary-500 bg-primary-50'
@@ -288,7 +372,10 @@ export default function AdminSettings() {
                   </button>
 
                   <button
-                    onClick={() => setPaymentTiming('after')}
+                    onClick={() => {
+                      setPaymentTiming('after');
+                      persistSettings({ paymentTiming: 'AFTER' });
+                    }}
                     className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
                       paymentTiming === 'after'
                         ? 'border-success-500 bg-success-50'
@@ -390,7 +477,10 @@ export default function AdminSettings() {
                 return (
                   <button
                     key={tid}
-                    onClick={() => setCustomerTheme(tid)}
+                    onClick={() => {
+                      setCustomerTheme(tid);
+                      persistSettings({ customerTheme: tid.toUpperCase() as CustomerThemeEnum });
+                    }}
                     className={`relative text-left p-5 rounded-2xl border-2 transition-all ${
                       isActive
                         ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100'

@@ -19,6 +19,17 @@ export function useOrganizations() {
   });
 }
 
+export function useOrganization(orgId: string | null) {
+  return useQuery({
+    queryKey: organizationKeys.detail(orgId ?? ''),
+    queryFn: async () => {
+      const res = await organizationApi.get(orgId as string);
+      return res.data;
+    },
+    enabled: !!orgId,
+  });
+}
+
 export function useOrganizationQrCode(orgId: string | null) {
   return useQuery({
     queryKey: organizationKeys.qrCode(orgId ?? ''),
