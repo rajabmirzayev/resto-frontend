@@ -110,3 +110,23 @@ export function useRequestPayment(orgId?: string) {
     },
   });
 }
+
+export function useStartPreparingOrder(orgId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => orderApi.startPreparing(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.list(orgId) });
+    },
+  });
+}
+
+export function useMarkAllReadyOrder(orgId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => orderApi.markAllReady(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.list(orgId) });
+    },
+  });
+}

@@ -1,22 +1,30 @@
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
-import type { Order } from '../../types';
+import { useMenuItems } from '../../api/hooks/useMenu';
+import { useUpdateOrderStatus, useUpdateOrderItemStatus, useStartPreparingOrder, useMarkAllReadyOrder } from '../../api/hooks/useOrders';
+import type { OrderDto } from '../../api/types';
 import { CheckCircle, ChefHat, Timer, ArrowRight, Camera } from 'lucide-react';
 
 interface Props {
-  order: Order;
+  order: OrderDto;
   variant: 'new' | 'preparing' | 'ready';
 }
 
 export default function KitchenOrderCard({ order, variant }: Props) {
   const { t } = useTranslation();
-  const { updateOrderItemStatus, updateOrderStatus } = useStore();
+  const currentUser = useStore((s) => s.currentUser);
+  const orgId = currentUser?.orgId;
+  const menuItemsQuery = useMenuItems(orgId);
+  const updateOrderStatus = useUpdateOrderStatus(orgId);
+  const updateOrderItemStatus = useUpdateOrderItemStatus(orgId);
+  const startPreparing = useStartPreparingOrder(orgId);
+  const markAllReady = useMarkAllReadyOrder(orgId);
 
-  const readyCount = order.items.filter((i) => i.status === 'ready' || i.status === 'served' || i.status === 'completed').length;
+  const menuItems = menuItemsQuery.data ?? [];
+
+  const readyCount = order.items.filter((i) => i.status === 'READY' || i.status === 'SERVED').length;
   const totalCount = order.items.length;
   const allReady = readyCount === totalCount;
-
-  const menuItems = useStore((s) => s.menuItems);
 
   const getElapsed = (createdAt: string) => {
     const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
@@ -41,21 +49,21 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   };
 
   const handleStartPreparing = () => {
-    updateOrderStatus(order.id, 'preparing');
+    startPreparing.mutate(order.id);
     order.items.forEach((item) => {
-      if (item.status === 'pending') {
-        updateOrderItemStatus(order.id, item.id, 'preparing');
+      if (item.status === 'PENDING') {
+        updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'PREPARING' });
       }
     });
   };
 
   const handleAllItemsReady = () => {
     order.items.forEach((item) => {
-      if (item.status !== 'ready') {
-        updateOrderItemStatus(order.id, item.id, 'ready');
+      if (item.status !== 'READY') {
+        updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'READY' });
       }
     });
-    updateOrderStatus(order.id, 'ready');
+    markAllReady.mutate(order.id);
   };
 
   const elapsed = getElapsed(order.createdAt);
@@ -91,7 +99,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
           <div className="flex items-center gap-2">
             <ChefHat className="w-4 h-4 text-text-muted" />
             <span className="font-bold text-text-primary">{t('table.number_prefix', { number: order.tableNumber })}</span>
-            {order.orderSource === 'customer' && (
+            {order.orderSource === 'CUSTOMER' && (
               <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">{t('order.customer')}</span>
             )}
           </div>
@@ -116,31 +124,31 @@ export default function KitchenOrderCard({ order, variant }: Props) {
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-[10px] text-text-muted">
-            {order.orderSource === 'customer' ? t('order.customer_order') : order.waiterName || t('order.waiter')} • {readyCount}/{totalCount} {t('kitchen.ready_suffix')}
+            {order.orderSource === 'CUSTOMER' ? t('order.customer_order') : order.waiterName || t('order.waiter')} • {readyCount}/{totalCount} {t('kitchen.ready_suffix')}
           </span>
         </div>
       </div>
 
       <div className="p-4 space-y-2">
         {order.items.map((item) => {
-          const isReady = item.status === 'ready';
-          const isPreparing = item.status === 'preparing';
+          const isReady = item.status === 'READY';
+          const isPreparing = item.status === 'PREPARING';
 
           const renderItemActions = () => {
-            if (item.status === 'ready') return null;
+            if (item.status === 'READY') return null;
             return (
               <div className="flex items-center gap-1.5">
-                {item.status === 'pending' && (
+                {item.status === 'PENDING' && (
                   <button
-                    onClick={() => updateOrderItemStatus(order.id, item.id, 'preparing')}
+                    onClick={() => updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'PREPARING' })}
                     className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
                     {t('kitchen.start')}
                   </button>
                 )}
-                {item.status === 'preparing' && (
+                {item.status === 'PREPARING' && (
                   <button
-                    onClick={() => updateOrderItemStatus(order.id, item.id, 'ready')}
+                    onClick={() => updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'READY' })}
                     className="text-xs bg-success-500 hover:bg-success-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
                     {t('kitchen.badge_ready')}
@@ -225,7 +233,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
         )}
         {allReady && variant !== 'ready' && (
           <button
-            onClick={() => updateOrderStatus(order.id, 'ready')}
+            onClick={() => updateOrderStatus.mutate({ id: order.id, status: 'READY' })}
             className="w-full bg-success-600 hover:bg-success-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
