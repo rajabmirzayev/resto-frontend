@@ -14,14 +14,28 @@ import type {
 
 const BASE = '/api/menu-ms/v1';
 
+function mapMenuItem(item: MenuItemDto): MenuItemDto {
+  const raw = item as MenuItemDto & { available?: boolean };
+  return { ...raw, isAvailable: raw.available ?? raw.isAvailable };
+}
+
 export const menuApi = {
-  items: (params?: { orgId?: string; categoryId?: string; available?: boolean }) =>
-    request<ApiResponse<MenuItemDto[]>>(`${BASE}/items${buildQuery(params)}`, { token: getAccessToken() ?? undefined }),
-  getItem: (id: string) => request<ApiResponse<MenuItemDto>>(`${BASE}/items/${id}`, { token: getAccessToken() ?? undefined }),
-  createItem: (payload: CreateMenuItemRequest) =>
-    request<ApiResponse<MenuItemDto>>(`${BASE}/items`, { method: 'POST', body: payload, token: getAccessToken() ?? undefined }),
-  updateItem: (id: string, payload: UpdateMenuItemRequest) =>
-    request<ApiResponse<MenuItemDto>>(`${BASE}/items/${id}`, { method: 'PUT', body: payload, token: getAccessToken() ?? undefined }),
+  items: async (params?: { orgId?: string; categoryId?: string; available?: boolean }) => {
+    const res = await request<ApiResponse<MenuItemDto[]>>(`${BASE}/items${buildQuery(params)}`, { token: getAccessToken() ?? undefined });
+    return { ...res, data: res.data.map(mapMenuItem) };
+  },
+  getItem: async (id: string) => {
+    const res = await request<ApiResponse<MenuItemDto>>(`${BASE}/items/${id}`, { token: getAccessToken() ?? undefined });
+    return { ...res, data: mapMenuItem(res.data) };
+  },
+  createItem: async (payload: CreateMenuItemRequest) => {
+    const res = await request<ApiResponse<MenuItemDto>>(`${BASE}/items`, { method: 'POST', body: payload, token: getAccessToken() ?? undefined });
+    return { ...res, data: mapMenuItem(res.data) };
+  },
+  updateItem: async (id: string, payload: UpdateMenuItemRequest) => {
+    const res = await request<ApiResponse<MenuItemDto>>(`${BASE}/items/${id}`, { method: 'PUT', body: payload, token: getAccessToken() ?? undefined });
+    return { ...res, data: mapMenuItem(res.data) };
+  },
   removeItem: (id: string) => request<ApiResponse<null>>(`${BASE}/items/${id}`, { method: 'DELETE', token: getAccessToken() ?? undefined }),
   uploadItemImage: (id: string, file: File) => {
     const formData = new FormData();
