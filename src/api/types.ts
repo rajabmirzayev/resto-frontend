@@ -144,7 +144,7 @@ export interface MenuItemDto {
 
 export interface MenuItemPayload {
   name: LocalizedString;
-  description: LocalizedString;
+  description?: LocalizedString | null;
   price: number;
   categoryId: string;
   preparationTime: number;

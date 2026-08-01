@@ -70,6 +70,16 @@ export function useUploadItemImage() {
   });
 }
 
+export function useDeleteItemImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => menuApi.removeItemImage(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: menuKeys.all });
+    },
+  });
+}
+
 export function useCreateMenuCategory(orgId?: string) {
   const queryClient = useQueryClient();
   return useMutation({

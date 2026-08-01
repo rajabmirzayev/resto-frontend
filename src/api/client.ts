@@ -32,13 +32,15 @@ export class ApiError extends Error {
   readonly status: number;
   readonly key?: string;
   readonly detail?: string;
+  readonly fieldErrors?: { field: string; message: string }[];
 
-  constructor(status: number, message: string, detail?: string, key?: string) {
+  constructor(status: number, message: string, detail?: string, key?: string, fieldErrors?: { field: string; message: string }[]) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.detail = detail;
     this.key = key;
+    this.fieldErrors = fieldErrors;
   }
 }
 
@@ -135,7 +137,13 @@ async function parseResponse<T>(response: Response): Promise<T> {
         // ignore malformed body
       }
     }
-    throw new ApiError(response.status, problem?.detail ?? response.statusText, problem?.detail, problem?.key);
+    throw new ApiError(
+      response.status,
+      problem?.detail ?? response.statusText,
+      problem?.detail,
+      problem?.key,
+      problem?.fieldErrors
+    );
   }
 
   if (response.status === 204 || !isJson) return undefined as T;

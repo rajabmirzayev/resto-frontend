@@ -63,3 +63,70 @@ export function validatePhone(phone: string): string | null {
   }
   return null;
 }
+
+// ===== Menu validations (mirrors tabler-back menu-service DTOs) =====
+
+export const MENU_LIMITS = {
+  nameMax: 100,
+  descriptionMax: 500,
+  iconMax: 50,
+  priceIntegerDigits: 8,
+  priceFractionDigits: 2,
+  prepTimeMax: 10080,
+  sortOrderMax: 10000,
+  imageUrlMax: 512,
+  imageMaxSizeBytes: 2 * 1024 * 1024,
+} as const;
+
+export const MENU_ICONS = ['soup', 'beef', 'salad', 'pizza', 'hamburger', 'cup-soda', 'cake', 'cookie'] as const;
+
+export const MENU_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+const CONTROL_CHAR_REGEX = /\p{Cc}/u;
+
+export function hasControlCharacters(value: string): boolean {
+  return CONTROL_CHAR_REGEX.test(value);
+}
+
+export function isBlank(value: string): boolean {
+  return value.trim().length === 0;
+}
+
+export function isValidLocalizedValue(value: string, max: number): boolean {
+  return value.length <= max && !value.includes('\u0000');
+}
+
+export function isValidPrice(value: number): boolean {
+  if (!Number.isFinite(value) || value <= 0) return false;
+  const s = String(value);
+  if (s.includes('e') || s.includes('E')) return false;
+  const [intPart, fracPart = ''] = s.split('.');
+  return (
+    intPart.replace(/^-/, '').length <= MENU_LIMITS.priceIntegerDigits &&
+    fracPart.length <= MENU_LIMITS.priceFractionDigits
+  );
+}
+
+export function isValidPrepTime(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= MENU_LIMITS.prepTimeMax;
+}
+
+export function isValidSortOrder(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= MENU_LIMITS.sortOrderMax;
+}
+
+export function isValidImageUrl(value: string): boolean {
+  if (value.length > MENU_LIMITS.imageUrlMax) return false;
+  return /^(https?:\/\/|\/)[^\p{Cc}]*$/u.test(value);
+}
+
+export function isValidIcon(value: string): boolean {
+  return value.length <= MENU_LIMITS.iconMax && !hasControlCharacters(value);
+}
+
+export function isAllowedMenuImage(file: File): boolean {
+  return (
+    file.size <= MENU_LIMITS.imageMaxSizeBytes &&
+    (MENU_IMAGE_TYPES as readonly string[]).includes(file.type)
+  );
+}
