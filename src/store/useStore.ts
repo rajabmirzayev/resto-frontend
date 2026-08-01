@@ -5,7 +5,7 @@ import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, Orde
 import { initialData } from '../data/mock';
 import { hashPassword } from '../lib/validation';
 import { authApi } from '../api/auth';
-import { clearSession, getRefreshToken, setSession } from '../api/session';
+import { clearSession, getOrgIdFromToken, getRefreshToken, setSession } from '../api/session';
 
 function mapRolesToUserRole(roles: string[]): UserRole {
   if (roles.includes('SUPER_ADMIN')) return 'admin';
@@ -95,8 +95,10 @@ export const useStore = create<Store>()(
         const response = await authApi.login({ username, password });
         setSession(response.accessToken, response.refreshToken, response.expiresIn);
         const user = buildUserFromLogin(username, response.roles);
-        set({ currentUser: user });
-        return user;
+        const orgId = getOrgIdFromToken(response.accessToken) ?? get().users.find((u) => u.username === username)?.orgId;
+        const currentUser = orgId ? { ...user, orgId } : user;
+        set({ currentUser });
+        return currentUser;
       },
 
       logout: async () => {

@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
+import { getAccessToken, getOrgIdFromToken } from './api/session';
 import AppLayout from './components/layout/AppLayout';
 import ToastContainer from './components/ui/ToastContainer';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -38,10 +40,25 @@ function PermRoute({ children, permission }: { children: React.ReactNode; permis
   return <>{children}</>;
 }
 
+function OrgIdBackfill() {
+  const currentUser = useStore((s) => s.currentUser);
+  useEffect(() => {
+    const token = getAccessToken();
+    if (currentUser && !currentUser.orgId && token) {
+      const orgId = getOrgIdFromToken(token);
+      if (orgId) {
+        useStore.setState({ currentUser: { ...currentUser, orgId } });
+      }
+    }
+  }, [currentUser]);
+  return null;
+}
+
 export default function App() {
   return (
     <I18nProvider>
       <ErrorBoundary>
+        <OrgIdBackfill />
         <BrowserRouter>
           <ToastContainer />
         <Routes>
