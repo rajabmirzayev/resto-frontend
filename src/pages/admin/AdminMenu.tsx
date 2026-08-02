@@ -3,7 +3,9 @@ import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import {
   Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera, Loader2, Search, LayoutGrid, Utensils,
-  Soup, Beef, Salad, Pizza, Hamburger, CupSoda, Cake, Cookie,
+  Soup, Beef, Salad, Pizza, Hamburger, Sandwich, CupSoda, Coffee, Milk, Wine, Martini, GlassWater, Beer,
+  Cake, Cookie, Donut, Croissant, IceCreamCone, IceCreamBowl, Popcorn, Apple, Cherry, Grape, Carrot,
+  Fish, Drumstick, Egg, ChefHat, UtensilsCrossed,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { localize } from '../../utils/localize';
@@ -71,9 +73,31 @@ const ICON_MAP = {
   salad: Salad,
   pizza: Pizza,
   hamburger: Hamburger,
+  sandwich: Sandwich,
   'cup-soda': CupSoda,
+  coffee: Coffee,
+  milk: Milk,
+  wine: Wine,
+  martini: Martini,
+  'glass-water': GlassWater,
+  beer: Beer,
   cake: Cake,
   cookie: Cookie,
+  donut: Donut,
+  croissant: Croissant,
+  'ice-cream-cone': IceCreamCone,
+  'ice-cream-bowl': IceCreamBowl,
+  popcorn: Popcorn,
+  apple: Apple,
+  cherry: Cherry,
+  grape: Grape,
+  carrot: Carrot,
+  fish: Fish,
+  drumstick: Drumstick,
+  egg: Egg,
+  'chef-hat': ChefHat,
+  utensils: Utensils,
+  'utensils-crossed': UtensilsCrossed,
 } as const;
 
 function CategoryIcon({ icon, className }: { icon?: string | null; className?: string }) {

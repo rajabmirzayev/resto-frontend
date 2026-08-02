@@ -78,7 +78,12 @@ export const MENU_LIMITS = {
   imageMaxSizeBytes: 2 * 1024 * 1024,
 } as const;
 
-export const MENU_ICONS = ['soup', 'beef', 'salad', 'pizza', 'hamburger', 'cup-soda', 'cake', 'cookie'] as const;
+export const MENU_ICONS = [
+  'soup', 'beef', 'salad', 'pizza', 'hamburger', 'sandwich', 'cup-soda', 'coffee', 'milk',
+  'wine', 'martini', 'glass-water', 'beer', 'cake', 'cookie', 'donut', 'croissant', 'ice-cream-cone',
+  'ice-cream-bowl', 'popcorn', 'apple', 'cherry', 'grape', 'carrot', 'fish', 'drumstick', 'egg',
+  'chef-hat', 'utensils', 'utensils-crossed',
+] as const;
 
 export const MENU_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
