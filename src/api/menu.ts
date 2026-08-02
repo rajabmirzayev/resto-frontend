@@ -16,7 +16,7 @@ const BASE = '/api/menu-ms/v1';
 
 function mapMenuItem(item: MenuItemDto): MenuItemDto {
   const raw = item as MenuItemDto & { available?: boolean };
-  return { ...raw, isAvailable: raw.available ?? raw.isAvailable };
+  return { ...raw, isAvailable: raw.isAvailable ?? raw.available };
 }
 
 export const menuApi = {

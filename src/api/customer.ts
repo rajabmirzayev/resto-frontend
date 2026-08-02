@@ -6,7 +6,7 @@ const BASE = '/api/customer-ms/v1';
 
 function mapMenuItem(item: CustomerMenuItemDto): CustomerMenuItemDto {
   const raw = item as CustomerMenuItemDto & { available?: boolean };
-  return { ...raw, isAvailable: raw.available ?? raw.isAvailable };
+  return { ...raw, isAvailable: raw.isAvailable ?? raw.available };
 }
 
 export const customerApi = {
