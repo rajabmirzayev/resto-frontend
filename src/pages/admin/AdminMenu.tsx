@@ -731,15 +731,15 @@ export default function AdminMenu() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.price')} <span className="text-danger-500">*</span></label>
-                  <input type="number" value={itemForm.price || ''} onChange={(e) => setItemForm({ ...itemForm, price: Number(e.target.value) })} className={inputClass(!!itemErrors.price)} min={0} step="0.01" placeholder="0.00" />
+                  <input type="number" value={itemForm.price || ''} onChange={(e) => setItemForm({ ...itemForm, price: Number(e.target.value) })} className={`${inputClass(!!itemErrors.price)} w-full`} min={0} step="0.01" placeholder="0.00" />
                   {itemErrors.price && <p className="text-xs text-danger-600 mt-1 ml-9">{itemErrors.price}</p>}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-text-secondary mb-1">{t('menu_management.prep_time')}</label>
-                  <input type="number" value={itemForm.preparationTime || ''} onChange={(e) => setItemForm({ ...itemForm, preparationTime: Number(e.target.value) })} className={inputClass(!!itemErrors.preparationTime)} min={0} />
+                  <input type="number" value={itemForm.preparationTime || ''} onChange={(e) => setItemForm({ ...itemForm, preparationTime: Number(e.target.value) })} className={`${inputClass(!!itemErrors.preparationTime)} w-full`} min={0} />
                   {itemErrors.preparationTime && <p className="text-xs text-danger-600 mt-1 ml-9">{itemErrors.preparationTime}</p>}
                 </div>
               </div>
