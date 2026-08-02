@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import {
-  Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera, Loader2, Search,
+  Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera, Loader2, Search, LayoutGrid, Utensils,
   Soup, Beef, Salad, Pizza, Hamburger, CupSoda, Cake, Cookie,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
@@ -75,6 +75,11 @@ const ICON_MAP = {
   cake: Cake,
   cookie: Cookie,
 } as const;
+
+function CategoryIcon({ icon, className }: { icon?: string | null; className?: string }) {
+  const Icon = (icon && ICON_MAP[icon as keyof typeof ICON_MAP]) || Utensils;
+  return <Icon className={className} />;
+}
 
 const inputClass = (hasError: boolean): string =>
   `flex-1 px-4 py-2.5 bg-surface-secondary border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${hasError ? 'border-danger-400' : 'border-border'}`;
@@ -515,34 +520,50 @@ export default function AdminMenu() {
           </div>
         </div>
 
-        <div className="flex gap-2 flex-wrap mb-6">
-          <button onClick={() => setSelectedCategory('all')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${selectedCategory === 'all' ? 'bg-primary-600 text-white' : 'bg-surface-secondary text-text-secondary hover:bg-border'}`}>
-            {t('common.all')} ({menuItems.length})
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-3 mb-6">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`group relative rounded-2xl border p-4 text-left transition-all ${selectedCategory === 'all' ? 'border-primary-500 ring-2 ring-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10' : 'bg-white dark:bg-surface border-border hover:border-primary-300 hover:shadow-lg hover:shadow-primary-100/50 hover:-translate-y-0.5'}`}
+          >
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${selectedCategory === 'all' ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600 group-hover:from-primary-600 group-hover:to-primary-500 group-hover:text-white'}`}>
+              <LayoutGrid className="w-5 h-5" />
+            </div>
+            <p className={`mt-3 text-sm font-semibold truncate ${selectedCategory === 'all' ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`}>{t('common.all')}</p>
+            <p className="text-xs text-text-muted mt-0.5">{menuItems.length} {t('menu.items_count')}</p>
           </button>
+
           {menuCategories.map((cat) => {
             const count = menuItems.filter((m) => m.categoryId === cat.id).length;
             const isActive = selectedCategory === cat.id;
             return (
-              <div key={cat.id} className={`flex items-center gap-1 rounded-lg transition-colors group/cat ${isActive ? 'bg-primary-600' : 'bg-surface-secondary hover:bg-border'}`}>
-                <button onClick={() => setSelectedCategory(cat.id)} className={`px-3 py-1.5 text-sm font-medium ${isActive ? 'text-white' : 'text-text-secondary'}`}>
-                  {localize(cat.name, locale)} ({count})
-                </button>
-                <div className={`flex items-center pr-1.5 gap-0.5 opacity-0 group-hover/cat:opacity-100 transition-opacity ${isActive ? '' : ''}`}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }}
-                    className={`p-0.5 rounded transition-colors ${isActive ? 'hover:bg-white dark:bg-surface/20 text-white' : 'hover:bg-primary-100 text-text-muted hover:text-primary-600'}`}
-                    title={t('common.edit')}
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openDeleteCategory(cat); }}
-                    className={`p-0.5 rounded transition-colors ${isActive ? 'hover:bg-white dark:bg-surface/20 text-white' : 'hover:bg-danger-100 text-text-muted hover:text-danger-600'}`}
-                    title={t('common.delete')}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+              <div
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`group relative rounded-2xl border p-4 cursor-pointer transition-all ${isActive ? 'border-primary-500 ring-2 ring-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10' : 'bg-white dark:bg-surface border-border hover:border-primary-300 hover:shadow-lg hover:shadow-primary-100/50 hover:-translate-y-0.5'}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${isActive ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600 group-hover:from-primary-600 group-hover:to-primary-500 group-hover:text-white'}`}>
+                    <CategoryIcon icon={cat.icon} className="w-5 h-5" />
+                  </div>
+                  <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }}
+                      className={`p-1.5 rounded-lg transition-colors ${isActive ? 'text-primary-700 dark:text-primary-300 hover:bg-primary-600 hover:text-white' : 'text-text-muted hover:bg-primary-50 hover:text-primary-600'}`}
+                      title={t('common.edit')}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openDeleteCategory(cat); }}
+                      className={`p-1.5 rounded-lg transition-colors ${isActive ? 'text-primary-700 dark:text-primary-300 hover:bg-danger-600 hover:text-white' : 'text-text-muted hover:bg-danger-50 hover:text-danger-600'}`}
+                      title={t('common.delete')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
+                <p className={`mt-3 text-sm font-semibold truncate ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`} title={localize(cat.name, locale)}>{localize(cat.name, locale)}</p>
+                <p className="text-xs text-text-muted mt-0.5">{count} {t('menu.items_count')}</p>
               </div>
             );
           })}
@@ -582,7 +603,14 @@ export default function AdminMenu() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full font-medium">{cat ? localize(cat.name, locale) : t('common.unknown')}</span>
+                        {cat ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs bg-primary-50 text-primary-700 dark:bg-primary-900/20 px-2.5 py-1 rounded-full font-medium">
+                            <CategoryIcon icon={cat.icon} className="w-3 h-3" />
+                            {localize(cat.name, locale)}
+                          </span>
+                        ) : (
+                          <span className="text-xs bg-surface-secondary text-text-muted px-2.5 py-1 rounded-full font-medium">{t('common.unknown')}</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-text-primary">{item.price} ₼</td>
                       <td className="px-6 py-4 text-sm text-text-secondary">{item.preparationTime} {t('time.minutes_abbreviation')}</td>
