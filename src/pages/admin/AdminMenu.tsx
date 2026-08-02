@@ -1,8 +1,20 @@
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragOverEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import {
-  Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera, Loader2, Search, LayoutGrid, Utensils,
+  Plus, Edit2, Trash2, Eye, EyeOff, X, Tag, ImagePlus, Camera, Loader2, Search, LayoutGrid, Utensils, GripVertical,
   Soup, Beef, Salad, Pizza, Hamburger, Sandwich, CupSoda, Coffee, Milk, Wine, Martini, GlassWater, Beer,
   Cake, Cookie, Donut, Croissant, IceCreamCone, IceCreamBowl, Popcorn, Apple, Cherry, Grape, Carrot,
   Fish, Drumstick, Egg, ChefHat, UtensilsCrossed,
@@ -13,6 +25,7 @@ import { useToast } from '../../store/useToast';
 import {
   useMenuItems, useMenuCategories, useCreateMenuItem, useUpdateMenuItem, useDeleteMenuItem,
   useUploadItemImage, useDeleteItemImage, useCreateMenuCategory, useUpdateMenuCategory, useDeleteMenuCategory,
+  useReorderMenuCategory,
 } from '../../api/hooks/useMenu';
 import { ApiError } from '../../api/client';
 import type { MenuItemDto, MenuCategoryDto, CreateMenuItemRequest } from '../../api/types';
@@ -105,6 +118,80 @@ function CategoryIcon({ icon, className }: { icon?: string | null; className?: s
   return <Icon className={className} />;
 }
 
+interface SortableCategoryCardProps {
+  category: MenuCategoryDto;
+  count: number;
+  active: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function SortableCategoryCard({ category, count, active, onSelect, onEdit, onDelete }: SortableCategoryCardProps) {
+  const { t, locale } = useTranslation();
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const name = localize(category.name, locale);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition: isDragging
+          ? undefined
+          : 'transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms ease, border-color 200ms ease',
+      }}
+      onClick={onSelect}
+      className={`group relative rounded-2xl border p-4 select-none cursor-pointer ${isDragging ? 'invisible' : ''} ${active ? 'border-primary-500 ring-2 ring-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10' : 'bg-white dark:bg-surface border-border hover:border-primary-300 hover:shadow-lg hover:shadow-primary-100/50 hover:-translate-y-0.5'}`}
+    >
+      <div className="flex items-start justify-between">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${active ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600 group-hover:from-primary-600 group-hover:to-primary-500 group-hover:text-white'}`}>
+          <CategoryIcon icon={category.icon} className="w-5 h-5" />
+        </div>
+        <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className={`p-1.5 rounded-lg transition-colors ${active ? 'text-primary-700 dark:text-primary-300 hover:bg-primary-600 hover:text-white' : 'text-text-muted hover:bg-primary-50 hover:text-primary-600'}`}
+            title={t('common.edit')}
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className={`p-1.5 rounded-lg transition-colors ${active ? 'text-primary-700 dark:text-primary-300 hover:bg-danger-600 hover:text-white' : 'text-text-muted hover:bg-danger-50 hover:text-danger-600'}`}
+            title={t('common.delete')}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      <p className={`mt-3 text-sm font-semibold truncate ${active ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`} title={name}>{name}</p>
+      <div className="mt-1 flex items-center justify-between gap-2">
+        <p className="text-xs text-text-muted">{count} {t('menu.items_count')}</p>
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="p-1 rounded-lg hover:bg-surface-secondary transition-colors cursor-grab active:cursor-grabbing touch-none"
+          title={t('menu_management.drag_to_reorder')}
+          aria-label={t('menu_management.drag_to_reorder')}
+        >
+          <GripVertical className="w-3.5 h-3.5 text-text-muted/60 group-hover:text-text-secondary transition-colors flex-shrink-0" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const inputClass = (hasError: boolean): string =>
   `flex-1 px-4 py-2.5 bg-surface-secondary border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${hasError ? 'border-danger-400' : 'border-border'}`;
 
@@ -129,6 +216,7 @@ export default function AdminMenu() {
   const createCategory = useCreateMenuCategory(orgId);
   const updateCategory = useUpdateMenuCategory(orgId);
   const deleteCategory = useDeleteMenuCategory(orgId);
+  const reorderCategory = useReorderMenuCategory();
 
   const menuItems = itemsQuery.data ?? [];
   const menuCategories = categoriesQuery.data ?? [];
@@ -149,6 +237,69 @@ export default function AdminMenu() {
   const [deleteItemConfirm, setDeleteItemConfirm] = useState<string | null>(null);
   const [deleteCatConfirm, setDeleteCatConfirm] = useState<MenuCategoryDto | null>(null);
   const [deleteCatMoveTo, setDeleteCatMoveTo] = useState('');
+
+  const [orderedCategories, setOrderedCategories] = useState<MenuCategoryDto[]>(categoriesQuery.data ?? []);
+  const orderedCategoriesRef = useRef<MenuCategoryDto[]>(orderedCategories);
+
+  useEffect(() => {
+    const data = categoriesQuery.data ?? [];
+    setOrderedCategories(data);
+    orderedCategoriesRef.current = data;
+  }, [categoriesQuery.data]);
+
+  const persistCategoryOrder = async (ordered: MenuCategoryDto[]) => {
+    const changed = ordered
+      .map((cat, idx) => ({ id: cat.id, sortOrder: idx }))
+      .filter(({ id, sortOrder }) => ordered.find((c) => c.id === id)?.sortOrder !== sortOrder);
+    if (changed.length === 0) return;
+    try {
+      await Promise.all(changed.map((c) => reorderCategory.mutateAsync(c)));
+      await categoriesQuery.refetch();
+      addToast(t('menu_management.category_order_updated'), 'success');
+    } catch (err) {
+      addToast(getErrorMessage(err, t('menu_management.error.update_category')), 'error');
+      categoriesQuery.refetch();
+    }
+  };
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDragRect, setActiveDragRect] = useState<{ width: number; height: number } | null>(null);
+  const activeDragCategory = activeDragId ? orderedCategories.find((c) => c.id === activeDragId) ?? null : null;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const id = event.active.id as string;
+    setActiveDragId(id);
+    const rect = event.active.rect.current.initial;
+    setActiveDragRect(rect ? { width: rect.width, height: rect.height } : null);
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragId(null);
+    setActiveDragRect(null);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setOrderedCategories((prev) => {
+      const from = prev.findIndex((c) => c.id === active.id);
+      const to = prev.findIndex((c) => c.id === over.id);
+      if (from === -1 || to === -1 || from === to) return prev;
+      const next = arrayMove(prev, from, to);
+      orderedCategoriesRef.current = next;
+      return next;
+    });
+  };
+
+  const handleDragEnd = () => {
+    setActiveDragId(null);
+    setActiveDragRect(null);
+    persistCategoryOrder(orderedCategoriesRef.current);
+  };
 
   const query = search.trim().toLowerCase();
   const filtered = menuItems.filter((m) => {
@@ -544,54 +695,65 @@ export default function AdminMenu() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-3 mb-6">
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={`group relative rounded-2xl border p-4 text-left transition-all ${selectedCategory === 'all' ? 'border-primary-500 ring-2 ring-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10' : 'bg-white dark:bg-surface border-border hover:border-primary-300 hover:shadow-lg hover:shadow-primary-100/50 hover:-translate-y-0.5'}`}
-          >
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${selectedCategory === 'all' ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600 group-hover:from-primary-600 group-hover:to-primary-500 group-hover:text-white'}`}>
-              <LayoutGrid className="w-5 h-5" />
-            </div>
-            <p className={`mt-3 text-sm font-semibold truncate ${selectedCategory === 'all' ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`}>{t('common.all')}</p>
-            <p className="text-xs text-text-muted mt-0.5">{menuItems.length} {t('menu.items_count')}</p>
-          </button>
+        <DndContext
+          sensors={dndSensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <SortableContext items={orderedCategories.map((c) => c.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-3 mb-6">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`group relative rounded-2xl border p-4 text-left transition-all ${selectedCategory === 'all' ? 'border-primary-500 ring-2 ring-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10' : 'bg-white dark:bg-surface border-border hover:border-primary-300 hover:shadow-lg hover:shadow-primary-100/50 hover:-translate-y-0.5'}`}
+              >
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${selectedCategory === 'all' ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600 group-hover:from-primary-600 group-hover:to-primary-500 group-hover:text-white'}`}>
+                  <LayoutGrid className="w-5 h-5" />
+                </div>
+                <p className={`mt-3 text-sm font-semibold truncate ${selectedCategory === 'all' ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`}>{t('common.all')}</p>
+                <p className="text-xs text-text-muted mt-0.5">{menuItems.length} {t('menu.items_count')}</p>
+              </button>
 
-          {menuCategories.map((cat) => {
-            const count = menuItems.filter((m) => m.categoryId === cat.id).length;
-            const isActive = selectedCategory === cat.id;
-            return (
+              {orderedCategories.map((cat) => (
+                <SortableCategoryCard
+                  key={cat.id}
+                  category={cat}
+                  count={menuItems.filter((m) => m.categoryId === cat.id).length}
+                  active={selectedCategory === cat.id}
+                  onSelect={() => setSelectedCategory(cat.id)}
+                  onEdit={() => openEditCategory(cat)}
+                  onDelete={() => openDeleteCategory(cat)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+
+          <DragOverlay
+            dropAnimation={null}
+            style={{ width: activeDragRect?.width }}
+          >
+            {activeDragCategory && (
               <div
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`group relative rounded-2xl border p-4 cursor-pointer transition-all ${isActive ? 'border-primary-500 ring-2 ring-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10' : 'bg-white dark:bg-surface border-border hover:border-primary-300 hover:shadow-lg hover:shadow-primary-100/50 hover:-translate-y-0.5'}`}
+                className={`pointer-events-none scale-105 rounded-2xl border p-4 shadow-2xl shadow-black/20 select-none ${activeDragCategory.id === selectedCategory ? 'border-primary-400 ring-2 ring-primary-500/40 bg-primary-50/95 dark:bg-primary-900/60' : 'bg-white/95 dark:bg-surface/95 border-primary-300'}`}
               >
                 <div className="flex items-start justify-between">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors ${isActive ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600 group-hover:from-primary-600 group-hover:to-primary-500 group-hover:text-white'}`}>
-                    <CategoryIcon icon={cat.icon} className="w-5 h-5" />
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${activeDragCategory.id === selectedCategory ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/30 dark:to-primary-900/15 text-primary-600'}`}>
+                    <CategoryIcon icon={activeDragCategory.icon} className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openEditCategory(cat); }}
-                      className={`p-1.5 rounded-lg transition-colors ${isActive ? 'text-primary-700 dark:text-primary-300 hover:bg-primary-600 hover:text-white' : 'text-text-muted hover:bg-primary-50 hover:text-primary-600'}`}
-                      title={t('common.edit')}
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openDeleteCategory(cat); }}
-                      className={`p-1.5 rounded-lg transition-colors ${isActive ? 'text-primary-700 dark:text-primary-300 hover:bg-danger-600 hover:text-white' : 'text-text-muted hover:bg-danger-50 hover:text-danger-600'}`}
-                      title={t('common.delete')}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <GripVertical className="w-3.5 h-3.5 text-text-muted/50 flex-shrink-0 mt-1" />
                 </div>
-                <p className={`mt-3 text-sm font-semibold truncate ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`} title={localize(cat.name, locale)}>{localize(cat.name, locale)}</p>
-                <p className="text-xs text-text-muted mt-0.5">{count} {t('menu.items_count')}</p>
+                <p className={`mt-3 text-sm font-semibold truncate ${activeDragCategory.id === selectedCategory ? 'text-primary-700 dark:text-primary-300' : 'text-text-primary'}`}>
+                  {localize(activeDragCategory.name, locale)}
+                </p>
+                <p className="text-xs text-text-muted mt-1">
+                  {menuItems.filter((m) => m.categoryId === activeDragCategory.id).length} {t('menu.items_count')}
+                </p>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </DragOverlay>
+        </DndContext>
 
         <div className="bg-white dark:bg-surface rounded-2xl border border-border overflow-hidden">
           <div className="overflow-x-auto">

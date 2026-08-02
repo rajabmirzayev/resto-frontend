@@ -100,6 +100,12 @@ export function useUpdateMenuCategory(orgId?: string) {
   });
 }
 
+export function useReorderMenuCategory() {
+  return useMutation({
+    mutationFn: ({ id, sortOrder }: { id: string; sortOrder: number }) => menuApi.updateCategory(id, { sortOrder }),
+  });
+}
+
 export function useDeleteMenuCategory(_orgId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
