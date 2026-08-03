@@ -565,7 +565,7 @@ const ru: Record<string, string> = {
   'order.waiter': 'Официант',
 
   // Customer Menu
-  'menu.title': 'Меню Tabler',
+  'menu.title': 'Меню RestoFlow',
   'menu.please_select_your_table': 'Пожалуйста, выберите ваш стол:',
   'menu.waiter_only_notice': 'Заказы в этом ресторане принимает официант',
   'menu.items_count': 'товаров',

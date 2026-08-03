@@ -546,7 +546,7 @@ export const useStore = create<Store>()(
       },
     }),
     {
-      name: 'tabler-storage',
+      name: 'restoflow-storage',
       version: 2,
       partialize: (state) => ({
         menuItems: state.menuItems,

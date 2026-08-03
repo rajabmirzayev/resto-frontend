@@ -565,7 +565,7 @@ const en: Record<string, string> = {
   'order.waiter': 'Waiter',
 
   // Customer Menu
-  'menu.title': 'Tabler Menu',
+  'menu.title': 'RestoFlow Menu',
   'menu.please_select_your_table': 'Please select your table:',
   'menu.waiter_only_notice': 'Orders at this restaurant are taken by the waiter',
   'menu.items_count': 'items',

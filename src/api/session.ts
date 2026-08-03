@@ -1,4 +1,4 @@
-const SESSION_KEY = 'tabler-session';
+const SESSION_KEY = 'restoflow-session';
 
 export interface Session {
   accessToken: string | null;

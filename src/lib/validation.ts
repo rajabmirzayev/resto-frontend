@@ -4,7 +4,7 @@ export function hashPassword(password: string): string {
     const char = password.charCodeAt(i);
     hash = ((hash << 5) - hash + char) | 0;
   }
-  const salted = `tabler_${Math.abs(hash).toString(36)}_${password.length}`;
+  const salted = `restoflow_${Math.abs(hash).toString(36)}_${password.length}`;
   return btoa(salted);
 }
 
@@ -64,7 +64,7 @@ export function validatePhone(phone: string): string | null {
   return null;
 }
 
-// ===== Menu validations (mirrors tabler-back menu-service DTOs) =====
+// ===== Menu validations (mirrors restoflow-back menu-service DTOs) =====
 
 export const MENU_LIMITS = {
   nameMax: 100,
@@ -136,7 +136,7 @@ export function isAllowedMenuImage(file: File): boolean {
   );
 }
 
-// ===== Table validations (mirrors tabler-back table-service DTOs) =====
+// ===== Table validations (mirrors restoflow-back table-service DTOs) =====
 
 export const TABLE_LIMITS = {
   tableNumberMin: 1,

@@ -60,10 +60,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-primary-900/20 dark:via-surface dark:to-primary-900/30 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg shadow-primary-200">
-            <span className="text-2xl font-bold text-white">T</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            <img src="/favicon.svg" alt="RestoFlow" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-text-primary">Tabler</h1>
+          <h1 className="text-3xl font-bold text-text-primary">RestoFlow</h1>
           <p className="text-text-secondary mt-1">{t('login.system_name')}</p>
         </div>
 

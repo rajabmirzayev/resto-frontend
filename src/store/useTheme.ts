@@ -49,7 +49,7 @@ export const useTheme = create<ThemeState>()(
       },
     }),
     {
-      name: 'tabler-theme',
+      name: 'restoflow-theme',
       onRehydrateStorage: () => (state) => {
         if (state) {
           applyTheme(resolveDark(state.theme));
@@ -71,7 +71,7 @@ export const useTheme = create<ThemeState>()(
 
 export function initTheme() {
   try {
-    const saved = localStorage.getItem('tabler-theme');
+    const saved = localStorage.getItem('restoflow-theme');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed?.state?.theme) {

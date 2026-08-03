@@ -15,7 +15,7 @@ export const useCustomerTheme = create<CustomerThemeState>()(
       setTheme: (theme) => set({ theme }),
     }),
     {
-      name: 'tabler-customer-theme',
+      name: 'restoflow-customer-theme',
     }
   )
 );

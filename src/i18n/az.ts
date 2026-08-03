@@ -565,7 +565,7 @@ const az: Record<string, string> = {
   'order.waiter': 'Ofisant',
 
   // Customer Menu
-  'menu.title': 'Tabler Menyu',
+  'menu.title': 'RestoFlow Menyu',
   'menu.please_select_your_table': 'Zəhmət olmasa masanızı seçin:',
   'menu.waiter_only_notice': 'Bu restoranda sifarişlər ofisant tərəfindən qəbul edilir',
   'menu.items_count': 'məhsul',

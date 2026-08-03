@@ -1,4 +1,4 @@
-import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, ChefHat, Shield, X, Settings } from 'lucide-react';
+import { LayoutDashboard, Menu, Grid3X3, ClipboardList, Users, BarChart3, Shield, X, Settings } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { useSidebar } from '../../store/useSidebar';
@@ -44,11 +44,11 @@ export default function Sidebar() {
         <div className="p-5 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
-                <ChefHat className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/favicon.svg" alt="RestoFlow" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-text-primary leading-tight">Tabler</h1>
+                <h1 className="text-lg font-bold text-text-primary leading-tight">RestoFlow</h1>
                 <p className="text-xs text-text-muted">{currentRole?.name || t('sidebar.admin_panel')}</p>
               </div>
             </div>

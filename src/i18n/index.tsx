@@ -21,7 +21,7 @@ const useI18nStore = create<I18nState>()(
       locale: 'az',
       setLocale: (locale) => set({ locale }),
     }),
-    { name: 'tabler-locale' }
+    { name: 'restoflow-locale' }
   )
 );
 
