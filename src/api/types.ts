@@ -224,6 +224,7 @@ export interface UpdateTableRequest {
 
 export interface UpdateTableStatusRequest {
   status: TableStatusEnum;
+  currentOrderId?: string;
 }
 
 export interface UpdateReservationRequest {

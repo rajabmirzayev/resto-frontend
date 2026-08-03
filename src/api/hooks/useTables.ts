@@ -63,7 +63,8 @@ export function useDeleteTable(orgId?: string) {
 export function useUpdateTableStatus(orgId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: TableStatusEnum }) => tableApi.updateStatus(id, { status }),
+    mutationFn: ({ id, status, currentOrderId }: { id: string; status: TableStatusEnum; currentOrderId?: string }) =>
+      tableApi.updateStatus(id, { status, currentOrderId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
     },

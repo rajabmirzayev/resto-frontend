@@ -135,3 +135,49 @@ export function isAllowedMenuImage(file: File): boolean {
     (MENU_IMAGE_TYPES as readonly string[]).includes(file.type)
   );
 }
+
+// ===== Table validations (mirrors tabler-back table-service DTOs) =====
+
+export const TABLE_LIMITS = {
+  tableNumberMin: 1,
+  tableNumberMax: 9999,
+  capacityMin: 1,
+  capacityMax: 500,
+  nameMax: 100,
+  reservationNameMax: 100,
+  phoneMax: 30,
+  phoneMinDigits: 7,
+  phoneMaxDigits: 15,
+  notesMax: 500,
+  guestCountMin: 1,
+  guestCountMax: 100,
+} as const;
+
+const PHONE_CHAR_REGEX = /^[0-9+\-(). ]+$/;
+
+export function hasValidPhoneChars(value: string): boolean {
+  return value.length <= TABLE_LIMITS.phoneMax && PHONE_CHAR_REGEX.test(value);
+}
+
+export function hasValidPhoneDigits(value: string): boolean {
+  const digits = value.replace(/[^0-9]/g, '').length;
+  return digits >= TABLE_LIMITS.phoneMinDigits && digits <= TABLE_LIMITS.phoneMaxDigits;
+}
+
+export function isValidTableNumber(value: number): boolean {
+  return Number.isInteger(value) && value >= TABLE_LIMITS.tableNumberMin && value <= TABLE_LIMITS.tableNumberMax;
+}
+
+export function isValidCapacity(value: number): boolean {
+  return Number.isInteger(value) && value >= TABLE_LIMITS.capacityMin && value <= TABLE_LIMITS.capacityMax;
+}
+
+export function isValidReservationPhone(value: string): boolean {
+  return hasValidPhoneChars(value) && hasValidPhoneDigits(value);
+}
+
+export function isValidReservationTime(value: string): boolean {
+  if (!value) return false;
+  const time = new Date(value).getTime();
+  return !Number.isNaN(time) && time > Date.now();
+}

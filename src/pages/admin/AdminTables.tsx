@@ -7,6 +7,11 @@ import { useOrders } from '../../api/hooks/useOrders';
 import type { RestaurantTableDto, SectionDto, TableStatusEnum } from '../../api/types';
 import { Plus, Edit2, Trash2, X, Grid3X3, Armchair, ChefHat, FolderOpen, Clock, Loader2 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { useToast } from '../../store/useToast';
+import { ApiError } from '../../api/client';
+import { getTableErrorMessage, TABLE_ERROR_KEYS } from '../../lib/tableErrors';
+import { TABLE_LIMITS, hasControlCharacters, isValidCapacity, isValidTableNumber } from '../../lib/validation';
+import { isStatusTransitionAllowed, TABLE_STATUSES } from '../../lib/tableStatus';
 
 type ModalMode = 'add' | 'edit' | 'status' | 'sectionAdd' | 'sectionEdit' | null;
 
@@ -18,8 +23,18 @@ interface TableForm {
 
 const emptyForm: TableForm = { number: 1, capacity: 2, section: '' };
 
+const TABLE_FIELD_MAP: Record<string, string> = {
+  tableNumber: 'number',
+  capacity: 'capacity',
+  sectionId: 'section',
+};
+
+const inputClass = (hasError: boolean): string =>
+  `w-full px-4 py-2.5 bg-surface-secondary border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${hasError ? 'border-danger-400' : 'border-border'}`;
+
 export default function AdminTables() {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const currentUser = useStore((s) => s.currentUser);
   const orgId = currentUser?.orgId;
 
@@ -43,11 +58,16 @@ export default function AdminTables() {
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingTable, setEditingTable] = useState<RestaurantTableDto | null>(null);
   const [form, setForm] = useState<TableForm>(emptyForm);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleteSectionConfirm, setDeleteSectionConfirm] = useState<string | null>(null);
   const [statusTable, setStatusTable] = useState<RestaurantTableDto | null>(null);
   const [activeSection, setActiveSection] = useState<string>('all');
   const [sectionFormName, setSectionFormName] = useState('');
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
+  const [sectionFormError, setSectionFormError] = useState('');
   const [editingSection, setEditingSection] = useState<string | null>(null);
 
   const sectionName = (id: string) => sections.find((s) => s.id === id)?.name ?? '';
@@ -69,16 +89,96 @@ export default function AdminTables() {
     return { total: st.length, available: st.filter((x) => x.status === 'AVAILABLE').length };
   };
 
+  const isDotEnabled = (table: RestaurantTableDto, s: TableStatusEnum) => {
+    if (s === 'RESERVED') return table.status === 'AVAILABLE' || table.status === 'CLEANING';
+    if (s === 'OCCUPIED') return isStatusTransitionAllowed(table.status, s) && !!table.currentOrderId;
+    return isStatusTransitionAllowed(table.status, s);
+  };
+
+  const translateTableFieldError = (field: string, message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes('must not be null') || lower.includes('must not be blank') || lower.includes('required')) {
+      if (field === 'tableNumber') return t('validation.table_number.required');
+      if (field === 'capacity') return t('validation.capacity.required');
+      if (field === 'sectionId') return t('validation.zone.required');
+      return t('error.tables.validation');
+    }
+    if (lower.includes('must be greater than or equal to') || lower.includes('must be less than or equal to')) {
+      if (field === 'tableNumber') return t('validation.table_number.range', { min: TABLE_LIMITS.tableNumberMin, max: TABLE_LIMITS.tableNumberMax });
+      if (field === 'capacity') return t('validation.capacity.range', { min: TABLE_LIMITS.capacityMin, max: TABLE_LIMITS.capacityMax });
+    }
+    if (lower.includes('numeric value out of bounds')) {
+      if (field === 'tableNumber') return t('validation.table_number.range', { min: TABLE_LIMITS.tableNumberMin, max: TABLE_LIMITS.tableNumberMax });
+      if (field === 'capacity') return t('validation.capacity.range', { min: TABLE_LIMITS.capacityMin, max: TABLE_LIMITS.capacityMax });
+    }
+    if (lower.includes('must not exceed') || lower.includes('control characters')) {
+      return t('validation.name.invalid_char');
+    }
+    return message;
+  };
+
+  const translateSectionFieldError = (message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes('must not be blank') || lower.includes('must not be null')) return t('validation.name.required');
+    if (lower.includes('must not exceed')) return t('validation.name.max_length', { max: TABLE_LIMITS.nameMax });
+    if (lower.includes('control characters')) return t('validation.name.invalid_char');
+    return message;
+  };
+
+  const handleTableApiError = (err: unknown) => {
+    if (err instanceof ApiError) {
+      if (err.fieldErrors && err.fieldErrors.length > 0) {
+        const fe: Record<string, string> = {};
+        for (const item of err.fieldErrors) {
+          fe[TABLE_FIELD_MAP[item.field] ?? item.field] = translateTableFieldError(item.field, item.message);
+        }
+        setFormErrors(fe);
+        return;
+      }
+      if (err.key && TABLE_ERROR_KEYS[err.key]) {
+        setFormError(t(TABLE_ERROR_KEYS[err.key]));
+        return;
+      }
+      setFormError(err.detail || t('error.unexpected'));
+      return;
+    }
+    setFormError(t('error.network'));
+  };
+
+  const handleSectionApiError = (err: unknown) => {
+    if (err instanceof ApiError) {
+      if (err.fieldErrors && err.fieldErrors.length > 0) {
+        const fe: Record<string, string> = {};
+        for (const item of err.fieldErrors) {
+          fe[item.field] = translateSectionFieldError(item.message);
+        }
+        setSectionErrors(fe);
+        return;
+      }
+      if (err.key && TABLE_ERROR_KEYS[err.key]) {
+        setSectionFormError(t(TABLE_ERROR_KEYS[err.key]));
+        return;
+      }
+      setSectionFormError(err.detail || t('error.unexpected'));
+      return;
+    }
+    setSectionFormError(t('error.network'));
+  };
+
   const openAdd = () => {
     setEditingTable(null);
     const nextNum = tables.length > 0 ? Math.max(...tables.map((tbl) => tbl.tableNumber)) + 1 : 1;
     setForm({ number: nextNum, capacity: 4, section: sections[0]?.id || '' });
+    setFormErrors({});
+    setFormError('');
     setModalMode('add');
   };
 
   const openEdit = (table: RestaurantTableDto) => {
     setEditingTable(table);
     setForm({ number: table.tableNumber, capacity: table.capacity, section: table.sectionId });
+    setFormErrors({});
+    setFormError('');
     setModalMode('edit');
   };
 
@@ -87,54 +187,163 @@ export default function AdminTables() {
     setModalMode('status');
   };
 
-  const handleSave = () => {
-    if (form.number < 1 || form.capacity < 1 || !form.section.trim()) return;
-    const duplicate = tables.find((tbl) => tbl.tableNumber === form.number && tbl.id !== editingTable?.id);
-    if (duplicate) return;
-
-    if (modalMode === 'edit' && editingTable) {
-      updateTable.mutate({ id: editingTable.id, payload: { tableNumber: form.number, capacity: form.capacity, sectionId: form.section.trim() } });
-    } else {
-      createTable.mutate({ tableNumber: form.number, capacity: form.capacity, sectionId: form.section.trim(), orgId: orgId ?? '' });
-    }
+  const closeTableModal = () => {
     setModalMode(null);
     setEditingTable(null);
+    setFormErrors({});
+    setFormError('');
   };
 
-  const handleDelete = (id: string) => {
-    deleteTable.mutate(id);
+  const validateTableForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!Number.isFinite(form.number) || form.number === 0) {
+      errors.number = t('validation.table_number.required');
+    } else if (!isValidTableNumber(form.number)) {
+      errors.number = t('validation.table_number.range', { min: TABLE_LIMITS.tableNumberMin, max: TABLE_LIMITS.tableNumberMax });
+    } else if (tables.some((tbl) => tbl.tableNumber === form.number && tbl.id !== editingTable?.id)) {
+      errors.number = t('validation.table_number.duplicate');
+    }
+    if (!Number.isFinite(form.capacity) || form.capacity === 0) {
+      errors.capacity = t('validation.capacity.required');
+    } else if (!isValidCapacity(form.capacity)) {
+      errors.capacity = t('validation.capacity.range', { min: TABLE_LIMITS.capacityMin, max: TABLE_LIMITS.capacityMax });
+    }
+    if (!form.section.trim()) {
+      errors.section = t('validation.zone.required');
+    }
+    return errors;
+  };
+
+  const handleSave = async () => {
+    const errors = validateTableForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
+    setFormError('');
+    setIsSaving(true);
+    const sectionId = form.section.trim();
+    try {
+      if (modalMode === 'edit' && editingTable) {
+        await updateTable.mutateAsync({ id: editingTable.id, payload: { tableNumber: form.number, capacity: form.capacity, sectionId } });
+        addToast(t('tables.table_updated'), 'success');
+      } else {
+        await createTable.mutateAsync({ tableNumber: form.number, capacity: form.capacity, sectionId, orgId: orgId ?? '' });
+        addToast(t('tables.table_added'), 'success');
+      }
+      setModalMode(null);
+      setEditingTable(null);
+    } catch (err) {
+      handleTableApiError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     setDeleteConfirm(null);
+    try {
+      await deleteTable.mutateAsync(id);
+      addToast(t('tables.table_deleted'), 'success');
+    } catch (err) {
+      addToast(getTableErrorMessage(err, t('tables.error.delete_table'), t), 'error');
+    }
+  };
+
+  const handleQuickStatus = async (table: RestaurantTableDto, s: TableStatusEnum) => {
+    if (s === 'RESERVED') {
+      openStatus(table);
+      return;
+    }
+    try {
+      await updateTableStatus.mutateAsync({ id: table.id, status: s });
+      addToast(t('tables.status_updated'), 'success');
+    } catch (err) {
+      addToast(getTableErrorMessage(err, t('tables.error.update_status'), t), 'error');
+    }
   };
 
   const openSectionAdd = () => {
     setEditingSection(null);
     setSectionFormName('');
+    setSectionErrors({});
+    setSectionFormError('');
     setModalMode('sectionAdd');
   };
 
   const openSectionEdit = (section: SectionDto) => {
     setEditingSection(section.id);
     setSectionFormName(section.name);
+    setSectionErrors({});
+    setSectionFormError('');
     setModalMode('sectionEdit');
   };
 
-  const handleSectionSave = () => {
-    const name = sectionFormName.trim();
-    if (!name) return;
-    if (modalMode === 'sectionEdit' && editingSection) {
-      updateSection.mutate({ id: editingSection, name });
-    } else {
-      createSection.mutate({ name, orgId: orgId ?? '' });
-    }
+  const closeSectionModal = () => {
     setModalMode(null);
     setEditingSection(null);
     setSectionFormName('');
+    setSectionErrors({});
+    setSectionFormError('');
   };
 
-  const handleSectionDelete = (id: string) => {
-    removeSection.mutate(id);
+  const validateSectionForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    const name = sectionFormName.trim();
+    if (!name) {
+      errors.name = t('validation.name.required');
+    } else {
+      if (hasControlCharacters(name)) {
+        errors.name = t('validation.name.invalid_char');
+      } else if (name.length > TABLE_LIMITS.nameMax) {
+        errors.name = t('validation.name.max_length', { max: TABLE_LIMITS.nameMax });
+      }
+      const normalized = name.toLowerCase();
+      if (sections.some((s) => s.name.toLowerCase() === normalized && s.id !== editingSection)) {
+        errors.name = t('validation.zone.name_duplicate');
+      }
+    }
+    return errors;
+  };
+
+  const handleSectionSave = async () => {
+    const errors = validateSectionForm();
+    if (Object.keys(errors).length > 0) {
+      setSectionErrors(errors);
+      return;
+    }
+    setSectionErrors({});
+    setSectionFormError('');
+    setIsSaving(true);
+    const name = sectionFormName.trim();
+    try {
+      if (modalMode === 'sectionEdit' && editingSection) {
+        await updateSection.mutateAsync({ id: editingSection, name });
+        addToast(t('tables.section_updated'), 'success');
+      } else {
+        await createSection.mutateAsync({ name, orgId: orgId ?? '' });
+        addToast(t('tables.section_added'), 'success');
+      }
+      setModalMode(null);
+      setEditingSection(null);
+      setSectionFormName('');
+    } catch (err) {
+      handleSectionApiError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSectionDelete = async (id: string) => {
     setDeleteSectionConfirm(null);
-    if (activeSection === id) setActiveSection('all');
+    try {
+      await removeSection.mutateAsync(id);
+      addToast(t('tables.section_deleted'), 'success');
+      if (activeSection === id) setActiveSection('all');
+    } catch (err) {
+      addToast(getTableErrorMessage(err, t('tables.error.delete_section'), t), 'error');
+    }
   };
 
   if ((tablesQuery.isLoading && !tablesQuery.data) || (sectionsQuery.isLoading && !sectionsQuery.data)) {
@@ -309,21 +518,27 @@ export default function AdminTables() {
                             <span className="text-[10px] font-semibold text-warning-600">{t('table.status.reserved')}</span>
                           </div>
                           <p className="text-xs font-bold text-text-primary">{table.reservation.guestName}</p>
-                          <p className="text-[10px] text-text-muted">{table.reservation.time} • {table.reservation.guestCount} {t('table.guests')}</p>
+                          <p className="text-[10px] text-text-muted">
+                            {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(table.reservation.time))} • {table.reservation.guestCount} {t('table.guests')}
+                          </p>
                         </div>
                       )}
 
                       <div className="mt-3 flex gap-1 justify-center">
-                        {(['AVAILABLE', 'OCCUPIED', 'RESERVED', 'CLEANING'] as const).map((s) => (
-                          <button
-                            key={s}
-                            onClick={(e) => { e.stopPropagation(); updateTableStatus.mutate({ id: table.id, status: s }); }}
-                            className={`w-6 h-6 rounded-full border-2 transition-all ${
-                              table.status === s ? 'border-primary-600 scale-110' : 'border-border hover:border-primary-300'
-                            } ${statusConfig[s].color}`}
-                            title={statusConfig[s].label}
-                          />
-                        ))}
+                        {TABLE_STATUSES.map((s) => {
+                          const enabled = isDotEnabled(table, s);
+                          return (
+                            <button
+                              key={s}
+                              onClick={(e) => { e.stopPropagation(); if (enabled) handleQuickStatus(table, s); }}
+                              disabled={!enabled}
+                              title={!enabled && s === 'OCCUPIED' ? t('tables.order_required_hint') : statusConfig[s].label}
+                              className={`w-6 h-6 rounded-full border-2 transition-all ${
+                                table.status === s ? 'border-primary-600 scale-110' : 'border-border hover:border-primary-300'
+                              } ${statusConfig[s].color} ${enabled ? '' : 'opacity-30 cursor-not-allowed'}`}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -353,11 +568,11 @@ export default function AdminTables() {
 
       {/* Table Add / Edit Modal */}
       {(modalMode === 'add' || modalMode === 'edit') && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeTableModal}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'edit' ? t('tables.edit_table') : t('tables.add_table')}</h3>
-              <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
+              <button onClick={closeTableModal} className="p-1 hover:bg-surface-secondary rounded-lg">
                 <X className="w-5 h-5 text-text-muted" />
               </button>
             </div>
@@ -367,47 +582,53 @@ export default function AdminTables() {
                   <label className="block text-sm font-medium text-text-secondary mb-1">{t('tables.table_number')}</label>
                   <input
                     type="number"
-                    min={1}
-                    value={form.number}
+                    min={TABLE_LIMITS.tableNumberMin}
+                    max={TABLE_LIMITS.tableNumberMax}
+                    value={form.number || ''}
                     onChange={(e) => setForm({ ...form, number: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={inputClass(!!formErrors.number)}
                   />
+                  {formErrors.number && <p className="text-xs text-danger-600 mt-1">{formErrors.number}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-1">{t('tables.capacity')}</label>
                   <input
                     type="number"
-                    min={1}
-                    max={50}
-                    value={form.capacity}
+                    min={TABLE_LIMITS.capacityMin}
+                    max={TABLE_LIMITS.capacityMax}
+                    value={form.capacity || ''}
                     onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={inputClass(!!formErrors.capacity)}
                   />
+                  {formErrors.capacity && <p className="text-xs text-danger-600 mt-1">{formErrors.capacity}</p>}
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">{t('tables.zone')}</label>
                 {sections.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {sections.map((section) => (
-                      <button
-                        key={section.id}
-                        onClick={() => setForm({ ...form, section: section.id })}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
-                          form.section === section.id
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
-                        }`}
-                      >
-                        {section.name}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {sections.map((section) => (
+                        <button
+                          key={section.id}
+                          onClick={() => setForm({ ...form, section: section.id })}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                            form.section === section.id
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
+                          }`}
+                        >
+                          {section.name}
+                        </button>
+                      ))}
+                    </div>
+                    {formErrors.section && <p className="text-xs text-danger-600 mt-1">{formErrors.section}</p>}
+                  </>
                 ) : (
                   <div className="bg-surface-secondary rounded-xl p-4 text-center">
                     <p className="text-sm text-text-muted mb-2">{t('tables.no_zones')}</p>
                     <button
-                      onClick={() => { setModalMode(null); openSectionAdd(); }}
+                      onClick={() => { closeTableModal(); openSectionAdd(); }}
                       className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                     >
                       + {t('tables.create_zone')}
@@ -415,17 +636,19 @@ export default function AdminTables() {
                   </div>
                 )}
               </div>
+              {formError && <p className="text-sm text-danger-600 bg-danger-50 border border-danger-200 rounded-xl px-4 py-3">{formError}</p>}
             </div>
             <div className="px-6 pb-6 flex gap-3">
               <button
-                onClick={() => setModalMode(null)}
+                onClick={closeTableModal}
+                disabled={isSaving}
                 className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
               >
                 {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
-                disabled={form.number < 1 || form.capacity < 1 || !form.section.trim() || (modalMode === 'add' && tables.some((tbl) => tbl.tableNumber === form.number))}
+                disabled={isSaving || form.number < 1 || form.capacity < 1 || !form.section.trim() || (modalMode === 'add' && tables.some((tbl) => tbl.tableNumber === form.number))}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 {modalMode === 'edit' ? t('common.save') : t('common.add')}
@@ -439,20 +662,29 @@ export default function AdminTables() {
       {modalMode === 'status' && statusTable && (
         <TableStatusModal
           table={statusTable}
-          onUpdateStatus={(id, status) => updateTableStatus.mutate({ id, status })}
-          onUpdateReservation={(id, reservation) => updateReservation.mutate({ id, reservation })}
-          onRemoveReservation={(id) => removeReservation.mutate(id)}
+          onUpdateStatus={async (id, status) => {
+            await updateTableStatus.mutateAsync({ id, status });
+            addToast(t('tables.status_updated'), 'success');
+          }}
+          onUpdateReservation={async (id, reservation) => {
+            await updateReservation.mutateAsync({ id, reservation });
+            addToast(t('tables.reservation_added'), 'success');
+          }}
+          onRemoveReservation={async (id) => {
+            await removeReservation.mutateAsync(id);
+            addToast(t('tables.reservation_cancelled'), 'success');
+          }}
           onClose={() => setModalMode(null)}
         />
       )}
 
       {/* Section Add / Edit Modal */}
       {(modalMode === 'sectionAdd' || modalMode === 'sectionEdit') && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModalMode(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeSectionModal}>
           <div className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-lg font-bold text-text-primary">{modalMode === 'sectionEdit' ? t('tables.edit_zone_title') : t('tables.add_zone_title')}</h3>
-              <button onClick={() => setModalMode(null)} className="p-1 hover:bg-surface-secondary rounded-lg">
+              <button onClick={closeSectionModal} className="p-1 hover:bg-surface-secondary rounded-lg">
                 <X className="w-5 h-5 text-text-muted" />
               </button>
             </div>
@@ -462,24 +694,25 @@ export default function AdminTables() {
                 value={sectionFormName}
                 onChange={(e) => setSectionFormName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSectionSave(); }}
-                className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className={inputClass(!!sectionErrors.name)}
                 placeholder={t('tables.zone_placeholder')}
+                maxLength={TABLE_LIMITS.nameMax}
                 autoFocus
               />
-              {modalMode === 'sectionAdd' && sections.some((s) => s.name === sectionFormName.trim()) && (
-                <p className="text-xs text-danger-600 mt-1">{t('tables.zone_already_exists')}</p>
-              )}
+              {sectionErrors.name && <p className="text-xs text-danger-600 mt-1">{sectionErrors.name}</p>}
+              {sectionFormError && <p className="text-sm text-danger-600 bg-danger-50 border border-danger-200 rounded-xl px-4 py-3 mt-2">{sectionFormError}</p>}
             </div>
             <div className="px-6 pb-6 flex gap-3">
               <button
-                onClick={() => setModalMode(null)}
+                onClick={closeSectionModal}
+                disabled={isSaving}
                 className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
               >
                 {t('common.cancel')}
               </button>
               <button
                 onClick={handleSectionSave}
-                disabled={!sectionFormName.trim() || (modalMode === 'sectionAdd' && sections.some((s) => s.name === sectionFormName.trim())) || (modalMode === 'sectionEdit' && (sections.find((s) => s.id === editingSection)?.name === sectionFormName.trim() || sections.some((s) => s.id !== editingSection && s.name === sectionFormName.trim())))}
+                disabled={isSaving || !sectionFormName.trim()}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 {modalMode === 'sectionEdit' ? t('common.save') : t('common.add')}

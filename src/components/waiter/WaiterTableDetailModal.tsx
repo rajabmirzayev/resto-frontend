@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../../i18n';
 import { localize } from '../../utils/localize';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { useMenuItems, useMenuCategories } from '../../api/hooks/useMenu';
 import { useOrders, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCompletePayment } from '../../api/hooks/useOrders';
-import { useUpdateTableStatus } from '../../api/hooks/useTables';
+import { useUpdateTableStatus, useRemoveReservation, tableKeys } from '../../api/hooks/useTables';
 import type { RestaurantTableDto, OrderDto } from '../../api/types';
 import { getOrderItemStatusLabels } from '../../lib/constants';
+import { getOrderErrorMessage } from '../../lib/orderErrors';
 import type { OrderStatus } from '../../types';
 import { X, ClipboardList, CheckCircle, UtensilsCrossed, CreditCard, Timer, ReceiptText, Banknote, Clock, User, Phone, Plus, Minus, ShoppingBag, Hand } from 'lucide-react';
 
@@ -19,6 +21,7 @@ interface Props {
 
 export default function WaiterTableDetailModal({ table, sectionName, onClose }: Props) {
   const { t, locale } = useTranslation();
+  const queryClient = useQueryClient();
   const ORDER_ITEM_STATUS_LABELS = useMemo(() => getOrderItemStatusLabels(t), [t]);
   const currentUser = useStore((s) => s.currentUser);
   const cart = useStore((s) => s.cart);
@@ -38,6 +41,7 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
   const updateOrderItemStatus = useUpdateOrderItemStatus(orgId);
   const completePayment = useCompletePayment(orgId);
   const updateTableStatus = useUpdateTableStatus(orgId);
+  const removeReservation = useRemoveReservation(orgId);
 
   const menuItems = menuItemsQuery.data ?? [];
   const menuCategories = menuCategoriesQuery.data ?? [];
@@ -72,35 +76,56 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
       },
       {
         onSuccess: () => {
-          updateTableStatus.mutate({ id: table.id, status: 'OCCUPIED' });
+          clearCart();
+          setShowNewOrder(false);
+          queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
+          addToast(t('toast.order_created', { number: table.tableNumber }), 'success');
+        },
+        onError: (err) => {
+          addToast(getOrderErrorMessage(err, t('error.order_creation_failed'), t), 'error');
         },
       }
     );
-    clearCart();
-    setShowNewOrder(false);
-    addToast(t('toast.order_created', { number: table.tableNumber }), 'success');
   };
 
   const handleAddItemsToOrder = () => {
     if (!order) return;
-    addItemsOrder.mutate({
-      id: order.id,
-      items: cart.map((c) => ({ menuItemId: c.menuItemId, menuItemName: c.menuItemName, quantity: c.quantity, price: c.price, notes: c.notes })),
-    });
-    clearCart();
-    setShowAddItems(false);
-    addToast(t('toast.items_added'), 'success');
+    addItemsOrder.mutate(
+      {
+        id: order.id,
+        items: cart.map((c) => ({ menuItemId: c.menuItemId, menuItemName: c.menuItemName, quantity: c.quantity, price: c.price, notes: c.notes })),
+      },
+      {
+        onSuccess: () => {
+          clearCart();
+          setShowAddItems(false);
+          addToast(t('toast.items_added'), 'success');
+        },
+        onError: (err) => {
+          addToast(getOrderErrorMessage(err, t('error.order_creation_failed'), t), 'error');
+        },
+      }
+    );
   };
 
   const handleMarkServed = () => {
     if (!order) return;
-    updateOrderStatus.mutate({ id: order.id, status: 'SERVED' });
+    updateOrderStatus.mutate(
+      { id: order.id, status: 'SERVED' },
+      {
+        onSuccess: () => {
+          addToast(t('toast.marked_served', { number: table.tableNumber }), 'success');
+        },
+        onError: (err) => {
+          addToast(getOrderErrorMessage(err, t('error.orders.invalid_status_transition'), t), 'error');
+        },
+      }
+    );
     order.items.forEach((item) => {
-      if (item.status === 'READY' || item.status === 'PREPARING') {
+      if (item.status === 'READY') {
         updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'SERVED' });
       }
     });
-    addToast(t('toast.marked_served', { number: table.tableNumber }), 'success');
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -294,7 +319,15 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           <p className="text-lg font-semibold text-text-primary">{t('table.cleaning_detail')}</p>
           <p className="text-sm text-text-muted mt-1">{t('table.marked_clean')}</p>
           <button
-            onClick={() => { updateTableStatus.mutate({ id: table.id, status: 'AVAILABLE' }); onClose(); }}
+            onClick={() => {
+              updateTableStatus.mutate(
+                { id: table.id, status: 'AVAILABLE' },
+                {
+                  onSuccess: () => { onClose(); addToast(t('tables.status_updated'), 'success'); },
+                  onError: (err) => { addToast(getOrderErrorMessage(err, t('tables.error.update_status'), t), 'error'); },
+                }
+              );
+            }}
             className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             {t('table.status.available')}
@@ -335,7 +368,12 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
             <p className="text-sm text-text-muted mt-1">{t('table.reservation_info')}</p>
           )}
           <button
-            onClick={() => { updateTableStatus.mutate({ id: table.id, status: 'AVAILABLE' }); onClose(); }}
+            onClick={() => {
+              removeReservation.mutate(table.id, {
+                onSuccess: () => { onClose(); addToast(t('tables.reservation_cancelled'), 'success'); },
+                onError: (err) => { addToast(getOrderErrorMessage(err, t('tables.error.cancel_reservation'), t), 'error'); },
+              });
+            }}
             className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             {t('table.free_table')}
@@ -440,10 +478,16 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
         {order.paymentRequested && order.paymentStatus === 'PENDING' && (
           <button
             onClick={() => {
-              completePayment.mutate(order.id);
-              updateTableStatus.mutate({ id: table.id, status: 'AVAILABLE' });
-              onClose();
-              addToast(t('toast.bill_closed', { number: table.tableNumber }), 'success');
+              completePayment.mutate(order.id, {
+                onSuccess: () => {
+                  onClose();
+                  queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
+                  addToast(t('toast.bill_closed', { number: table.tableNumber }), 'success');
+                },
+                onError: (err) => {
+                  addToast(getOrderErrorMessage(err, t('error.unexpected'), t), 'error');
+                },
+              });
             }}
             className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
           >

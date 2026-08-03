@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../../i18n';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { playOrderReadySound } from '../../lib/sounds';
-import { useTables, useTableSections } from '../../api/hooks/useTables';
+import { useTables, useTableSections, tableKeys } from '../../api/hooks/useTables';
 import { useOrders, useCompletePayment, useWaiterConfirmOrder, useCancelOrder } from '../../api/hooks/useOrders';
+import { getOrderErrorMessage } from '../../lib/orderErrors';
 import type { RestaurantTableDto, OrderDto } from '../../api/types';
 import WaiterTableDetailModal from '../../components/waiter/WaiterTableDetailModal';
 import {
@@ -16,6 +18,7 @@ import {
 
 export default function WaiterDashboard() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const currentUser = useStore((s) => s.currentUser);
   const orderMode = useStore((s) => s.orderMode);
   const { addToast } = useToast();
@@ -117,8 +120,17 @@ export default function WaiterDashboard() {
   const sectionIds = [...new Set(tables.map((t) => t.sectionId).filter(Boolean))];
 
   const handleConfirmCustomerOrder = (order: OrderDto) => {
-    waiterConfirm.mutate({ id: order.id, waiterId: currentUser?.id || '', waiterName: currentUser?.name || '' });
-    addToast(t('toast.table_order_confirmed', { number: order.tableNumber }), 'success');
+    waiterConfirm.mutate(
+      { id: order.id, waiterId: currentUser?.id || '', waiterName: currentUser?.name || '' },
+      {
+        onSuccess: () => {
+          addToast(t('toast.table_order_confirmed', { number: order.tableNumber }), 'success');
+        },
+        onError: (err) => {
+          addToast(getOrderErrorMessage(err, t('error.orders.only_pending_confirmable'), t), 'error');
+        },
+      }
+    );
   };
 
   if ((tablesQuery.isLoading && !tablesQuery.data) || (ordersQuery.isLoading && !ordersQuery.data) || (sectionsQuery.isLoading && !sectionsQuery.data)) {
@@ -233,8 +245,15 @@ export default function WaiterDashboard() {
                 </div>
                 <button
                   onClick={() => {
-                    completePayment.mutate(order.id);
-                    addToast(t('toast.bill_closed', { number: order.tableNumber }), 'success');
+                    completePayment.mutate(order.id, {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
+                        addToast(t('toast.bill_closed', { number: order.tableNumber }), 'success');
+                      },
+                      onError: (err) => {
+                        addToast(getOrderErrorMessage(err, t('error.unexpected'), t), 'error');
+                      },
+                    });
                   }}
                   className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
@@ -272,7 +291,17 @@ export default function WaiterDashboard() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { cancelOrder.mutate(order.id); addToast(t('toast.order_cancelled', { number: order.tableNumber }), 'warning'); }}
+                    onClick={() => {
+                      cancelOrder.mutate(order.id, {
+                        onSuccess: () => {
+                          queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
+                          addToast(t('toast.order_cancelled', { number: order.tableNumber }), 'warning');
+                        },
+                        onError: (err) => {
+                          addToast(getOrderErrorMessage(err, t('error.orders.not_cancellable'), t), 'error');
+                        },
+                      });
+                    }}
                     className="flex-1 bg-danger-500 hover:bg-danger-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
                   >
                     {t('order.reject')}
