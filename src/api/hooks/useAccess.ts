@@ -30,8 +30,9 @@ export function useUsers(params?: { orgId?: string; roleId?: string; page?: numb
 export function useStaffPerformance(orgId?: string) {
   return useQuery({
     queryKey: userKeys.staffPerformance(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await accessApi.staffPerformance(orgId ? { orgId } : {});
+      const res = await accessApi.staffPerformance({ orgId: orgId! });
       return res.data;
     },
   });
@@ -147,10 +148,10 @@ export function useSetRolePermissions() {
   });
 }
 
-export function useAssignRoleUsers(roleId: string) {
+export function useAssignRoleUsers() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: AssignUsersRequest) => accessApi.assignRoleUsers(roleId, payload),
+    mutationFn: ({ roleId, payload }: { roleId: string; payload: AssignUsersRequest }) => accessApi.assignRoleUsers(roleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

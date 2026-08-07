@@ -4,16 +4,16 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
 import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionsTree, useSetRolePermissions } from '../../api/hooks/useAccess';
 import { useUsers } from '../../api/hooks/useAccess';
-import { ApiError } from '../../api/client';
+import { formatApiError } from '../../api/client';
 import type { RoleResponse, UiScope } from '../../api/types';
 import { Plus, Edit2, Trash2, X, Shield, Check, Lock, Loader2 } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | null;
 
-const UI_SCOPE_OPTIONS: { value: UiScope; label: string }[] = [
-  { value: 'ADMIN_PANEL', label: 'Admin Panel' },
-  { value: 'WAITER_PANEL', label: 'Ofisant Panel' },
-  { value: 'KITCHEN_PANEL', label: 'Mtbəx Panel' },
+const UI_SCOPE_OPTIONS: { value: UiScope; labelKey: string }[] = [
+  { value: 'ADMIN_PANEL', labelKey: 'roles.panel_admin' },
+  { value: 'WAITER_PANEL', labelKey: 'roles.panel_waiter' },
+  { value: 'KITCHEN_PANEL', labelKey: 'roles.panel_kitchen' },
 ];
 
 export default function RoleManagement() {
@@ -37,6 +37,7 @@ export default function RoleManagement() {
   const [formPermIds, setFormPermIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const roles = rolesQuery.data?.content ?? [];
   const users = usersQuery.data?.content ?? [];
@@ -78,31 +79,28 @@ export default function RoleManagement() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim() || !formCode.trim()) return;
-    if (modalMode === 'edit' && editingRole) {
-      updateRole.mutate(
-        { id: editingRole.id, payload: { name: formName.trim(), uiScope: formUiScope } },
-        {
-          onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')),
+    setSaving(true);
+    setFormError('');
+    try {
+      if (modalMode === 'edit' && editingRole) {
+        await updateRole.mutateAsync({ id: editingRole.id, payload: { name: formName.trim(), uiScope: formUiScope } });
+        const originalPerms = [...editingRole.permissionIds].sort().join(',');
+        const nextPerms = [...formPermIds].sort().join(',');
+        if (originalPerms !== nextPerms) {
+          await setRolePermissions.mutateAsync({ roleId: editingRole.id, payload: { permissionIds: formPermIds } });
         }
-      );
-      const originalPerms = [...editingRole.permissionIds].sort().join(',');
-      const nextPerms = [...formPermIds].sort().join(',');
-      if (originalPerms !== nextPerms) {
-        setRolePermissions.mutate(
-          { roleId: editingRole.id, payload: { permissionIds: formPermIds } },
-          { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
-        );
+      } else {
+        await createRole.mutateAsync({ code: formCode.trim().toUpperCase(), name: formName.trim(), uiScope: formUiScope, permissionIds: formPermIds });
       }
-    } else {
-      createRole.mutate(
-        { code: formCode.trim().toUpperCase(), name: formName.trim(), uiScope: formUiScope, permissionIds: formPermIds },
-        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
-      );
+      setModalMode(null);
+      setEditingRole(null);
+    } catch (err) {
+      setFormError(formatApiError(err, t('error.network')));
+    } finally {
+      setSaving(false);
     }
-    setModalMode(null);
-    setEditingRole(null);
   };
 
   const handleDelete = (id: string) => {
@@ -247,7 +245,7 @@ export default function RoleManagement() {
             <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Kod</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">{t('roles.code')}</label>
                   <input
                     value={formCode}
                     onChange={(e) => setFormCode(e.target.value.toUpperCase())}
@@ -268,7 +266,7 @@ export default function RoleManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Panel</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2">{t('roles.panel')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {UI_SCOPE_OPTIONS.map((opt) => (
                     <button
@@ -280,7 +278,7 @@ export default function RoleManagement() {
                           : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
                       }`}
                     >
-                      {opt.label}
+                      {opt.labelKey && t(opt.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -344,7 +342,7 @@ export default function RoleManagement() {
                       );
                     })}
                     {tree.length === 0 && (
-                      <p className="text-sm text-text-muted text-center py-4">İcazə kataloqu yüklənə bilmədi</p>
+                      <p className="text-sm text-text-muted text-center py-4">{t('roles.permissions_tree_error')}</p>
                     )}
                   </div>
                 </div>
@@ -358,16 +356,17 @@ export default function RoleManagement() {
             <div className="px-6 pb-6 flex gap-3 shrink-0 pt-4 border-t border-border">
               <button
                 onClick={() => setModalMode(null)}
-                className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors"
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors disabled:opacity-50"
               >
                 {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
-                disabled={!formName.trim() || (modalMode === 'add' && !formCode.trim())}
+                disabled={!formName.trim() || (modalMode === 'add' && !formCode.trim()) || saving}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
               >
-                {modalMode === 'edit' ? t('common.save') : t('common.add')}
+                {saving ? '...' : modalMode === 'edit' ? t('common.save') : t('common.add')}
               </button>
             </div>
           </div>

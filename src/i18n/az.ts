@@ -239,17 +239,19 @@ const az: Record<string, string> = {
 
   // Staff
   'staff.title': 'Personal İdarəetməsi',
-  'staff.staff_suffix': 'işiçi',
+  'staff.staff_suffix': 'işçi',
   'staff.new_staff': 'Yeni İşçi',
   'staff.active_orders': 'Aktiv Sifariş',
   'staff.revenue': 'Gəlir',
   'staff.no_staff_in_category': 'Bu kateqoriyada işçi yoxdur',
+  'staff.org_required': 'İşçi yaratmaq üçün təşkilat lazımdır',
   'staff.edit_staff': 'İşçini Redaktə Et',
   'staff.add_staff': 'Yeni İşçi Əlavə Et',
   'staff.full_name': 'Ad Soyad',
   'staff.full_name_placeholder': 'Ad Soyad',
   'staff.username': 'İstifadəçi adı',
   'staff.email': 'Email',
+  'staff.password_placeholder': 'Yeni parol (boş = dəyişmə)',
   'staff.role': 'Rol',
   'staff.delete_confirmation': 'İşçini silmək?',
 
@@ -266,6 +268,12 @@ const az: Record<string, string> = {
   'roles.role_name': 'Rol adı',
   'roles.role_name_placeholder': 'Rol adı',
   'roles.permissions': 'İcazələr',
+  'roles.code': 'Kod',
+  'roles.panel': 'Panel',
+  'roles.panel_admin': 'Admin Panel',
+  'roles.panel_waiter': 'Ofisant Panel',
+  'roles.panel_kitchen': 'Mətbəx Panel',
+  'roles.permissions_tree_error': 'İcazə kataloqu yüklənə bilmədi',
   'roles.delete_confirmation': 'Rolü silmək?',
 
   // Menu Management

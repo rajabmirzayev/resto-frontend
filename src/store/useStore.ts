@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, Organization, PaymentMethod, PaymentTiming, Permission, Role, Table, TableStatus, User, UserRole } from '../types';
+import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, PaymentMethod, PaymentTiming, Permission, Table, TableStatus, User, UserRole } from '../types';
 import { initialData } from '../data/mock';
-import { hashPassword } from '../lib/validation';
 import { authApi } from '../api/auth';
 import { clearSession, getAccessToken, getOrgIdFromToken, getPermissions, getRefreshToken, setSession, setPermissions, setUiScope } from '../api/session';
 
@@ -47,14 +46,6 @@ interface StoreActions {
   updateTableSection: (oldName: string, newName: string) => void;
   deleteTableSection: (name: string) => void;
 
-  addUser: (user: Omit<User, 'id'>) => void;
-  updateUser: (id: string, user: Partial<User>) => void;
-  deleteUser: (id: string) => void;
-
-  addRole: (role: Omit<Role, 'id'>) => void;
-  updateRole: (id: string, role: Partial<Role>) => void;
-  deleteRole: (id: string) => void;
-  getUserPermissions: (userId: string) => Permission[];
   hasPermission: (permission: Permission) => boolean;
 
   addToCart: (item: CartItem) => void;
@@ -71,8 +62,6 @@ interface StoreActions {
   cancelOrder: (orderId: string) => void;
   completePayment: (orderId: string) => void;
   requestPayment: (orderId: string, method: PaymentMethod) => void;
-  createOrganization: (name: string, adminName: string, adminEmail: string, adminPassword: string) => Organization;
-  getOrgById: (id: string) => Organization | undefined;
   setOrderMode: (mode: OrderMode) => void;
   setCustomerPhotoRequired: (required: boolean) => void;
   setPaymentTiming: (timing: PaymentTiming) => void;
@@ -201,72 +190,11 @@ export const useStore = create<Store>()(
         });
       },
 
-      addUser: (user) => {
-        const newUser: User = { ...user, id: uuidv4(), password: hashPassword(user.password) };
-        set((state) => ({ users: [...state.users, newUser] }));
-      },
-
-      updateUser: (id, user) => {
-        const { password: pwd, ...rest } = user;
-        set((state) => ({
-          users: state.users.map((u) =>
-            u.id === id
-              ? { ...u, ...rest, ...(pwd ? { password: hashPassword(pwd) } : {}) }
-              : u
-          ),
-        }));
-      },
-
-      deleteUser: (id) => {
-        set((state) => ({ users: state.users.filter((u) => u.id !== id) }));
-      },
-
-      addRole: (role) => {
-        const newRole: Role = { ...role, id: uuidv4() };
-        set((state) => ({ roles: [...state.roles, newRole] }));
-      },
-
-      updateRole: (id, role) => {
-        set((state) => ({
-          roles: state.roles.map((r) => (r.id === id ? { ...r, ...role } : r)),
-        }));
-      },
-
-      deleteRole: (id) => {
-        set((state) => {
-          const target = state.roles.find((r) => r.id === id);
-          if (target?.isSystem) return state;
-          return { roles: state.roles.filter((r) => r.id !== id) };
-        });
-      },
-
-      getUserPermissions: (userId) => {
-        const { users, roles, currentUser } = get();
-        const user =
-          users.find((u) => u.id === userId) ??
-          (currentUser && currentUser.id === userId ? currentUser : undefined);
-        if (!user) return [];
-        if (user.roleId) {
-          const role = roles.find((r) => r.id === user.roleId);
-          if (role) return role.permissions;
-        }
-        if (user.role === 'admin') {
-          const adminRole = roles.find((r) => r.isSystem);
-          if (adminRole) return adminRole.permissions;
-        }
-        const fallbackRoleId = user.role === 'waiter' ? 'r3' : user.role === 'chef' ? 'r4' : 'r1';
-        const fallbackRole = roles.find((r) => r.id === fallbackRoleId);
-        if (fallbackRole) return fallbackRole.permissions;
-        return [];
-      },
-
       hasPermission: (permission) => {
-        const state = get();
-        if (!state.currentUser) return false;
+        if (!get().currentUser) return false;
         const sessionPerms = getPermissions();
-        if (sessionPerms.length > 0) return sessionPerms.includes(permission);
-        const perms = state.getUserPermissions(state.currentUser.id);
-        return perms.includes(permission);
+        if (sessionPerms.length === 0) return false;
+        return sessionPerms.includes(permission);
       },
 
       addToCart: (item) => {
@@ -513,38 +441,6 @@ export const useStore = create<Store>()(
 
       setPaymentTiming: (timing) => {
         set({ paymentTiming: timing });
-      },
-
-      createOrganization: (name, adminName, adminEmail, adminPassword) => {
-        const id = uuidv4();
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + id.slice(0, 8);
-        const org: Organization = { id, name, slug, adminName, adminEmail, createdAt: new Date().toISOString() };
-        const orgRole: Role = {
-          id: uuidv4(),
-          name: `${name} Admin`,
-          permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'table.view', 'table.create', 'table.edit', 'table.delete', 'table.status', 'order.view', 'order.create', 'order.manage', 'order.cancel', 'kitchen.view'],
-          isSystem: false,
-        };
-        const orgUser: User = {
-          id: uuidv4(),
-          name: adminName,
-          role: 'org_admin',
-          roleId: orgRole.id,
-          username: adminEmail,
-          email: adminEmail,
-          password: hashPassword(adminPassword),
-          orgId: id,
-        };
-        set((state) => ({
-          organizations: [...(state.organizations || []), org],
-          roles: [...state.roles, orgRole],
-          users: [...state.users, orgUser],
-        }));
-        return org;
-      },
-
-      getOrgById: (id) => {
-        return get().organizations.find((o) => o.id === id);
       },
 
       resetData: () => {

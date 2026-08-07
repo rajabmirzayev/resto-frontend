@@ -2,10 +2,10 @@ import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
-import { useUsers, useStaffPerformance, useCreateUser, useUpdateUser, useDeleteUser } from '../../api/hooks/useAccess';
+import { useUsers, useStaffPerformance, useCreateUser, useUpdateUser, useDeleteUser, useAssignRoleUsers } from '../../api/hooks/useAccess';
 import { useRoles } from '../../api/hooks/useAccess';
-import { ApiError } from '../../api/client';
-import type { UserDto } from '../../api/types';
+import { formatApiError } from '../../api/client';
+import type { UserDto, UpdateUserRequest } from '../../api/types';
 import { Plus, Edit2, Trash2, X, Users, Shield, UtensilsCrossed, ChefHat, Loader2 } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | null;
@@ -43,6 +43,7 @@ export default function StaffManagement() {
   const perfQuery = useStaffPerformance(orgId);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
+  const assignRoleUsers = useAssignRoleUsers();
   const deleteUser = useDeleteUser();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
@@ -80,34 +81,38 @@ export default function StaffManagement() {
     setModalMode('edit');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.email || !form.roleId || (!editingUser && !form.password)) return;
-    if (modalMode === 'edit' && editingUser) {
-      updateUser.mutate(
-        {
-          id: editingUser.id,
-          payload: {
-            name: form.name,
-          },
-        },
-        { onError: () => setFormError(t('error.network')) }
-      );
-    } else {
-      createUser.mutate(
-        {
+    setFormError('');
+    try {
+      if (modalMode === 'edit' && editingUser) {
+        const payload: UpdateUserRequest = { name: form.name, email: form.email };
+        if (form.username) payload.username = form.username;
+        if (form.password) payload.password = form.password;
+        await updateUser.mutateAsync({ id: editingUser.id, payload });
+        if (form.roleId && form.roleId !== editingUser.role?.id) {
+          await assignRoleUsers.mutateAsync({ roleId: form.roleId, payload: { userIds: [editingUser.id] } });
+        }
+      } else {
+        if (!orgId) {
+          setFormError(t('staff.org_required'));
+          return;
+        }
+        await createUser.mutateAsync({
           name: form.name,
           username: form.username || undefined,
           password: form.password,
           email: form.email,
           roleId: form.roleId,
-          orgId: orgId ?? '',
-        },
-        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
-      );
+          orgId,
+        });
+      }
+      setModalMode(null);
+      setEditingUser(null);
+      setForm(emptyForm);
+    } catch (err) {
+      setFormError(formatApiError(err, t('error.network')));
     }
-    setModalMode(null);
-    setEditingUser(null);
-    setForm(emptyForm);
   };
 
   const handleDelete = (id: string) => {
@@ -243,7 +248,7 @@ export default function StaffManagement() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-1">{t('common.password')}</label>
-                  <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="••••••" />
+                  <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder={modalMode === 'edit' ? t('staff.password_placeholder') : '••••••'} />
                 </div>
               </div>
               <div>

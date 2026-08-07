@@ -32,6 +32,16 @@ export class ApiError extends Error {
   }
 }
 
+export function formatApiError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.fieldErrors && err.fieldErrors.length > 0) {
+      return err.fieldErrors.map((f) => f.message).join('; ');
+    }
+    return err.detail || err.message || fallback;
+  }
+  return fallback;
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;
@@ -112,25 +122,33 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   return parseResponse<T>(response);
 }
 
+async function readErrorBody(response: Response): Promise<{ detail?: string; title?: string; key?: string; fieldErrors?: { field: string; message: string }[] }> {
+  try {
+    const body = await response.json();
+    return (body ?? {}) as { detail?: string; title?: string; key?: string; fieldErrors?: { field: string; message: string }[] };
+  } catch {
+    try {
+      const raw = await response.clone().text();
+      const cleaned = raw.replace(/^\uFEFF/, '');
+      return JSON.parse(cleaned) as { detail?: string; title?: string; key?: string; fieldErrors?: { field: string; message: string }[] };
+    } catch {
+      return {};
+    }
+  }
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const ct = response.headers.get('content-type') ?? '';
 
   if (!response.ok) {
     if (ct.includes('json')) {
-      try {
-        const body = await response.json();
-        throw new ApiError(response.status, body.detail || body.title || response.statusText, body.key);
-      } catch (e) {
-        if (e instanceof ApiError) throw e;
-        try {
-          const raw = await response.clone().text();
-          const cleaned = raw.replace(/^\uFEFF/, '');
-          const body = JSON.parse(cleaned);
-          throw new ApiError(response.status, body.detail || body.title || response.statusText, body.key);
-        } catch {
-          throw new ApiError(response.status, response.statusText);
-        }
-      }
+      const body = await readErrorBody(response);
+      throw new ApiError(
+        response.status,
+        body.detail || body.title || response.statusText,
+        body.key,
+        body.fieldErrors?.filter((f) => f && typeof f.message === 'string')
+      );
     }
     throw new ApiError(response.status, response.statusText);
   }

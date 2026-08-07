@@ -14,8 +14,9 @@ export const reportKeys = {
 export function useReportSummary(orgId?: string) {
   return useQuery({
     queryKey: reportKeys.summary(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await reportApi.summary(orgId ? { orgId } : undefined);
+      const res = await reportApi.summary({ orgId: orgId! });
       return res.data;
     },
   });
@@ -24,8 +25,9 @@ export function useReportSummary(orgId?: string) {
 export function useDailyRevenue(orgId?: string) {
   return useQuery({
     queryKey: reportKeys.daily(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await reportApi.dailyRevenue(orgId ? { orgId } : undefined);
+      const res = await reportApi.dailyRevenue({ orgId: orgId! });
       return res.data;
     },
   });
@@ -34,8 +36,9 @@ export function useDailyRevenue(orgId?: string) {
 export function useHourlyReport(orgId?: string) {
   return useQuery({
     queryKey: reportKeys.hourly(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await reportApi.hourly(orgId ? { orgId } : undefined);
+      const res = await reportApi.hourly({ orgId: orgId! });
       return res.data;
     },
   });
@@ -44,8 +47,9 @@ export function useHourlyReport(orgId?: string) {
 export function useSalesByCategory(orgId?: string) {
   return useQuery({
     queryKey: reportKeys.categories(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await reportApi.salesByCategory(orgId ? { orgId } : undefined);
+      const res = await reportApi.salesByCategory({ orgId: orgId! });
       return res.data;
     },
   });
@@ -54,8 +58,9 @@ export function useSalesByCategory(orgId?: string) {
 export function useTopItemsReport(orgId?: string) {
   return useQuery({
     queryKey: reportKeys.topItems(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await reportApi.topItems(orgId ? { orgId } : undefined);
+      const res = await reportApi.topItems({ orgId: orgId! });
       return res.data;
     },
   });
@@ -64,8 +69,9 @@ export function useTopItemsReport(orgId?: string) {
 export function useStaffPerformance(orgId?: string) {
   return useQuery({
     queryKey: reportKeys.staff(orgId),
+    enabled: !!orgId,
     queryFn: async () => {
-      const res = await reportApi.staffPerformance(orgId ? { orgId } : undefined);
+      const res = await reportApi.staffPerformance({ orgId: orgId! });
       return res.data;
     },
   });

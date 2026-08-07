@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { useToast } from '../../store/useToast';
-import { ApiError } from '../../api/client';
+import { formatApiError } from '../../api/client';
 import { useOrganizations, useOrganizationQrCode, useCreateOrganization } from '../../api/hooks/useOrganizations';
 import Header from '../../components/layout/Header';
 import { Building2, Plus, X, QrCode, Copy, Check, Download, ExternalLink, Loader2 } from 'lucide-react';
@@ -49,11 +49,7 @@ export default function AdminOrganizations() {
       setShowCreate(false);
       addToast(t('organizations.created'), 'success');
     } catch (err) {
-      if (err instanceof ApiError) {
-        setFormError(err.detail || err.message);
-      } else {
-        setFormError(t('error.network'));
-      }
+      setFormError(formatApiError(err, t('error.network')));
     }
   };
 

@@ -104,6 +104,9 @@ export interface UpdateUserRequest {
   name?: string;
   phone?: string;
   isActive?: boolean;
+  username?: string;
+  email?: string;
+  password?: string;
 }
 
 export interface StaffPerformanceDto {

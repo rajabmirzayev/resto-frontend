@@ -244,12 +244,14 @@ const en: Record<string, string> = {
   'staff.active_orders': 'Active Orders',
   'staff.revenue': 'Revenue',
   'staff.no_staff_in_category': 'No staff in this category',
+  'staff.org_required': 'An organization is required to create staff',
   'staff.edit_staff': 'Edit Staff',
   'staff.add_staff': 'Add New Staff',
   'staff.full_name': 'Full Name',
   'staff.full_name_placeholder': 'Full Name',
   'staff.username': 'Username',
   'staff.email': 'Email',
+  'staff.password_placeholder': 'New password (leave blank to keep)',
   'staff.role': 'Role',
   'staff.delete_confirmation': 'Delete this staff member?',
 
@@ -266,6 +268,12 @@ const en: Record<string, string> = {
   'roles.role_name': 'Role name',
   'roles.role_name_placeholder': 'Role name',
   'roles.permissions': 'Permissions',
+  'roles.code': 'Code',
+  'roles.panel': 'Panel',
+  'roles.panel_admin': 'Admin Panel',
+  'roles.panel_waiter': 'Waiter Panel',
+  'roles.panel_kitchen': 'Kitchen Panel',
+  'roles.permissions_tree_error': 'Could not load permission catalog',
   'roles.delete_confirmation': 'Delete this role?',
 
   // Menu Management

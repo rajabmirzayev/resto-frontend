@@ -244,12 +244,14 @@ const ru: Record<string, string> = {
   'staff.active_orders': 'Активные заказы',
   'staff.revenue': 'Выручка',
   'staff.no_staff_in_category': 'Нет сотрудников в этой категории',
+  'staff.org_required': 'Для создания сотрудника требуется организация',
   'staff.edit_staff': 'Редактировать сотрудника',
   'staff.add_staff': 'Добавить сотрудника',
   'staff.full_name': 'ФИО',
   'staff.full_name_placeholder': 'ФИО',
   'staff.username': 'Имя пользователя',
   'staff.email': 'Email',
+  'staff.password_placeholder': 'Новый пароль (пусто = не менять)',
   'staff.role': 'Роль',
   'staff.delete_confirmation': 'Удалить этого сотрудника?',
 
@@ -266,6 +268,12 @@ const ru: Record<string, string> = {
   'roles.role_name': 'Название роли',
   'roles.role_name_placeholder': 'Название роли',
   'roles.permissions': 'Разрешения',
+  'roles.code': 'Код',
+  'roles.panel': 'Панель',
+  'roles.panel_admin': 'Панель администратора',
+  'roles.panel_waiter': 'Панель официанта',
+  'roles.panel_kitchen': 'Панель кухни',
+  'roles.permissions_tree_error': 'Не удалось загрузить каталог разрешений',
   'roles.delete_confirmation': 'Удалить эту роль?',
 
   // Menu Management
