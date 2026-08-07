@@ -166,6 +166,12 @@ const ru: Record<string, string> = {
   'organizations.download_qr': 'Скачать',
   'organizations.no_orgs': 'Организаций пока нет',
   'organizations.menu_link': 'Ссылка на меню',
+  'organizations.validation.name_required': 'Название организации обязательно',
+  'organizations.validation.admin_name_required': 'Имя администратора обязательно',
+  'organizations.validation.admin_email_required': 'Email администратора обязателен',
+  'organizations.validation.admin_password_required': 'Пароль администратора обязателен',
+  'organizations.validation.admin_password_length': 'Пароль должен быть не менее 8 символов',
+  'organizations.validation.admin_password_pattern': 'Пароль должен содержать хотя бы одну букву и одну цифру',
 
   // Dashboard
   'dashboard.welcome_overview': 'Добро пожаловать, обзор',
@@ -243,6 +249,7 @@ const ru: Record<string, string> = {
   'staff.full_name': 'ФИО',
   'staff.full_name_placeholder': 'ФИО',
   'staff.username': 'Имя пользователя',
+  'staff.email': 'Email',
   'staff.role': 'Роль',
   'staff.delete_confirmation': 'Удалить этого сотрудника?',
 

@@ -2,10 +2,10 @@ import { request, buildQuery } from './client';
 import { getAccessToken } from './session';
 import type { ApiResponse, CreateUserRequest, StaffPerformanceDto, UpdateUserRequest, UserDto } from './types';
 
-const BASE = '/api/user-ms/v1';
+const BASE = '/api/access-ms/v1';
 
 export const userApi = {
-  list: (params?: { orgId?: string; role?: string }) =>
+  list: (params?: { orgId?: string; roleId?: string }) =>
     request<ApiResponse<UserDto[]>>(`${BASE}/users${buildQuery(params)}`, { token: getAccessToken() ?? undefined }),
   get: (id: string) => request<ApiResponse<UserDto>>(`${BASE}/users/${id}`, { token: getAccessToken() ?? undefined }),
   create: (payload: CreateUserRequest) =>

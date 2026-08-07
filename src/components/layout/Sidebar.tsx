@@ -8,11 +8,11 @@ import type { Permission } from '../../types';
 const navItems: { to: string; labelKey: string; icon: typeof LayoutDashboard; permission: Permission }[] = [
   { to: '/admin', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
   { to: '/admin/menu', labelKey: 'nav.menu', icon: Menu, permission: 'menu.view' },
-  { to: '/admin/tables', labelKey: 'nav.tables', icon: Grid3X3, permission: 'tables.view' },
-  { to: '/admin/orders', labelKey: 'nav.orders', icon: ClipboardList, permission: 'orders.view' },
-  { to: '/admin/reports', labelKey: 'nav.reports', icon: BarChart3, permission: 'reports.view' },
+  { to: '/admin/tables', labelKey: 'nav.tables', icon: Grid3X3, permission: 'table.view' },
+  { to: '/admin/orders', labelKey: 'nav.orders', icon: ClipboardList, permission: 'order.view' },
+  { to: '/admin/reports', labelKey: 'nav.reports', icon: BarChart3, permission: 'report.view' },
   { to: '/admin/staff', labelKey: 'nav.staff', icon: Users, permission: 'staff.view' },
-  { to: '/admin/roles', labelKey: 'nav.roles', icon: Shield, permission: 'roles.view' },
+  { to: '/admin/roles', labelKey: 'nav.roles', icon: Shield, permission: 'role.view' },
   { to: '/admin/settings', labelKey: 'nav.settings', icon: Settings, permission: 'settings.view' },
 ];
 

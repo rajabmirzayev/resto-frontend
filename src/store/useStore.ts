@@ -5,12 +5,12 @@ import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, Orde
 import { initialData } from '../data/mock';
 import { hashPassword } from '../lib/validation';
 import { authApi } from '../api/auth';
-import { clearSession, getOrgIdFromToken, getRefreshToken, setSession } from '../api/session';
+import { clearSession, getAccessToken, getOrgIdFromToken, getPermissions, getRefreshToken, setSession, setPermissions, setUiScope } from '../api/session';
 
 function mapRolesToUserRole(roles: string[]): UserRole {
   if (roles.includes('SUPER_ADMIN')) return 'admin';
-  if (roles.includes('waiter')) return 'waiter';
-  if (roles.includes('chef')) return 'chef';
+  if (roles.includes('WAITER_DEFAULT')) return 'waiter';
+  if (roles.includes('KITCHEN_DEFAULT')) return 'chef';
   return 'org_admin';
 }
 
@@ -94,8 +94,12 @@ export const useStore = create<Store>()(
       login: async (username: string, password: string) => {
         const response = await authApi.login({ username, password });
         setSession(response.accessToken, response.refreshToken, response.expiresIn);
-        const user = buildUserFromLogin(username, response.roles);
-        const orgId = getOrgIdFromToken(response.accessToken) ?? get().users.find((u) => u.username === username)?.orgId;
+        setPermissions(response.permissions);
+        setUiScope(response.uiScope);
+        const userRoles = response.user?.roles ?? [];
+        const user = buildUserFromLogin(username, userRoles);
+        const token = getAccessToken();
+        const orgId = token ? (getOrgIdFromToken(token) ?? get().users.find((u) => u.username === username)?.orgId) : undefined;
         const currentUser = orgId ? { ...user, orgId } : user;
         set({ currentUser });
         return currentUser;
@@ -259,6 +263,8 @@ export const useStore = create<Store>()(
       hasPermission: (permission) => {
         const state = get();
         if (!state.currentUser) return false;
+        const sessionPerms = getPermissions();
+        if (sessionPerms.length > 0) return sessionPerms.includes(permission);
         const perms = state.getUserPermissions(state.currentUser.id);
         return perms.includes(permission);
       },
@@ -516,7 +522,7 @@ export const useStore = create<Store>()(
         const orgRole: Role = {
           id: uuidv4(),
           name: `${name} Admin`,
-          permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'tables.view', 'tables.manage', 'tables.status', 'orders.view', 'orders.manage', 'orders.cancel', 'kitchen.view'],
+          permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'table.view', 'table.create', 'table.edit', 'table.delete', 'table.status', 'order.view', 'order.create', 'order.manage', 'order.cancel', 'kitchen.view'],
           isSystem: false,
         };
         const orgUser: User = {
@@ -547,7 +553,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'restoflow-storage',
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         menuItems: state.menuItems,
         menuCategories: state.menuCategories,

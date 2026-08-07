@@ -2,89 +2,95 @@ import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
-import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from '../../api/hooks/useRoles';
-import { useUsers } from '../../api/hooks/useUsers';
+import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionsTree } from '../../api/hooks/useAccess';
+import { useUsers } from '../../api/hooks/useAccess';
 import { ApiError } from '../../api/client';
-import type { Permission } from '../../types';
-import type { RoleDto } from '../../api/types';
-import { PERMISSION_GROUPS } from '../../types';
+import type { RoleResponse, UiScope } from '../../api/types';
 import { Plus, Edit2, Trash2, X, Shield, Check, Lock, Loader2 } from 'lucide-react';
 
 type ModalMode = 'add' | 'edit' | null;
 
-const permissionActionKey = (key: Permission): string => {
-  const map: Record<string, string> = {
-    'tables.status': 'status_change',
-    'orders.cancel': 'cancel',
-    'kitchen.view': 'kitchen_view',
-    'kitchen.manage': 'kitchen_manage',
-  };
-  return map[key] || key.split('.').pop() || key;
-};
+const UI_SCOPE_OPTIONS: { value: UiScope; label: string }[] = [
+  { value: 'ADMIN_PANEL', label: 'Admin Panel' },
+  { value: 'WAITER_PANEL', label: 'Ofisant Panel' },
+  { value: 'KITCHEN_PANEL', label: 'Mtbəx Panel' },
+];
 
 export default function RoleManagement() {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const orgId = currentUser?.orgId;
 
-  const rolesQuery = useRoles(orgId);
-  const usersQuery = useUsers(orgId);
-  const createRole = useCreateRole(orgId);
-  const updateRole = useUpdateRole(orgId);
-  const deleteRole = useDeleteRole(orgId);
+  const rolesQuery = useRoles();
+  const usersQuery = useUsers(orgId ? { orgId } : undefined);
+  const treeQuery = usePermissionsTree();
+  const createRole = useCreateRole();
+  const updateRole = useUpdateRole();
+  const deleteRole = useDeleteRole();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
-  const [editingRole, setEditingRole] = useState<RoleDto | null>(null);
+  const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
   const [formName, setFormName] = useState('');
-  const [formPermissions, setFormPermissions] = useState<Permission[]>([]);
+  const [formCode, setFormCode] = useState('');
+  const [formUiScope, setFormUiScope] = useState<UiScope>('ADMIN_PANEL');
+  const [formPermIds, setFormPermIds] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
 
-  const roles = rolesQuery.data ?? [];
-  const users = usersQuery.data ?? [];
+  const roles = rolesQuery.data?.content ?? [];
+  const users = usersQuery.data?.content ?? [];
+  const tree = treeQuery.data ?? [];
 
-  const getUserCount = (roleId: string) => users.filter((u) => u.roleId === roleId).length;
+  const getUserCount = (roleId: string) => users.filter((u) => u.role?.id === roleId).length;
 
   const openAdd = () => {
     setEditingRole(null);
     setFormName('');
-    setFormPermissions([]);
+    setFormCode('');
+    setFormUiScope('ADMIN_PANEL');
+    setFormPermIds([]);
     setFormError('');
     setModalMode('add');
   };
 
-  const openEdit = (role: RoleDto) => {
+  const openEdit = (role: RoleResponse) => {
     setEditingRole(role);
     setFormName(role.name);
-    setFormPermissions([...role.permissions] as Permission[]);
+    setFormCode(role.code);
+    setFormUiScope(role.uiScope);
+    setFormPermIds([...role.permissionIds]);
     setFormError('');
     setModalMode('edit');
   };
 
-  const togglePermission = (perm: Permission) => {
-    setFormPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
+  const togglePermId = (permId: string) => {
+    setFormPermIds((prev) =>
+      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
     );
   };
 
-  const toggleGroup = (perms: Permission[]) => {
-    setFormPermissions((prev) => {
-      const allSelected = perms.every((p) => prev.includes(p));
-      if (allSelected) return prev.filter((p) => !perms.includes(p));
-      return [...new Set([...prev, ...perms])];
+  const toggleModule = (permIds: string[]) => {
+    setFormPermIds((prev) => {
+      const allSelected = permIds.every((p) => prev.includes(p));
+      if (allSelected) return prev.filter((p) => !permIds.includes(p));
+      return [...new Set([...prev, ...permIds])];
     });
   };
 
   const handleSave = () => {
-    if (!formName.trim()) return;
+    if (!formName.trim() || !formCode.trim()) return;
     if (modalMode === 'edit' && editingRole) {
       updateRole.mutate(
-        { id: editingRole.id, payload: { name: formName.trim(), permissions: formPermissions } },
-        { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+        { id: editingRole.id, payload: { name: formName.trim(), uiScope: formUiScope } },
+        {
+          onSuccess: () => {
+          },
+          onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')),
+        }
       );
     } else {
       createRole.mutate(
-        { name: formName.trim(), permissions: formPermissions, orgId: orgId ?? '' },
+        { code: formCode.trim().toUpperCase(), name: formName.trim(), uiScope: formUiScope, permissionIds: formPermIds },
         { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
       );
     }
@@ -97,7 +103,7 @@ export default function RoleManagement() {
     setDeleteConfirm(null);
   };
 
-  if (rolesQuery.isLoading && !rolesQuery.data) {
+  if ((rolesQuery.isLoading || treeQuery.isLoading) && !rolesQuery.data) {
     return (
       <div>
         <Header title={t('roles.title')} subtitle={''} showUser />
@@ -153,7 +159,7 @@ export default function RoleManagement() {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-text-primary">{role.name}</p>
-                      <p className="text-xs text-text-muted">{role.permissions.length} {t('roles.permissions_suffix')}</p>
+                      <p className="text-xs text-text-muted">{role.code} &middot; {role.permissions.length} {t('roles.permissions_suffix')}</p>
                     </div>
                   </div>
                   {role.isSystem && (
@@ -165,16 +171,16 @@ export default function RoleManagement() {
 
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-1.5">
-                    {PERMISSION_GROUPS.map((group) => {
-                      const groupPerms = group.permissions.map((p) => p.key);
-                      const activeCount = groupPerms.filter((p) => role.permissions.includes(p)).length;
+                    {tree.map((module) => {
+                      const modulePerms = module.uiGroups.flatMap((g) => g.permissions);
+                      const activeCount = modulePerms.filter((p) => role.permissionIds.includes(p.id)).length;
                       if (activeCount === 0) return null;
                       return (
                         <span
-                          key={group.id}
+                          key={module.id}
                           className="text-[10px] font-medium px-2 py-1 rounded-md bg-surface-secondary text-text-secondary"
                         >
-                          {t(`permission_group.${group.id}`)} ({activeCount}/{group.permissions.length})
+                          {module.name} ({activeCount}/{modulePerms.length})
                         </span>
                       );
                     })}
@@ -232,67 +238,116 @@ export default function RoleManagement() {
             </div>
 
             <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">{t('roles.role_name')}</label>
-                <input
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder={t('roles.role_name_placeholder')}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">{t('roles.permissions')}</label>
-                <div className="space-y-3">
-                  {PERMISSION_GROUPS.map((group) => {
-                    const groupPerms = group.permissions.map((p) => p.key);
-                    const allSelected = groupPerms.every((p) => formPermissions.includes(p));
-                    const someSelected = groupPerms.some((p) => formPermissions.includes(p));
-
-                    return (
-                      <div key={group.id} className="bg-surface-secondary rounded-xl p-3">
-                        <button
-                          onClick={() => toggleGroup(groupPerms)}
-                          className="flex items-center gap-2 mb-2 w-full text-left"
-                        >
-                          <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                              allSelected
-                                ? 'bg-primary-500 border-primary-500'
-                                : someSelected
-                                ? 'bg-primary-200 border-primary-400'
-                                : 'border-border bg-white dark:bg-surface'
-                            }`}
-                          >
-                            {allSelected && <Check className="w-3 h-3 text-white" />}
-                            {someSelected && !allSelected && <div className="w-2 h-0.5 bg-primary-600 rounded" />}
-                          </div>
-                          <span className="text-sm font-semibold text-text-primary">{t(`permission_group.${group.id}`)}</span>
-                        </button>
-                        <div className="flex flex-wrap gap-1.5 pl-7">
-                          {group.permissions.map((perm) => {
-                            const selected = formPermissions.includes(perm.key);
-                            return (
-                              <button
-                                key={perm.key}
-                                onClick={() => togglePermission(perm.key)}
-                                className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-all ${
-                                  selected
-                                    ? 'bg-primary-50 border-primary-300 text-primary-700'
-                                    : 'bg-white dark:bg-surface border-border text-text-muted hover:border-primary-200'
-                                }`}
-                              >
-                                {t(`permission.${permissionActionKey(perm.key)}`)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Kod</label>
+                  <input
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value.toUpperCase())}
+                    disabled={modalMode === 'edit'}
+                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                    placeholder="MES: CASHIER"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">{t('roles.role_name')}</label>
+                  <input
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder={t('roles.role_name_placeholder')}
+                  />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Panel</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {UI_SCOPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setFormUiScope(opt.value)}
+                      className={`py-2 px-3 rounded-xl text-sm font-medium border transition-all ${
+                        formUiScope === opt.value
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {modalMode === 'add' && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">{t('roles.permissions')}</label>
+                  <div className="space-y-3">
+                    {tree.map((module) => {
+                      const modulePermIds = module.uiGroups.flatMap((g) => g.permissions.map((p) => p.id));
+                      const allSelected = modulePermIds.every((p) => formPermIds.includes(p));
+                      const someSelected = modulePermIds.some((p) => formPermIds.includes(p));
+
+                      return (
+                        <div key={module.id} className="bg-surface-secondary rounded-xl p-3">
+                          <button
+                            onClick={() => toggleModule(modulePermIds)}
+                            className="flex items-center gap-2 mb-2 w-full text-left"
+                          >
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                allSelected
+                                  ? 'bg-primary-500 border-primary-500'
+                                  : someSelected
+                                  ? 'bg-primary-200 border-primary-400'
+                                  : 'border-border bg-white dark:bg-surface'
+                              }`}
+                            >
+                              {allSelected && <Check className="w-3 h-3 text-white" />}
+                              {someSelected && !allSelected && <div className="w-2 h-0.5 bg-primary-600 rounded" />}
+                            </div>
+                            <span className="text-sm font-semibold text-text-primary">{module.name}</span>
+                          </button>
+                          <div className="space-y-2 pl-7">
+                            {module.uiGroups.map((group) => (
+                              <div key={group.id}>
+                                <p className="text-xs font-medium text-text-muted mb-1">{group.name}</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {group.permissions.map((perm) => {
+                                    const selected = formPermIds.includes(perm.id);
+                                    return (
+                                      <button
+                                        key={perm.id}
+                                        onClick={() => togglePermId(perm.id)}
+                                        className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-all ${
+                                          selected
+                                            ? 'bg-primary-50 border-primary-300 text-primary-700'
+                                            : 'bg-white dark:bg-surface border-border text-text-muted hover:border-primary-200'
+                                        }`}
+                                      >
+                                        {perm.name}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {tree.length === 0 && (
+                      <p className="text-sm text-text-muted text-center py-4">İcazə kataloqu yüklənə bilmədi</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {modalMode === 'edit' && editingRole && (
+                <div className="text-xs text-text-muted">
+                  İcazələri redaktə etmək üçün rol detallarına keçin.
+                </div>
+              )}
 
               {formError && (
                 <p className="text-sm text-danger-600">{formError}</p>
@@ -308,7 +363,7 @@ export default function RoleManagement() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!formName.trim()}
+                disabled={!formName.trim() || (modalMode === 'add' && !formCode.trim())}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-text-muted text-white rounded-xl text-sm font-semibold transition-colors"
               >
                 {modalMode === 'edit' ? t('common.save') : t('common.add')}

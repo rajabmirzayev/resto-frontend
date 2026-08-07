@@ -11,11 +11,11 @@ const daysAgo = (days: number, hours = 0, minutes = 0) => {
 const allPermissions = [
   'dashboard.view',
   'menu.view', 'menu.create', 'menu.edit', 'menu.delete',
-  'tables.view', 'tables.manage', 'tables.status',
-  'orders.view', 'orders.manage', 'orders.cancel',
-  'reports.view',
+  'table.view', 'table.create', 'table.edit', 'table.delete', 'table.status',
+  'order.view', 'order.create', 'order.manage', 'order.cancel',
+  'report.view',
   'staff.view', 'staff.create', 'staff.edit', 'staff.delete',
-  'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
+  'role.view', 'role.create', 'role.edit', 'role.delete',
   'kitchen.view', 'kitchen.manage',
   'settings.view', 'settings.edit',
 ] as const;
@@ -23,9 +23,9 @@ const allPermissions = [
 export const initialData: AppState = {
   roles: [
     { id: 'r1', name: 'Süper Admin', permissions: [...allPermissions], isSystem: true },
-    { id: 'r2', name: 'Menecer', permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'tables.view', 'tables.manage', 'tables.status', 'orders.view', 'orders.manage', 'orders.cancel', 'reports.view', 'staff.view', 'staff.create', 'staff.edit', 'staff.delete', 'kitchen.view', 'settings.view'], isSystem: false },
-    { id: 'r3', name: 'Ofisant', permissions: ['dashboard.view', 'tables.view', 'tables.status', 'orders.view', 'orders.manage', 'kitchen.view'], isSystem: false },
-    { id: 'r4', name: 'Aşpaz', permissions: ['kitchen.view', 'kitchen.manage', 'orders.view'], isSystem: false },
+    { id: 'r2', name: 'Menecer', permissions: ['dashboard.view', 'menu.view', 'menu.create', 'menu.edit', 'menu.delete', 'table.view', 'table.create', 'table.edit', 'table.delete', 'table.status', 'order.view', 'order.create', 'order.manage', 'order.cancel', 'report.view', 'staff.view', 'staff.create', 'staff.edit', 'staff.delete', 'kitchen.view', 'settings.view'], isSystem: false },
+    { id: 'r3', name: 'Ofisant', permissions: ['dashboard.view', 'table.view', 'table.status', 'order.view', 'order.manage', 'kitchen.view'], isSystem: false },
+    { id: 'r4', name: 'Aşpaz', permissions: ['kitchen.view', 'kitchen.manage', 'order.view'], isSystem: false },
   ],
   organizations: [
     {

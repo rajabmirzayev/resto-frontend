@@ -22,13 +22,15 @@ export const ORDER_MODES: { value: OrderMode; title: string; description: string
 export type Permission =
   | 'dashboard.view'
   | 'menu.view' | 'menu.create' | 'menu.edit' | 'menu.delete'
-  | 'tables.view' | 'tables.manage' | 'tables.status'
-  | 'orders.view' | 'orders.manage' | 'orders.cancel'
-  | 'reports.view'
-  | 'staff.view' | 'staff.create' | 'staff.edit' | 'staff.delete'
-  | 'roles.view' | 'roles.create' | 'roles.edit' | 'roles.delete'
+  | 'table.view' | 'table.create' | 'table.edit' | 'table.delete' | 'table.status' | 'table.reserve'
+  | 'order.view' | 'order.create' | 'order.manage' | 'order.cancel' | 'order.payment'
   | 'kitchen.view' | 'kitchen.manage'
-  | 'settings.view' | 'settings.edit';
+  | 'waiter.view' | 'waiter.manage'
+  | 'staff.view' | 'staff.create' | 'staff.edit' | 'staff.delete'
+  | 'role.view' | 'role.create' | 'role.edit' | 'role.delete' | 'role.assign' | 'permission.view' | 'permission.manage'
+  | 'settings.view' | 'settings.edit'
+  | 'report.view'
+  | 'organization.view' | 'organization.create' | 'organization.edit' | 'organization.delete';
 
 export const PERMISSION_GROUPS: { id: string; label: string; permissions: { key: Permission; label: string }[] }[] = [
   {
@@ -47,27 +49,43 @@ export const PERMISSION_GROUPS: { id: string; label: string; permissions: { key:
     ],
   },
   {
-    id: 'tables',
+    id: 'table',
     label: 'Masalar',
     permissions: [
-      { key: 'tables.view', label: 'Görüntüləmə' },
-      { key: 'tables.manage', label: 'İdarəetmə' },
-      { key: 'tables.status', label: 'Status dəyişikliyi' },
+      { key: 'table.view', label: 'Görüntüləmə' },
+      { key: 'table.create', label: 'Əlavə etmə' },
+      { key: 'table.edit', label: 'Redaktə' },
+      { key: 'table.delete', label: 'Silmə' },
+      { key: 'table.status', label: 'Status dəyişikliyi' },
+      { key: 'table.reserve', label: 'Rezervasiya' },
     ],
   },
   {
-    id: 'orders',
+    id: 'order',
     label: 'Sifarişlər',
     permissions: [
-      { key: 'orders.view', label: 'Görüntüləmə' },
-      { key: 'orders.manage', label: 'İdarəetmə' },
-      { key: 'orders.cancel', label: 'Ləğv etmə' },
+      { key: 'order.view', label: 'Görüntüləmə' },
+      { key: 'order.create', label: 'Yaratma' },
+      { key: 'order.manage', label: 'İdarəetmə' },
+      { key: 'order.cancel', label: 'Ləğv etmə' },
+      { key: 'order.payment', label: 'Ödəniş' },
     ],
   },
   {
-    id: 'reports',
-    label: 'Hesabatlar',
-    permissions: [{ key: 'reports.view', label: 'Görüntüləmə' }],
+    id: 'kitchen',
+    label: 'Mtbəx',
+    permissions: [
+      { key: 'kitchen.view', label: 'Panelə baxış' },
+      { key: 'kitchen.manage', label: 'Sifariş idarəetməsi' },
+    ],
+  },
+  {
+    id: 'waiter',
+    label: 'Ofisant',
+    permissions: [
+      { key: 'waiter.view', label: 'Panelə baxış' },
+      { key: 'waiter.manage', label: 'İdarəetmə' },
+    ],
   },
   {
     id: 'staff',
@@ -83,18 +101,13 @@ export const PERMISSION_GROUPS: { id: string; label: string; permissions: { key:
     id: 'roles',
     label: 'Rollar',
     permissions: [
-      { key: 'roles.view', label: 'Görüntüləmə' },
-      { key: 'roles.create', label: 'Əlavə etmə' },
-      { key: 'roles.edit', label: 'Redaktə' },
-      { key: 'roles.delete', label: 'Silmə' },
-    ],
-  },
-  {
-    id: 'kitchen',
-    label: 'Mtbəx',
-    permissions: [
-      { key: 'kitchen.view', label: 'Panelə baxış' },
-      { key: 'kitchen.manage', label: 'Sifariş idarəetməsi' },
+      { key: 'role.view', label: 'Görüntüləmə' },
+      { key: 'role.create', label: 'Əlavə etmə' },
+      { key: 'role.edit', label: 'Redaktə' },
+      { key: 'role.delete', label: 'Silmə' },
+      { key: 'role.assign', label: 'Təyin etmə' },
+      { key: 'permission.view', label: 'İcazələrə baxış' },
+      { key: 'permission.manage', label: 'İcazə idarəsi' },
     ],
   },
   {
@@ -103,6 +116,21 @@ export const PERMISSION_GROUPS: { id: string; label: string; permissions: { key:
     permissions: [
       { key: 'settings.view', label: 'Baxış' },
       { key: 'settings.edit', label: 'Redaktə' },
+    ],
+  },
+  {
+    id: 'reports',
+    label: 'Hesabatlar',
+    permissions: [{ key: 'report.view', label: 'Görüntüləmə' }],
+  },
+  {
+    id: 'organization',
+    label: 'Təşkilat',
+    permissions: [
+      { key: 'organization.view', label: 'Görüntüləmə' },
+      { key: 'organization.create', label: 'Əlavə etmə' },
+      { key: 'organization.edit', label: 'Redaktə' },
+      { key: 'organization.delete', label: 'Silmə' },
     ],
   },
 ];

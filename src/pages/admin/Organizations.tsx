@@ -20,11 +20,22 @@ export default function AdminOrganizations() {
   const organizations = data ?? [];
   const qrQuery = useOrganizationQrCode(showQr);
 
+  const validateForm = (): string | null => {
+    if (!form.name.trim()) return t('organizations.validation.name_required');
+    if (!form.adminName.trim()) return t('organizations.validation.admin_name_required');
+    if (!form.adminEmail.trim()) return t('organizations.validation.admin_email_required');
+    if (!form.adminPassword) return t('organizations.validation.admin_password_required');
+    if (form.adminPassword.length < 8) return t('organizations.validation.admin_password_length');
+    if (!/^(?=.*[A-Za-z])(?=.*\d).+$/.test(form.adminPassword)) return t('organizations.validation.admin_password_pattern');
+    return null;
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
-    if (!form.name.trim() || !form.adminName.trim() || !form.adminEmail.trim() || !form.adminPassword.trim()) {
-      setFormError(t('common.irreversible_warning'));
+    const validationError = validateForm();
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
     try {
@@ -39,7 +50,7 @@ export default function AdminOrganizations() {
       addToast(t('organizations.created'), 'success');
     } catch (err) {
       if (err instanceof ApiError) {
-        setFormError(err.detail || t('error.unexpected'));
+        setFormError(err.detail || err.message);
       } else {
         setFormError(t('error.network'));
       }
@@ -85,7 +96,7 @@ export default function AdminOrganizations() {
             <p className="text-sm text-text-secondary">{organizations.length} {t('organizations.subtitle')}</p>
           </div>
           <button
-            onClick={() => setShowCreate(true)}
+            onClick={() => { setFormError(''); setShowCreate(true); }}
             disabled={createMutation.isPending}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors"
           >
@@ -248,7 +259,9 @@ export default function AdminOrganizations() {
                 </div>
 
                 {formError && (
-                  <p className="text-sm text-danger-600">{formError}</p>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-600">{formError}</p>
+                  </div>
                 )}
 
                 <button

@@ -11,6 +11,19 @@ export interface LocalizedString {
   ru: string;
 }
 
+// ===== Pagination =====
+
+export interface PageDto<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
 // ===== Common enums =====
 
 export type UserRoleEnum = 'ADMIN' | 'ORG_ADMIN' | 'WAITER' | 'CHEF' | 'CUSTOMER';
@@ -23,7 +36,7 @@ export type OrderModeEnum = 'WAITER' | 'CUSTOMER' | 'CUSTOMER_WAITER_CONFIRM' | 
 export type OrderSourceEnum = 'WAITER' | 'CUSTOMER';
 export type CustomerThemeEnum = 'CLASSIC' | 'EMERALD' | 'SUNSET' | 'ROSE' | 'VIOLET' | 'AMBER';
 export type PaymentTimingEnum = 'BEFORE' | 'AFTER';
-export type UiScope = 'ADMIN_PANEL' | 'USER_PANEL';
+export type UiScope = 'SUPER_ADMIN_PANEL' | 'ADMIN_PANEL' | 'WAITER_PANEL' | 'KITCHEN_PANEL';
 
 // ===== Organization =====
 
@@ -49,7 +62,7 @@ export interface CreateOrganizationRequest {
 export interface CreateOrganizationResponse {
   organization: OrganizationDto;
   adminUser: UserDto;
-  adminRole: RoleDto;
+  adminRole: RoleResponse;
 }
 
 export interface QrCodeDto {
@@ -58,6 +71,13 @@ export interface QrCodeDto {
 
 // ===== User / Staff =====
 
+export interface RoleBriefDto {
+  id: string;
+  code: string;
+  name: string;
+  uiScope: UiScope;
+}
+
 export interface UserDto {
   id: string;
   keycloakId?: string;
@@ -65,29 +85,23 @@ export interface UserDto {
   username: string;
   email: string | null;
   phone: string | null;
-  role: UserRoleEnum;
-  roleId: string;
   orgId: string;
-  avatar: string;
+  role: RoleBriefDto | null;
   isActive: boolean;
-  createdAt: string;
 }
 
 export interface CreateUserRequest {
   name: string;
-  username: string;
+  username?: string;
   password: string;
   roleId: string;
   orgId: string;
-  email?: string | null;
+  email: string;
   phone?: string | null;
 }
 
 export interface UpdateUserRequest {
   name?: string;
-  username?: string;
-  password?: string;
-  roleId?: string;
   phone?: string;
   isActive?: boolean;
 }
@@ -104,27 +118,89 @@ export interface StaffPerformanceDto {
 
 // ===== Role =====
 
-export interface RoleDto {
+export interface PermissionDto {
   id: string;
+  code: string;
   name: string;
-  permissions: string[];
+  description: string;
+  module: ModuleRefDto;
+  uiGroup: UiGroupRefDto;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ModuleRefDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface UiGroupRefDto {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export interface RoleResponse {
+  id: string;
+  code: string;
+  name: string;
+  uiScope: UiScope;
   isSystem: boolean;
+  isActive: boolean;
   orgId: string | null;
+  permissionIds: string[];
+  permissions: PermissionDto[];
 }
 
 export interface CreateRoleRequest {
+  code: string;
   name: string;
-  permissions: string[];
-  orgId: string;
+  uiScope: UiScope;
+  permissionIds: string[];
 }
 
 export interface UpdateRoleRequest {
   name?: string;
-  permissions?: string[];
+  uiScope?: UiScope;
 }
 
-export interface PermissionGroupsDto {
-  groups: Record<string, string[]>;
+export interface AddPermissionsRequest {
+  permissionIds: string[];
+}
+
+export interface SetPermissionsRequest {
+  permissionIds: string[];
+}
+
+export interface AssignUsersRequest {
+  userIds: string[];
+}
+
+// ===== Module & UI Group =====
+
+export interface UiGroupDto {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  permissions: PermissionDto[];
+}
+
+export interface ModuleDto {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  uiGroups: UiGroupDto[];
+}
+
+export interface ModuleTreeDto {
+  id: string;
+  code: string;
+  name: string;
+  sortOrder: number;
+  uiGroups: UiGroupDto[];
 }
 
 // ===== Menu =====

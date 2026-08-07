@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useTranslation } from '../i18n';
 import { ApiError } from '../api/client';
+import { getUiScope } from '../api/session';
+import type { UiScope } from '../api/types';
 import { LogIn, User, Lock, Loader2 } from 'lucide-react';
 
-function getRedirectPath(role: string): string {
-  switch (role) {
-    case 'admin':
+function getRedirectPath(uiScope: UiScope): string {
+  switch (uiScope) {
+    case 'SUPER_ADMIN_PANEL':
       return '/super-admin';
-    case 'waiter':
+    case 'WAITER_PANEL':
       return '/waiter';
-    case 'chef':
+    case 'KITCHEN_PANEL':
       return '/kitchen';
     default:
       return '/admin';
@@ -38,7 +40,8 @@ export default function LoginPage() {
         setError(t('error.unexpected'));
         return;
       }
-      navigate(getRedirectPath(user.role), { replace: true });
+      const uiScope = getUiScope() as UiScope | null;
+      navigate(getRedirectPath(uiScope ?? 'ADMIN_PANEL'), { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401 || err.key === 'AUTH_001') {

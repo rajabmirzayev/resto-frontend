@@ -166,6 +166,12 @@ const en: Record<string, string> = {
   'organizations.download_qr': 'Download',
   'organizations.no_orgs': 'No organizations yet',
   'organizations.menu_link': 'Menu link',
+  'organizations.validation.name_required': 'Organization name is required',
+  'organizations.validation.admin_name_required': 'Admin name is required',
+  'organizations.validation.admin_email_required': 'Admin email is required',
+  'organizations.validation.admin_password_required': 'Admin password is required',
+  'organizations.validation.admin_password_length': 'Password must be at least 8 characters',
+  'organizations.validation.admin_password_pattern': 'Password must contain at least one letter and one digit',
 
   // Dashboard
   'dashboard.welcome_overview': 'Welcome, overview',
@@ -243,6 +249,7 @@ const en: Record<string, string> = {
   'staff.full_name': 'Full Name',
   'staff.full_name_placeholder': 'Full Name',
   'staff.username': 'Username',
+  'staff.email': 'Email',
   'staff.role': 'Role',
   'staff.delete_confirmation': 'Delete this staff member?',
 

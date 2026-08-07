@@ -166,6 +166,12 @@ const az: Record<string, string> = {
   'organizations.download_qr': 'Yüklə',
   'organizations.no_orgs': 'Hələ təşkilat yaradılmayıb',
   'organizations.menu_link': 'Menyu linki',
+  'organizations.validation.name_required': 'Təşkilat adı vacibdir',
+  'organizations.validation.admin_name_required': 'Admin adı vacibdir',
+  'organizations.validation.admin_email_required': 'Admin email vacibdir',
+  'organizations.validation.admin_password_required': 'Admin şifrəsi vacibdir',
+  'organizations.validation.admin_password_length': 'Şifrə ən az 8 simvol olmalıdır',
+  'organizations.validation.admin_password_pattern': 'Şifrə ən az bir hərf və bir rəqəm ehtiva etməlidir',
 
   // Dashboard
   'dashboard.welcome_overview': 'Xoş gəlmisiniz, ümumi baxış',
@@ -243,6 +249,7 @@ const az: Record<string, string> = {
   'staff.full_name': 'Ad Soyad',
   'staff.full_name_placeholder': 'Ad Soyad',
   'staff.username': 'İstifadəçi adı',
+  'staff.email': 'Email',
   'staff.role': 'Rol',
   'staff.delete_confirmation': 'İşçini silmək?',
 

@@ -8,11 +8,11 @@ export const roleKeys = {
   detail: (id: string) => [...roleKeys.all, 'detail', id] as const,
 };
 
-export function useRoles(orgId?: string) {
+export function useRoles(_orgId?: string) {
   return useQuery({
-    queryKey: roleKeys.list(orgId),
+    queryKey: roleKeys.list(_orgId),
     queryFn: async () => {
-      const res = await roleApi.list(orgId ? { orgId } : undefined);
+      const res = await roleApi.list();
       return res.data;
     },
   });

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
-import { getAccessToken, getOrgIdFromToken } from './api/session';
+import { getAccessToken, getOrgIdFromToken, getUiScope } from './api/session';
 import AppLayout from './components/layout/AppLayout';
 import ToastContainer from './components/ui/ToastContainer';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -23,20 +23,19 @@ import CustomerMenu from './pages/customer/CustomerMenu';
 import CustomerOrder from './pages/customer/CustomerOrder';
 import type { Permission } from './types';
 
-function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
+function ProtectedRoute({ children, scope }: { children: React.ReactNode; scope: string[] }) {
   const currentUser = useStore((s) => s.currentUser);
+  const savedScope = getUiScope();
   if (!currentUser) return <Navigate to="/login" replace />;
-  if (!allowedRoles.includes(currentUser.role)) return <Navigate to="/login" replace />;
+  if (!scope.includes(savedScope ?? '')) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function PermRoute({ children, permission }: { children: React.ReactNode; permission: Permission }) {
   const currentUser = useStore((s) => s.currentUser);
-  const userPermissions = useStore(
-    (s) => s.currentUser ? s.getUserPermissions(s.currentUser.id) : [] as Permission[],
-  );
+  const hasPermission = useStore((s) => s.hasPermission);
   if (!currentUser) return <Navigate to="/login" replace />;
-  if (!userPermissions.includes(permission)) return <Navigate to="/login" replace />;
+  if (!hasPermission(permission)) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -67,18 +66,18 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'org_admin']}>
+              <ProtectedRoute scope={['ADMIN_PANEL', 'SUPER_ADMIN_PANEL']}>
                 <AppLayout />
               </ProtectedRoute>
             }
           >
             <Route index element={<AdminDashboard />} />
             <Route path="menu" element={<PermRoute permission="menu.view"><AdminMenu /></PermRoute>} />
-            <Route path="tables" element={<PermRoute permission="tables.view"><AdminTables /></PermRoute>} />
-            <Route path="orders" element={<PermRoute permission="orders.view"><AdminOrders /></PermRoute>} />
-            <Route path="reports" element={<PermRoute permission="reports.view"><AdminReports /></PermRoute>} />
+            <Route path="tables" element={<PermRoute permission="table.view"><AdminTables /></PermRoute>} />
+            <Route path="orders" element={<PermRoute permission="order.view"><AdminOrders /></PermRoute>} />
+            <Route path="reports" element={<PermRoute permission="report.view"><AdminReports /></PermRoute>} />
             <Route path="staff" element={<PermRoute permission="staff.view"><StaffManagement /></PermRoute>} />
-            <Route path="roles" element={<PermRoute permission="roles.view"><RoleManagement /></PermRoute>} />
+            <Route path="roles" element={<PermRoute permission="role.view"><RoleManagement /></PermRoute>} />
             <Route path="settings" element={<PermRoute permission="settings.view"><AdminSettings /></PermRoute>} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
@@ -86,7 +85,7 @@ export default function App() {
           <Route
             path="/waiter"
             element={
-              <ProtectedRoute allowedRoles={['waiter']}>
+              <ProtectedRoute scope={['WAITER_PANEL']}>
                 <WaiterDashboard />
               </ProtectedRoute>
             }
@@ -95,7 +94,7 @@ export default function App() {
           <Route
             path="/kitchen"
             element={
-              <ProtectedRoute allowedRoles={['chef']}>
+              <ProtectedRoute scope={['KITCHEN_PANEL']}>
                 <KitchenDashboard />
               </ProtectedRoute>
             }
@@ -104,7 +103,7 @@ export default function App() {
           <Route
             path="/super-admin"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute scope={['SUPER_ADMIN_PANEL']}>
                 <AdminOrganizations />
               </ProtectedRoute>
             }

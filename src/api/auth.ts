@@ -10,8 +10,13 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  roles: string[];
+  tokenType: string;
+  user: {
+    username: string;
+    roles: string[];
+  };
   uiScope: UiScope;
+  permissions: string[];
 }
 
 export interface RefreshResponse {

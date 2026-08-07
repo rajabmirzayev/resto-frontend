@@ -16,26 +16,14 @@ export function buildQuery(params?: QueryParams): string {
   return qs ? `?${qs}` : '';
 }
 
-export interface ProblemDetail {
-  type?: string;
-  title?: string;
-  status: number;
-  detail?: string;
-  instance?: string;
-  key?: string;
-  path?: string;
-  timestamp?: string;
-  fieldErrors?: { field: string; message: string }[];
-}
-
 export class ApiError extends Error {
   readonly status: number;
   readonly key?: string;
   readonly detail?: string;
   readonly fieldErrors?: { field: string; message: string }[];
 
-  constructor(status: number, message: string, detail?: string, key?: string, fieldErrors?: { field: string; message: string }[]) {
-    super(message);
+  constructor(status: number, detail?: string, key?: string, fieldErrors?: { field: string; message: string }[]) {
+    super(detail || `HTTP ${status}`);
     this.name = 'ApiError';
     this.status = status;
     this.detail = detail;
@@ -125,27 +113,28 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get('content-type') ?? '';
-  const isJson = contentType.includes('application/json');
+  const ct = response.headers.get('content-type') ?? '';
 
   if (!response.ok) {
-    let problem: ProblemDetail | undefined;
-    if (isJson) {
+    if (ct.includes('json')) {
       try {
-        problem = (await response.json()) as ProblemDetail;
-      } catch {
-        // ignore malformed body
+        const body = await response.json();
+        throw new ApiError(response.status, body.detail || body.title || response.statusText, body.key);
+      } catch (e) {
+        if (e instanceof ApiError) throw e;
+        try {
+          const raw = await response.clone().text();
+          const cleaned = raw.replace(/^\uFEFF/, '');
+          const body = JSON.parse(cleaned);
+          throw new ApiError(response.status, body.detail || body.title || response.statusText, body.key);
+        } catch {
+          throw new ApiError(response.status, response.statusText);
+        }
       }
     }
-    throw new ApiError(
-      response.status,
-      problem?.detail ?? response.statusText,
-      problem?.detail,
-      problem?.key,
-      problem?.fieldErrors
-    );
+    throw new ApiError(response.status, response.statusText);
   }
 
-  if (response.status === 204 || !isJson) return undefined as T;
-  return (await response.json()) as T;
+  if (response.status === 204 || !ct.includes('json')) return undefined as T;
+  return await response.json() as T;
 }
