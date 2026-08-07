@@ -8,6 +8,7 @@ import type { OrderModeEnum, PaymentTimingEnum, CustomerThemeEnum } from '../../
 import { useOrganization, useOrganizationQrCode } from '../../api/hooks/useOrganizations';
 import { useOrgSettings, useUpdateOrgSettings } from '../../api/hooks/useSettings';
 import { useToast } from '../../store/useToast';
+import { formatApiError } from '../../api/client';
 import { Settings, UtensilsCrossed, UserCheck, ChefHat, ClipboardList, Check, Camera, ShieldCheck, Clock, CreditCard, Sun, Moon, Monitor, Store, QrCode, Copy, Download, ExternalLink, Loader2 } from 'lucide-react';
 import { useTheme } from '../../store/useTheme';
 import { useCustomerTheme } from '../../store/useCustomerTheme';
@@ -59,10 +60,17 @@ function apiToLocalTiming(timing: PaymentTimingEnum): PaymentTiming {
   return timing === 'BEFORE' ? 'before' : 'after';
 }
 
+interface LocalSettingsState {
+  orderMode: OrderMode;
+  customerPhotoRequired: boolean;
+  paymentTiming: PaymentTiming;
+  customerTheme: CustomerThemeId;
+}
+
 export default function AdminSettings() {
   const { t } = useTranslation();
   const addToast = useToast((s) => s.addToast);
-  const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming, currentUser } = useStore();
+  const { orderMode, setOrderMode, customerPhotoRequired, setCustomerPhotoRequired, paymentTiming, setPaymentTiming, currentUser, hasPermission } = useStore();
   const { theme, setTheme } = useTheme();
   const { theme: customerTheme, setTheme: setCustomerTheme } = useCustomerTheme();
   const [showOrgQr, setShowOrgQr] = useState(false);
@@ -77,30 +85,57 @@ export default function AdminSettings() {
   const org = orgQuery.data;
   const orgMenuUrl = org ? `${window.location.origin}/org/${org.id}/menu` : '';
 
-  const syncedRef = useRef(false);
+  const canEdit = hasPermission('settings.edit') && !!settingsQuery.data && !updateSettingsMutation.isPending;
+
   useEffect(() => {
     const data = settingsQuery.data;
-    if (data && !syncedRef.current) {
-      syncedRef.current = true;
-      setOrderMode(apiToLocalMode(data.orderMode));
-      setCustomerPhotoRequired(data.customerPhotoRequired);
-      setPaymentTiming(apiToLocalTiming(data.paymentTiming));
-      setCustomerTheme(data.customerTheme.toLowerCase() as CustomerThemeId);
-    }
-  }, [settingsQuery.data, setOrderMode, setCustomerPhotoRequired, setPaymentTiming, setCustomerTheme]);
+    if (!data || updateSettingsMutation.isPending) return;
+    setOrderMode(apiToLocalMode(data.orderMode));
+    setCustomerPhotoRequired(data.customerPhotoRequired);
+    setPaymentTiming(apiToLocalTiming(data.paymentTiming));
+    setCustomerTheme(data.customerTheme.toLowerCase() as CustomerThemeId);
+  }, [settingsQuery.data, updateSettingsMutation.isPending, setOrderMode, setCustomerPhotoRequired, setPaymentTiming, setCustomerTheme]);
 
-  const persistSettings = (patch: Partial<{ orderMode: OrderModeEnum; customerPhotoRequired: boolean; paymentTiming: PaymentTimingEnum; customerTheme: CustomerThemeEnum }>) => {
-    if (!orgId) return;
+  const prevSettingsRef = useRef<LocalSettingsState | null>(null);
+
+  const persistSettings = (next: Partial<LocalSettingsState>) => {
+    if (!orgId || !canEdit || updateSettingsMutation.isPending) return;
+
+    const current: LocalSettingsState = { orderMode, customerPhotoRequired, paymentTiming, customerTheme };
+    const merged: LocalSettingsState = { ...current, ...next };
+    const isNoop = (Object.keys(next) as (keyof LocalSettingsState)[]).every((key) => next[key] === current[key]);
+    if (isNoop) return;
+
+    prevSettingsRef.current = current;
+    setOrderMode(merged.orderMode);
+    setCustomerPhotoRequired(merged.customerPhotoRequired);
+    setPaymentTiming(merged.paymentTiming);
+    setCustomerTheme(merged.customerTheme);
+
     updateSettingsMutation.mutate(
       {
         orgId,
-        orderMode: localToApiMode(orderMode),
-        customerPhotoRequired,
-        paymentTiming: localToApiTiming(paymentTiming),
-        customerTheme: customerTheme.toUpperCase() as CustomerThemeEnum,
-        ...patch,
+        orderMode: localToApiMode(merged.orderMode),
+        customerPhotoRequired: merged.customerPhotoRequired,
+        paymentTiming: localToApiTiming(merged.paymentTiming),
+        customerTheme: merged.customerTheme.toUpperCase() as CustomerThemeEnum,
       },
-      { onError: () => addToast(t('error.network'), 'error') }
+      {
+        onSuccess: () => {
+          prevSettingsRef.current = null;
+        },
+        onError: (err) => {
+          const prev = prevSettingsRef.current;
+          if (prev) {
+            setOrderMode(prev.orderMode);
+            setCustomerPhotoRequired(prev.customerPhotoRequired);
+            setPaymentTiming(prev.paymentTiming);
+            setCustomerTheme(prev.customerTheme);
+          }
+          prevSettingsRef.current = null;
+          addToast(formatApiError(err, t('error.network')), 'error');
+        },
+      }
     );
   };
 
@@ -133,6 +168,20 @@ export default function AdminSettings() {
     } catch {}
   };
 
+  if (settingsQuery.isLoading && !settingsQuery.data) {
+    return (
+      <div>
+        <Header title={t('settings.title')} subtitle={''} showUser />
+        <div className="p-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-sm text-text-secondary">...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const customerThemeColors: Record<CustomerThemeId, string[]> = {
     classic: ['#0ea5e9', '#0284c7', '#0369a1'],
     emerald: ['#10b981', '#059669', '#047857'],
@@ -149,6 +198,25 @@ export default function AdminSettings() {
       <Header title={t('settings.title')} subtitle={t('settings.subtitle')} showUser />
 
       <div className="p-6 max-w-4xl">
+
+        {settingsQuery.isError && (
+          <div className="bg-danger-50 border border-danger-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <p className="text-sm text-danger-700">{t('error.unexpected')}</p>
+            <button
+              onClick={() => settingsQuery.refetch()}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('error.retry')}
+            </button>
+          </div>
+        )}
+
+        {!hasPermission('settings.edit') && (
+          <div className="bg-warning-50 border border-warning-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-warning-600 flex-shrink-0" />
+            <p className="text-sm text-warning-700">{t('settings.no_edit_permission')}</p>
+          </div>
+        )}
 
         {org && (
           <div className="mb-8 bg-white dark:bg-surface rounded-2xl border border-border p-6">
@@ -234,11 +302,9 @@ export default function AdminSettings() {
             return (
               <button
                 key={mode.value}
-                onClick={() => {
-                  setOrderMode(mode.value);
-                  persistSettings({ orderMode: localToApiMode(mode.value) });
-                }}
-                className={`relative text-left p-6 rounded-2xl border-2 transition-all ${
+                onClick={() => persistSettings({ orderMode: mode.value })}
+                disabled={!canEdit}
+                className={`relative text-left p-6 rounded-2xl border-2 transition-all disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none ${
                   isActive
                     ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100'
                     : 'border-border bg-white dark:bg-surface hover:border-primary-300 hover:shadow-md'
@@ -281,7 +347,15 @@ export default function AdminSettings() {
         </div>
 
         <div className="mt-8 bg-white dark:bg-surface rounded-2xl border border-border p-6">
-          <h3 className="text-base font-bold text-text-primary mb-3">{t('settings.current_mode')}: {t(modeTitleKeys[orderMode])}</h3>
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <h3 className="text-base font-bold text-text-primary">{t('settings.current_mode')}: {t(modeTitleKeys[orderMode])}</h3>
+            {updateSettingsMutation.isPending && (
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-primary-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {t('common.saving')}
+              </span>
+            )}
+          </div>
           <div className="bg-surface-secondary rounded-xl p-4">
             <p className="text-sm text-text-secondary leading-relaxed">
               {t(modeDescKeys[orderMode])}
@@ -304,12 +378,9 @@ export default function AdminSettings() {
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      const next = !customerPhotoRequired;
-                      setCustomerPhotoRequired(next);
-                      persistSettings({ customerPhotoRequired: next });
-                    }}
-                    className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 ${
+                    onClick={() => persistSettings({ customerPhotoRequired: !customerPhotoRequired })}
+                    disabled={!canEdit}
+                    className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 ml-4 disabled:cursor-not-allowed disabled:opacity-60 ${
                       customerPhotoRequired ? 'bg-success-500' : 'bg-border'
                     }`}
                   >
@@ -352,11 +423,9 @@ export default function AdminSettings() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
-                      setPaymentTiming('before');
-                      persistSettings({ paymentTiming: 'BEFORE' });
-                    }}
-                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                    onClick={() => persistSettings({ paymentTiming: 'before' })}
+                    disabled={!canEdit}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-left disabled:cursor-not-allowed disabled:opacity-60 ${
                       paymentTiming === 'before'
                         ? 'border-primary-500 bg-primary-50'
                         : 'border-border hover:border-primary-300'
@@ -372,11 +441,9 @@ export default function AdminSettings() {
                   </button>
 
                   <button
-                    onClick={() => {
-                      setPaymentTiming('after');
-                      persistSettings({ paymentTiming: 'AFTER' });
-                    }}
-                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                    onClick={() => persistSettings({ paymentTiming: 'after' })}
+                    disabled={!canEdit}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all text-left disabled:cursor-not-allowed disabled:opacity-60 ${
                       paymentTiming === 'after'
                         ? 'border-success-500 bg-success-50'
                         : 'border-border hover:border-success-300'
@@ -477,11 +544,9 @@ export default function AdminSettings() {
                 return (
                   <button
                     key={tid}
-                    onClick={() => {
-                      setCustomerTheme(tid);
-                      persistSettings({ customerTheme: tid.toUpperCase() as CustomerThemeEnum });
-                    }}
-                    className={`relative text-left p-5 rounded-2xl border-2 transition-all ${
+                    onClick={() => persistSettings({ customerTheme: tid })}
+                    disabled={!canEdit}
+                    className={`relative text-left p-5 rounded-2xl border-2 transition-all disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none ${
                       isActive
                         ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-100'
                         : 'border-border bg-white dark:bg-surface hover:border-primary-300 hover:shadow-md'

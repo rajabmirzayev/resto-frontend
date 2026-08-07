@@ -27,6 +27,7 @@ const ru: Record<string, string> = {
   'common.open': 'Открыть',
   'common.qr_code': 'QR-код',
   'common.download_qr': 'Скачать QR-код',
+  'common.saving': 'Сохранение...',
 
   // Roles
   'role.admin': 'Админ',
@@ -453,13 +454,8 @@ const ru: Record<string, string> = {
   'settings.subtitle': 'Конфигурация ресторана',
   'settings.order_mode': 'Режим заказов',
   'settings.order_mode_description': 'Настройте поток заказов вашего ресторана',
-  'settings.waiter_panel_label': 'Официант: ',
-  'settings.kitchen_panel_label': 'Кухня: ',
-  'settings.current_mode': 'Текущий режим:',
-  'settings.mode.waiter_description': 'Официанты берут заказы из меню на своей панели. Заказы невозможны без официанта.',
-  'settings.mode.customer_description': 'Клиент сканирует QR для доступа к меню и делает заказ напрямую. Заказ сразу идёт на кухню.',
-  'settings.mode.customer_waiter_confirm_description': 'Клиент делает заказ через QR. Официант проверяет и подтверждает, затем заказ уходит на кухню.',
-  'settings.mode.kitchen_description': 'Заказы идут напрямую на кухню через систему. Работает без панели официанта или клиента.',
+  'settings.current_mode': 'Текущий режим',
+  'settings.no_edit_permission': 'У вас нет разрешения на изменение этих настроек.',
   'settings.customer_photo_confirmation': 'Подтверждение фото клиента',
   'settings.customer_photo_description': 'Клиент должен загрузить фото для подтверждения присутствия за столом.',
   'settings.active': 'Активно',

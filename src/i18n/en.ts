@@ -27,6 +27,7 @@ const en: Record<string, string> = {
   'common.open': 'Open',
   'common.qr_code': 'QR Code',
   'common.download_qr': 'Download QR',
+  'common.saving': 'Saving...',
 
   // Roles
   'role.admin': 'Admin',
@@ -453,13 +454,8 @@ const en: Record<string, string> = {
   'settings.subtitle': 'Restaurant configuration',
   'settings.order_mode': 'Order Mode',
   'settings.order_mode_description': 'Configure your restaurant order flow',
-  'settings.waiter_panel_label': 'Waiter: ',
-  'settings.kitchen_panel_label': 'Kitchen: ',
-  'settings.current_mode': 'Current Mode:',
-  'settings.mode.waiter_description': 'Waiters take orders from the menu on their panel. Orders cannot be placed without a waiter.',
-  'settings.mode.customer_description': 'Customer scans QR to access the menu and places order directly. Order goes straight to kitchen.',
-  'settings.mode.customer_waiter_confirm_description': 'Customer places order via QR. Waiter reviews and confirms, then it goes to kitchen.',
-  'settings.mode.kitchen_description': 'Orders go directly to kitchen through the system. Works without waiter or customer panel.',
+  'settings.current_mode': 'Current Mode',
+  'settings.no_edit_permission': 'You do not have permission to change these settings.',
   'settings.customer_photo_confirmation': 'Customer Photo Confirmation',
   'settings.customer_photo_description': 'Customer must upload a photo to confirm they are at the table when ordering.',
   'settings.active': 'Active',

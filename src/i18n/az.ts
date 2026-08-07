@@ -27,6 +27,7 @@ const az: Record<string, string> = {
   'common.open': 'Aç',
   'common.qr_code': 'QR Kod',
   'common.download_qr': 'QR Kodunu Yüklə',
+  'common.saving': 'Yadda saxlanılır...',
 
   // Roles
   'role.admin': 'Admin',
@@ -453,13 +454,8 @@ const az: Record<string, string> = {
   'settings.subtitle': 'Restoran konfiqurasiyası',
   'settings.order_mode': 'Sifariş Rejimi',
   'settings.order_mode_description': 'Restoranınızın sifariş axınını tənzimləyin',
-  'settings.waiter_panel_label': 'Ofisant: ',
-  'settings.kitchen_panel_label': 'Metbex: ',
-  'settings.current_mode': 'Cari Rejim:',
-  'settings.mode.waiter_description': 'Ofisantlar menyudan sifarişləri öz panelindən yazır. Ofisant olmadan sifariş qəbul edilmir.',
-  'settings.mode.customer_description': 'Müştəri QR kod ilə menyuya daxil olur və sifarişini birbaşa göndərir. Sifariş avtomatik olaraq metbexə düşür.',
-  'settings.mode.customer_waiter_confirm_description': 'Müştəri QR kod ilə sifarişini edir. Ofisant panelində sifarişi yoxlayıb təsdiqləyir, sonra metbexə göndərilir.',
-  'settings.mode.kitchen_description': 'Sifarişlər sistemi vasitəsilə birbaşa metbexə düşür. Ofisant və ya müştəri paneli olmadan işləyir.',
+  'settings.current_mode': 'Cari Rejim',
+  'settings.no_edit_permission': 'Bu parametrləri dəyişmək üçün icazəniz yoxdur.',
   'settings.customer_photo_confirmation': 'Müşteri Şəkil Təsdiqi',
   'settings.customer_photo_description': 'Müştəri sifariş verəndə masada olduğunu təsdiqləmək üçün şəkil yükləməlidir.',
   'settings.active': 'Aktivdir',
