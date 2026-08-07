@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../i18n';
-import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionsTree } from '../../api/hooks/useAccess';
+import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionsTree, useSetRolePermissions } from '../../api/hooks/useAccess';
 import { useUsers } from '../../api/hooks/useAccess';
 import { ApiError } from '../../api/client';
 import type { RoleResponse, UiScope } from '../../api/types';
@@ -26,6 +26,7 @@ export default function RoleManagement() {
   const treeQuery = usePermissionsTree();
   const createRole = useCreateRole();
   const updateRole = useUpdateRole();
+  const setRolePermissions = useSetRolePermissions();
   const deleteRole = useDeleteRole();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
@@ -83,11 +84,17 @@ export default function RoleManagement() {
       updateRole.mutate(
         { id: editingRole.id, payload: { name: formName.trim(), uiScope: formUiScope } },
         {
-          onSuccess: () => {
-          },
           onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')),
         }
       );
+      const originalPerms = [...editingRole.permissionIds].sort().join(',');
+      const nextPerms = [...formPermIds].sort().join(',');
+      if (originalPerms !== nextPerms) {
+        setRolePermissions.mutate(
+          { roleId: editingRole.id, payload: { permissionIds: formPermIds } },
+          { onError: (err) => setFormError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network')) }
+        );
+      }
     } else {
       createRole.mutate(
         { code: formCode.trim().toUpperCase(), name: formName.trim(), uiScope: formUiScope, permissionIds: formPermIds },
@@ -279,7 +286,7 @@ export default function RoleManagement() {
                 </div>
               </div>
 
-              {modalMode === 'add' && (
+              {modalMode !== null && (
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-2">{t('roles.permissions')}</label>
                   <div className="space-y-3">
@@ -340,12 +347,6 @@ export default function RoleManagement() {
                       <p className="text-sm text-text-muted text-center py-4">İcazə kataloqu yüklənə bilmədi</p>
                     )}
                   </div>
-                </div>
-              )}
-
-              {modalMode === 'edit' && editingRole && (
-                <div className="text-xs text-text-muted">
-                  İcazələri redaktə etmək üçün rol detallarına keçin.
                 </div>
               )}
 

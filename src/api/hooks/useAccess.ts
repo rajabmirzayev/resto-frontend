@@ -137,10 +137,10 @@ export function useDeleteRole() {
   });
 }
 
-export function useSetRolePermissions(roleId: string) {
+export function useSetRolePermissions() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: SetPermissionsRequest) => accessApi.setRolePermissions(roleId, payload),
+    mutationFn: ({ roleId, payload }: { roleId: string; payload: SetPermissionsRequest }) => accessApi.setRolePermissions(roleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
     },
