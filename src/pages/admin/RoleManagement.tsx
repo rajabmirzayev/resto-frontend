@@ -6,7 +6,8 @@ import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePermissionsTr
 import { useUsers } from '../../api/hooks/useAccess';
 import { formatApiError } from '../../api/client';
 import type { RoleResponse, UiScope } from '../../api/types';
-import { Plus, Edit2, Trash2, X, Shield, Check, Lock, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Shield, Check, Lock, Loader2, ShieldCheck, Users } from 'lucide-react';
+import { panelMeta } from '../../lib/panelMeta';
 
 type ModalMode = 'add' | 'edit' | null;
 
@@ -38,10 +39,12 @@ export default function RoleManagement() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [panelFilter, setPanelFilter] = useState<'all' | UiScope>('all');
 
   const roles = rolesQuery.data?.content ?? [];
   const users = usersQuery.data?.content ?? [];
   const tree = treeQuery.data ?? [];
+  const filteredRoles = panelFilter === 'all' ? roles : roles.filter((r) => r.uiScope === panelFilter);
 
   const getUserCount = (roleId: string) => users.filter((u) => u.role?.id === roleId).length;
 
@@ -139,7 +142,69 @@ export default function RoleManagement() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-5 h-5 text-primary-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-text-primary leading-none">{roles.length}</p>
+              <p className="text-xs text-text-muted mt-1">{t('roles.stat_roles')}</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center flex-shrink-0">
+              <Users className="w-5 h-5 text-warning-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-text-primary leading-none">{users.length}</p>
+              <p className="text-xs text-text-muted mt-1">{t('roles.stat_users')}</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center flex-shrink-0">
+              <Lock className="w-5 h-5 text-success-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-text-primary leading-none">{roles.filter((r) => r.isSystem).length}</p>
+              <p className="text-xs text-text-muted mt-1">{t('roles.stat_system')}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setPanelFilter('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                panelFilter === 'all'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
+              }`}
+            >
+              {t('common.all')}
+            </button>
+            {UI_SCOPE_OPTIONS.map((opt) => {
+              const meta = panelMeta[opt.value];
+              const Icon = meta.icon;
+              const active = panelFilter === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setPanelFilter(active ? 'all' : opt.value)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    active
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
+                      : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {t(meta.labelKey)}
+                </button>
+              );
+            })}
+          </div>
+
           <button
             onClick={openAdd}
             className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary-200"
@@ -150,28 +215,37 @@ export default function RoleManagement() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {roles.map((role) => {
+          {filteredRoles.map((role) => {
             const userCount = getUserCount(role.id);
+            const meta = panelMeta[role.uiScope];
+            const PanelIcon = meta.icon;
             return (
               <div
                 key={role.id}
-                className="bg-white dark:bg-surface rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-surface rounded-2xl border border-border p-5 hover:shadow-lg hover:border-primary-200 transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${role.isSystem ? 'bg-primary-100 text-primary-700' : 'bg-surface-secondary text-text-muted'}`}>
-                      {role.isSystem ? <Lock className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.iconBg}`}>
+                      <PanelIcon className={`w-6 h-6 ${meta.iconColor}`} />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-text-primary">{role.name}</p>
-                      <p className="text-xs text-text-muted">{role.code} &middot; {role.permissions.length} {t('roles.permissions_suffix')}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-text-primary truncate">{role.name}</p>
+                      <p className="text-xs text-text-muted font-mono mt-0.5">{role.code}</p>
                     </div>
                   </div>
-                  {role.isSystem && (
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary-50 text-primary-600">
-                      {t('roles.system_badge')}
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    {role.isSystem && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-secondary text-text-muted">
+                        <Lock className="w-3 h-3" />
+                        {t('roles.system_badge')}
+                      </span>
+                    )}
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${meta.badgeCls}`}>
+                      <PanelIcon className="w-3 h-3" />
+                      {t(meta.labelKey)}
                     </span>
-                  )}
+                  </div>
                 </div>
 
                 <div className="mb-4">
@@ -192,8 +266,12 @@ export default function RoleManagement() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs text-text-muted">{userCount} {t('roles.users_suffix')}</span>
+                <div className="flex items-center justify-between mb-4 pt-3 border-t border-border">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-text-muted">
+                    <Users className="w-3.5 h-3.5" />
+                    {userCount} {t('roles.users_suffix')}
+                  </span>
+                  <span className="text-xs text-text-muted">{role.permissions.length} {t('roles.permissions_suffix')}</span>
                 </div>
 
                 <div className="flex gap-2">
@@ -218,7 +296,7 @@ export default function RoleManagement() {
             );
           })}
 
-          {roles.length === 0 && (
+          {filteredRoles.length === 0 && (
             <div className="col-span-full text-center py-16">
               <Shield className="w-12 h-12 mx-auto text-text-muted opacity-30 mb-3" />
               <p className="text-text-muted">{t('roles.no_roles')}</p>
@@ -268,19 +346,25 @@ export default function RoleManagement() {
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">{t('roles.panel')}</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {UI_SCOPE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setFormUiScope(opt.value)}
-                      className={`py-2 px-3 rounded-xl text-sm font-medium border transition-all ${
-                        formUiScope === opt.value
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
-                      }`}
-                    >
-                      {opt.labelKey && t(opt.labelKey)}
-                    </button>
-                  ))}
+                  {UI_SCOPE_OPTIONS.map((opt) => {
+                    const meta = panelMeta[opt.value];
+                    const Icon = meta.icon;
+                    const active = formUiScope === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => setFormUiScope(opt.value)}
+                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-sm font-medium border transition-all ${
+                          active
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${active ? 'text-primary-600' : 'text-text-muted'}`} />
+                        {t(meta.labelKey)}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

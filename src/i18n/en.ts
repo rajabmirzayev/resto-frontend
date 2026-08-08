@@ -255,6 +255,9 @@ const en: Record<string, string> = {
   'staff.password_placeholder': 'New password (leave blank to keep)',
   'staff.role': 'Role',
   'staff.delete_confirmation': 'Delete this staff member?',
+  'staff.stat_staff': 'Total Staff',
+  'staff.stat_waiters': 'Waiters',
+  'staff.stat_kitchen': 'Kitchen Staff',
 
   // Roles
   'roles.title': 'Role Management',
@@ -276,6 +279,10 @@ const en: Record<string, string> = {
   'roles.panel_kitchen': 'Kitchen Panel',
   'roles.permissions_tree_error': 'Could not load permission catalog',
   'roles.delete_confirmation': 'Delete this role?',
+  'roles.panel_super_admin': 'Super Admin Panel',
+  'roles.stat_roles': 'Total Roles',
+  'roles.stat_users': 'Assigned Users',
+  'roles.stat_system': 'System Roles',
 
   // Menu Management
   'menu_management.title': 'Menu Management',

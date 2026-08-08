@@ -255,6 +255,9 @@ const ru: Record<string, string> = {
   'staff.password_placeholder': 'Новый пароль (пусто = не менять)',
   'staff.role': 'Роль',
   'staff.delete_confirmation': 'Удалить этого сотрудника?',
+  'staff.stat_staff': 'Всего сотрудников',
+  'staff.stat_waiters': 'Официанты',
+  'staff.stat_kitchen': 'Персонал кухни',
 
   // Roles
   'roles.title': 'Управление ролями',
@@ -276,6 +279,10 @@ const ru: Record<string, string> = {
   'roles.panel_kitchen': 'Панель кухни',
   'roles.permissions_tree_error': 'Не удалось загрузить каталог разрешений',
   'roles.delete_confirmation': 'Удалить эту роль?',
+  'roles.panel_super_admin': 'Панель супер-администратора',
+  'roles.stat_roles': 'Всего ролей',
+  'roles.stat_users': 'Назначенных пользователей',
+  'roles.stat_system': 'Системные роли',
 
   // Menu Management
   'menu_management.title': 'Управление меню',

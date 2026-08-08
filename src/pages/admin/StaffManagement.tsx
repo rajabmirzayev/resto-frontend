@@ -6,7 +6,8 @@ import { useUsers, useStaffPerformance, useCreateUser, useUpdateUser, useDeleteU
 import { useRoles } from '../../api/hooks/useAccess';
 import { formatApiError } from '../../api/client';
 import type { UserDto, UpdateUserRequest } from '../../api/types';
-import { Plus, Edit2, Trash2, X, Users, Shield, UtensilsCrossed, ChefHat, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Users, Loader2, UtensilsCrossed, ChefHat, Mail, Activity, Wallet } from 'lucide-react';
+import { getPanelMeta } from '../../lib/panelMeta';
 
 type ModalMode = 'add' | 'edit' | null;
 
@@ -19,19 +20,6 @@ interface StaffForm {
 }
 
 const emptyForm: StaffForm = { name: '', username: '', password: '', email: '', roleId: '' };
-
-function roleIcon(code: string) {
-  if (code === 'WAITER_DEFAULT') return UtensilsCrossed;
-  if (code === 'KITCHEN_DEFAULT') return ChefHat;
-  return Shield;
-}
-
-function roleIconFromName(name: string) {
-  const lower = name.toLowerCase();
-  if (lower.includes('waiter') || lower.includes('ofisant')) return UtensilsCrossed;
-  if (lower.includes('chef') || lower.includes('aşbaz')) return ChefHat;
-  return Shield;
-}
 
 export default function StaffManagement() {
   const { t } = useTranslation();
@@ -60,12 +48,8 @@ export default function StaffManagement() {
   const staff = users.filter((u) => u.role?.code !== 'CUSTOMER');
   const filtered = roleFilter === 'all' ? staff : staff.filter((u) => u.role?.id === roleFilter);
 
-  const getRoleBadgeColor = (roleName: string) => {
-    const colors = ['bg-primary-100 text-primary-700', 'bg-warning-100 text-warning-700', 'bg-success-100 text-success-700', 'bg-danger-100 text-danger-700', 'bg-primary-200 text-primary-800'];
-    let hash = 0;
-    for (let i = 0; i < roleName.length; i++) hash = roleName.charCodeAt(i) + ((hash << 5) - hash);
-    return colors[Math.abs(hash) % colors.length];
-  };
+  const waiterCount = staff.filter((u) => u.role?.uiScope === 'WAITER_PANEL').length;
+  const kitchenCount = staff.filter((u) => u.role?.uiScope === 'KITCHEN_PANEL').length;
 
   const openAdd = () => {
     setEditingUser(null);
@@ -151,46 +135,89 @@ export default function StaffManagement() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+              <Users className="w-5 h-5 text-primary-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-text-primary leading-none">{staff.length}</p>
+              <p className="text-xs text-text-muted mt-1">{t('staff.stat_staff')}</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-warning-50 flex items-center justify-center flex-shrink-0">
+              <UtensilsCrossed className="w-5 h-5 text-warning-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-text-primary leading-none">{waiterCount}</p>
+              <p className="text-xs text-text-muted mt-1">{t('staff.stat_waiters')}</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-surface rounded-2xl border border-border p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-success-50 flex items-center justify-center flex-shrink-0">
+              <ChefHat className="w-5 h-5 text-success-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-text-primary leading-none">{kitchenCount}</p>
+              <p className="text-xs text-text-muted mt-1">{t('staff.stat_kitchen')}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => setRoleFilter('all')} className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${roleFilter === 'all' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'}`}>
+              {t('common.all')} ({staff.length})
+            </button>
+            {roles.map((role) => {
+              const meta = getPanelMeta(role.uiScope);
+              const Icon = meta.icon;
+              const active = roleFilter === role.id;
+              return (
+                <button key={role.id} onClick={() => setRoleFilter(active ? 'all' : role.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${active ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'}`}>
+                  <Icon className="w-3.5 h-3.5" />
+                  {role.name} ({staff.filter((u) => u.role?.id === role.id).length})
+                </button>
+              );
+            })}
+          </div>
+
           <button onClick={openAdd} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-primary-200">
             <Plus className="w-4 h-4" />
             {t('staff.new_staff')}
           </button>
-
-          <div className="flex gap-2 flex-wrap ml-auto">
-            <button onClick={() => setRoleFilter('all')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${roleFilter === 'all' ? 'bg-primary-600 text-white' : 'bg-surface-secondary text-text-secondary hover:bg-border'}`}>
-              {t('common.all')} ({staff.length})
-            </button>
-            {roles.map((role) => (
-              <button key={role.id} onClick={() => setRoleFilter(role.id)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${roleFilter === role.id ? 'bg-primary-600 text-white' : 'bg-surface-secondary text-text-secondary hover:bg-border'}`}>
-                {role.name} ({staff.filter((u) => u.role?.id === role.id).length})
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((user) => {
             const userRole = user.role;
-            const badgeColor = getRoleBadgeColor(userRole?.name || '');
-            const Icon = roleIcon(userRole?.code ?? '');
+            const meta = getPanelMeta(userRole?.uiScope);
+            const PanelIcon = meta.icon;
             const perf = perfByUser.get(user.id);
             const orderCount = perf?.activeOrders ?? 0;
             const revenue = perf?.revenue ?? 0;
 
             return (
-              <div key={user.id} className="bg-white dark:bg-surface rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow">
+              <div key={user.id} className="bg-white dark:bg-surface rounded-2xl border border-border p-5 hover:shadow-lg hover:border-primary-200 transition-all">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${badgeColor}`}>
-                      <Icon className="w-6 h-6" />
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${meta.iconBg}`}>
+                      <PanelIcon className={`w-6 h-6 ${meta.iconColor}`} />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-text-primary">{user.name}</p>
-                      <p className="text-xs text-text-muted">@{user.username}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-text-primary truncate">{user.name}</p>
+                      <p className="text-xs text-text-muted mt-0.5">@{user.username}</p>
+                      {user.email && (
+                        <p className="text-[11px] text-text-muted truncate mt-0.5 inline-flex items-center gap-1">
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${badgeColor}`}>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${meta.badgeCls}`}>
+                    <PanelIcon className="w-3 h-3" />
                     {userRole?.name || t('common.unknown')}
                   </span>
                 </div>
@@ -198,11 +225,17 @@ export default function StaffManagement() {
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-surface-secondary rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-text-primary">{orderCount}</p>
-                    <p className="text-[10px] text-text-muted">{t('staff.active_orders')}</p>
+                    <p className="text-[10px] text-text-muted inline-flex items-center gap-1">
+                      <Activity className="w-3 h-3" />
+                      {t('staff.active_orders')}
+                    </p>
                   </div>
                   <div className="bg-surface-secondary rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-text-primary">{revenue} ₼</p>
-                    <p className="text-[10px] text-text-muted">{t('staff.revenue')}</p>
+                    <p className="text-[10px] text-text-muted inline-flex items-center gap-1">
+                      <Wallet className="w-3 h-3" />
+                      {t('staff.revenue')}
+                    </p>
                   </div>
                 </div>
 
@@ -259,7 +292,8 @@ export default function StaffManagement() {
                 <label className="block text-sm font-medium text-text-secondary mb-2">{t('staff.role')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {roles.map((role) => {
-                    const Icon = roleIconFromName(role.name);
+                    const meta = getPanelMeta(role.uiScope);
+                    const Icon = meta.icon;
                     return (
                       <button key={role.id} onClick={() => setForm({ ...form, roleId: role.id })} className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border-2 transition-all ${form.roleId === role.id ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border bg-surface-secondary text-text-secondary hover:border-primary-300'}`}>
                         <Icon className="w-4 h-4" />

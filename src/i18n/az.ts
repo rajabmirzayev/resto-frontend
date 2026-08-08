@@ -255,6 +255,9 @@ const az: Record<string, string> = {
   'staff.password_placeholder': 'Yeni parol (boş = dəyişmə)',
   'staff.role': 'Rol',
   'staff.delete_confirmation': 'İşçini silmək?',
+  'staff.stat_staff': 'Ümumi İşçilər',
+  'staff.stat_waiters': 'Ofisantlar',
+  'staff.stat_kitchen': 'Mətbəx İşçiləri',
 
   // Roles
   'roles.title': 'Rol İdarəetməsi',
@@ -276,6 +279,10 @@ const az: Record<string, string> = {
   'roles.panel_kitchen': 'Mətbəx Panel',
   'roles.permissions_tree_error': 'İcazə kataloqu yüklənə bilmədi',
   'roles.delete_confirmation': 'Rolü silmək?',
+  'roles.panel_super_admin': 'Super Admin Panel',
+  'roles.stat_roles': 'Ümumi Rollar',
+  'roles.stat_users': 'Təyin Olunan İstifadəçilər',
+  'roles.stat_system': 'Sistem Rolları',
 
   // Menu Management
   'menu_management.title': 'Menyu İdarəetməsi',
