@@ -27,7 +27,7 @@ export default function KitchenDashboard() {
   }, []);
 
   useEffect(() => {
-    const pendingCount = (kitchenQuery.data?.new ?? []).length;
+    const pendingCount = (kitchenQuery.data?.newOrders ?? []).length;
     if (prevPendingCount.current > 0 && pendingCount > prevPendingCount.current) {
       const newCount = pendingCount - prevPendingCount.current;
       playNewOrderSound();
@@ -36,7 +36,7 @@ export default function KitchenDashboard() {
     prevPendingCount.current = pendingCount;
   }, [kitchenQuery.data, addToast, t]);
 
-  const newOrders = kitchenQuery.data?.new ?? [];
+  const newOrders = kitchenQuery.data?.newOrders ?? [];
   const preparingOrders = kitchenQuery.data?.preparing ?? [];
   const readyOrders = kitchenQuery.data?.ready ?? [];
 

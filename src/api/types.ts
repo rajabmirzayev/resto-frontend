@@ -29,7 +29,7 @@ export interface PageDto<T> {
 export type UserRoleEnum = 'ADMIN' | 'ORG_ADMIN' | 'WAITER' | 'CHEF' | 'CUSTOMER';
 export type TableStatusEnum = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 export type OrderStatusEnum = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED' | 'CANCELLED';
-export type OrderItemStatusEnum = 'PENDING' | 'PREPARING' | 'READY' | 'SERVED';
+export type OrderItemStatusEnum = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
 export type PaymentStatusEnum = 'PENDING' | 'PAID';
 export type PaymentMethodEnum = 'CASH' | 'CARD';
 export type OrderModeEnum = 'WAITER' | 'CUSTOMER' | 'CUSTOMER_WAITER_CONFIRM' | 'KITCHEN';
@@ -409,10 +409,23 @@ export interface RequestPaymentRequest {
 
 // ===== Kitchen =====
 
+export interface KitchenOrderDto {
+  id: string;
+  items: OrderItemDto[];
+  tableId: string;
+  tableNumber: number;
+  status: OrderStatusEnum;
+  paymentStatus: PaymentStatusEnum;
+  totalAmount: number;
+  waiterName: string;
+  orderSource: OrderSourceEnum;
+  createdAt: string;
+}
+
 export interface KitchenOrdersDto {
-  new: OrderDto[];
-  preparing: OrderDto[];
-  ready: OrderDto[];
+  newOrders: KitchenOrderDto[];
+  preparing: KitchenOrderDto[];
+  ready: KitchenOrderDto[];
 }
 
 // ===== Waiter =====

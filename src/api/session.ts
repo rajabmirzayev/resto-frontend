@@ -88,16 +88,26 @@ export function clearSession(): void {
   }
 }
 
-export function getOrgIdFromToken(accessToken: string): string | null {
+function decodeTokenPayload(accessToken: string): Record<string, unknown> | null {
   try {
     const parts = accessToken.split('.');
     if (parts.length < 2) return null;
     const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
-    const payload = JSON.parse(atob(padded)) as Record<string, unknown>;
-    const orgId = payload['organizationId'];
-    return typeof orgId === 'string' && orgId ? orgId : null;
+    return JSON.parse(atob(padded)) as Record<string, unknown>;
   } catch {
     return null;
   }
+}
+
+export function getUserIdFromToken(accessToken: string): string | null {
+  const payload = decodeTokenPayload(accessToken);
+  const userId = payload?.['sub'];
+  return typeof userId === 'string' && userId ? userId : null;
+}
+
+export function getOrgIdFromToken(accessToken: string): string | null {
+  const payload = decodeTokenPayload(accessToken);
+  const orgId = payload?.['organizationId'];
+  return typeof orgId === 'string' && orgId ? orgId : null;
 }

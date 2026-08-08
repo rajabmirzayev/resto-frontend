@@ -1,12 +1,14 @@
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { useMenuItems } from '../../api/hooks/useMenu';
 import { useUpdateOrderStatus, useUpdateOrderItemStatus, useStartPreparingOrder, useMarkAllReadyOrder } from '../../api/hooks/useOrders';
-import type { OrderDto } from '../../api/types';
-import { CheckCircle, ChefHat, Timer, ArrowRight, Camera } from 'lucide-react';
+import { kitchenKeys } from '../../api/hooks/useKitchen';
+import type { KitchenOrderDto } from '../../api/types';
+import { CheckCircle, ChefHat, Timer, ArrowRight } from 'lucide-react';
 
 interface Props {
-  order: OrderDto;
+  order: KitchenOrderDto;
   variant: 'new' | 'preparing' | 'ready';
 }
 
@@ -14,6 +16,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const orgId = currentUser?.orgId;
+  const queryClient = useQueryClient();
   const menuItemsQuery = useMenuItems(orgId);
   const updateOrderStatus = useUpdateOrderStatus(orgId);
   const updateOrderItemStatus = useUpdateOrderItemStatus(orgId);
@@ -22,9 +25,14 @@ export default function KitchenOrderCard({ order, variant }: Props) {
 
   const menuItems = menuItemsQuery.data ?? [];
 
+  const refreshKitchen = () => {
+    queryClient.invalidateQueries({ queryKey: kitchenKeys.orders(orgId) });
+  };
+
   const readyCount = order.items.filter((i) => i.status === 'READY' || i.status === 'SERVED').length;
   const totalCount = order.items.length;
   const allReady = readyCount === totalCount;
+  const canStartPreparing = order.status === 'CONFIRMED';
 
   const getElapsed = (createdAt: string) => {
     const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
@@ -49,21 +57,15 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   };
 
   const handleStartPreparing = () => {
-    startPreparing.mutate(order.id);
-    order.items.forEach((item) => {
-      if (item.status === 'PENDING') {
-        updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'PREPARING' });
-      }
+    startPreparing.mutate(order.id, {
+      onSuccess: refreshKitchen,
     });
   };
 
   const handleAllItemsReady = () => {
-    order.items.forEach((item) => {
-      if (item.status !== 'READY') {
-        updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'READY' });
-      }
+    markAllReady.mutate(order.id, {
+      onSuccess: refreshKitchen,
     });
-    markAllReady.mutate(order.id);
   };
 
   const elapsed = getElapsed(order.createdAt);
@@ -135,12 +137,15 @@ export default function KitchenOrderCard({ order, variant }: Props) {
           const isPreparing = item.status === 'PREPARING';
 
           const renderItemActions = () => {
-            if (item.status === 'READY') return null;
+            if (item.status === 'READY' || item.status === 'SERVED' || item.status === 'CANCELLED') return null;
             return (
               <div className="flex items-center gap-1.5">
-                {item.status === 'PENDING' && (
+                {(item.status === 'PENDING' || item.status === 'CONFIRMED') && (
                   <button
-                    onClick={() => updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'PREPARING' })}
+                    onClick={() => updateOrderItemStatus.mutate(
+                      { orderId: order.id, itemId: item.id, status: 'PREPARING' },
+                      { onSuccess: refreshKitchen }
+                    )}
                     className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
                     {t('kitchen.start')}
@@ -148,7 +153,10 @@ export default function KitchenOrderCard({ order, variant }: Props) {
                 )}
                 {item.status === 'PREPARING' && (
                   <button
-                    onClick={() => updateOrderItemStatus.mutate({ orderId: order.id, itemId: item.id, status: 'READY' })}
+                    onClick={() => updateOrderItemStatus.mutate(
+                      { orderId: order.id, itemId: item.id, status: 'READY' },
+                      { onSuccess: refreshKitchen }
+                    )}
                     className="text-xs bg-success-500 hover:bg-success-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
                     {t('kitchen.badge_ready')}
@@ -197,23 +205,8 @@ export default function KitchenOrderCard({ order, variant }: Props) {
         })}
       </div>
 
-      {order.customerPhoto && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Camera className="w-3.5 h-3.5 text-primary-600" />
-            <span className="text-xs font-semibold text-primary-700">{t('kitchen.customer_photo')}</span>
-          </div>
-          <img
-            src={order.customerPhoto}
-            alt={t('kitchen.customer_photo_alt', { number: order.tableNumber })}
-            className="w-full h-32 object-cover rounded-xl border border-primary-200"
-          />
-          <p className="text-[10px] text-text-muted mt-1">{t('kitchen.verify_customer')}</p>
-        </div>
-      )}
-
       <div className="px-4 pb-4 space-y-2">
-        {variant === 'new' && !allReady && (
+        {variant === 'new' && canStartPreparing && (
           <button
             onClick={handleStartPreparing}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -221,6 +214,11 @@ export default function KitchenOrderCard({ order, variant }: Props) {
             <ChefHat className="w-4 h-4" />
             {t('kitchen.start_preparing')}
           </button>
+        )}
+        {variant === 'new' && !canStartPreparing && (
+          <div className="w-full text-center py-2.5 rounded-xl bg-warning-50 border border-warning-200 text-sm font-semibold text-warning-700">
+            {t('kitchen.waiting_confirmation')}
+          </div>
         )}
         {variant === 'preparing' && !allReady && (
           <button
@@ -233,7 +231,10 @@ export default function KitchenOrderCard({ order, variant }: Props) {
         )}
         {allReady && variant !== 'ready' && (
           <button
-            onClick={() => updateOrderStatus.mutate({ id: order.id, status: 'READY' })}
+            onClick={() => updateOrderStatus.mutate(
+              { id: order.id, status: 'READY' },
+              { onSuccess: refreshKitchen }
+            )}
             className="w-full bg-success-600 hover:bg-success-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />

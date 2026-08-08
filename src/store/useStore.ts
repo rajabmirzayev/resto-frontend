@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, PaymentMethod, PaymentTiming, Permission, Table, TableStatus, User, UserRole } from '../types';
 import { initialData } from '../data/mock';
 import { authApi } from '../api/auth';
-import { clearSession, getAccessToken, getOrgIdFromToken, getPermissions, getRefreshToken, setSession, setPermissions, setUiScope } from '../api/session';
+import { clearSession, getAccessToken, getOrgIdFromToken, getPermissions, getRefreshToken, getUserIdFromToken, setSession, setPermissions, setUiScope } from '../api/session';
 
 function mapRolesToUserRole(roles: string[]): UserRole {
   if (roles.includes('SUPER_ADMIN')) return 'admin';
@@ -88,8 +88,9 @@ export const useStore = create<Store>()(
         const userRoles = response.user?.roles ?? [];
         const user = buildUserFromLogin(username, userRoles);
         const token = getAccessToken();
+        const userId = token ? (getUserIdFromToken(token) ?? user.id) : user.id;
         const orgId = token ? (getOrgIdFromToken(token) ?? get().users.find((u) => u.username === username)?.orgId) : undefined;
-        const currentUser = orgId ? { ...user, orgId } : user;
+        const currentUser = orgId ? { ...user, id: userId, orgId } : { ...user, id: userId };
         set({ currentUser });
         return currentUser;
       },
@@ -466,6 +467,18 @@ export const useStore = create<Store>()(
         roles: state.roles,
         currentUser: state.currentUser,
       }),
+      merge: (persisted, current) => {
+        const persistedState = persisted as Partial<Store> | undefined;
+        const merged: Store = { ...(current as Store), ...(persistedState as Partial<Store>) };
+        const cu = persistedState?.currentUser;
+        if (cu) {
+          const token = getAccessToken();
+          const userId = token ? getUserIdFromToken(token) : undefined;
+          const orgId = token ? getOrgIdFromToken(token) : undefined;
+          merged.currentUser = { ...cu, id: userId ?? cu.id, orgId: orgId ?? cu.orgId };
+        }
+        return merged;
+      },
     }
   )
 );

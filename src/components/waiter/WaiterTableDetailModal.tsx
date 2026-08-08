@@ -5,25 +5,27 @@ import { localize } from '../../utils/localize';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { useMenuItems, useMenuCategories } from '../../api/hooks/useMenu';
-import { useOrders, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCompletePayment } from '../../api/hooks/useOrders';
-import { useUpdateTableStatus, useRemoveReservation, tableKeys } from '../../api/hooks/useTables';
-import type { RestaurantTableDto, OrderDto } from '../../api/types';
+import { useOrder, useCreateOrder, useAddOrderItems, useUpdateOrderStatus, useUpdateOrderItemStatus, useCompletePayment } from '../../api/hooks/useOrders';
+import { useUpdateTableStatus, useRemoveReservation } from '../../api/hooks/useTables';
+import { waiterKeys } from '../../api/hooks/useWaiter';
+import type { WaiterTableDto } from '../../api/types';
+import { getAccessToken, getOrgIdFromToken, getUserIdFromToken } from '../../api/session';
 import { getOrderItemStatusLabels } from '../../lib/constants';
 import { getOrderErrorMessage } from '../../lib/orderErrors';
 import type { OrderStatus } from '../../types';
-import { X, ClipboardList, CheckCircle, UtensilsCrossed, CreditCard, Timer, ReceiptText, Banknote, Clock, User, Phone, Plus, Minus, ShoppingBag, Hand } from 'lucide-react';
+import { X, ClipboardList, CheckCircle, UtensilsCrossed, CreditCard, ReceiptText, Banknote, Plus, Minus, ShoppingBag, Hand, Clock, Loader2 } from 'lucide-react';
 
 interface Props {
-  table: RestaurantTableDto;
-  sectionName: string;
+  table: WaiterTableDto;
   onClose: () => void;
 }
 
-export default function WaiterTableDetailModal({ table, sectionName, onClose }: Props) {
+export default function WaiterTableDetailModal({ table, onClose }: Props) {
   const { t, locale } = useTranslation();
   const queryClient = useQueryClient();
   const ORDER_ITEM_STATUS_LABELS = useMemo(() => getOrderItemStatusLabels(t), [t]);
   const currentUser = useStore((s) => s.currentUser);
+  const hasPermission = useStore((s) => s.hasPermission);
   const cart = useStore((s) => s.cart);
   const addToCart = useStore((s) => s.addToCart);
   const removeFromCart = useStore((s) => s.removeFromCart);
@@ -34,7 +36,7 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
 
   const menuItemsQuery = useMenuItems(orgId);
   const menuCategoriesQuery = useMenuCategories(orgId);
-  const ordersQuery = useOrders(orgId);
+  const orderQuery = useOrder(table.currentOrderId);
   const createOrder = useCreateOrder(orgId);
   const addItemsOrder = useAddOrderItems(orgId);
   const updateOrderStatus = useUpdateOrderStatus(orgId);
@@ -45,40 +47,40 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
 
   const menuItems = menuItemsQuery.data ?? [];
   const menuCategories = menuCategoriesQuery.data ?? [];
-  const orders = ordersQuery.data ?? [];
 
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [showAddItems, setShowAddItems] = useState(false);
 
-  const getElapsed = (createdAt: string) => {
-    const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
-    const m = Math.floor(diff / 60);
-    return `${m} ${t('time.minutes_abbreviation')}`;
+  const sectionName = table.section;
+
+  const getOrder = () => {
+    const o = orderQuery.data;
+    if (!o || ['COMPLETED', 'CANCELLED'].includes(o.status)) return undefined;
+    return o;
   };
 
-  const getTableOrder = (): OrderDto | undefined => {
-    if (!table.currentOrderId) return undefined;
-    return orders.find((o) => o.id === table.currentOrderId && !['COMPLETED', 'CANCELLED'].includes(o.status));
-  };
-
-  const order = getTableOrder();
+  const order = getOrder();
 
   const handleCreateOrder = () => {
     if (!currentUser) return;
+    const token = getAccessToken();
+    const waiterId = token ? (getUserIdFromToken(token) ?? currentUser.id) : currentUser.id;
+    const orgId = token ? (getOrgIdFromToken(token) ?? currentUser.orgId) : currentUser.orgId;
+    if (!orgId) return;
     createOrder.mutate(
       {
         tableId: table.id,
-        waiterId: currentUser.id,
+        waiterId,
         waiterName: currentUser.name,
         orderSource: 'WAITER',
         items: cart.map((c) => ({ menuItemId: c.menuItemId, menuItemName: c.menuItemName, quantity: c.quantity, price: c.price, notes: c.notes })),
-        orgId: orgId ?? '',
+        orgId,
       },
       {
         onSuccess: () => {
           clearCart();
           setShowNewOrder(false);
-          queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
+          queryClient.invalidateQueries({ queryKey: waiterKeys.all });
           addToast(t('toast.order_created', { number: table.tableNumber }), 'success');
         },
         onError: (err) => {
@@ -99,6 +101,7 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
         onSuccess: () => {
           clearCart();
           setShowAddItems(false);
+          queryClient.invalidateQueries({ queryKey: waiterKeys.all });
           addToast(t('toast.items_added'), 'success');
         },
         onError: (err) => {
@@ -114,6 +117,7 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
       { id: order.id, status: 'SERVED' },
       {
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: waiterKeys.all });
           addToast(t('toast.marked_served', { number: table.tableNumber }), 'success');
         },
         onError: (err) => {
@@ -201,9 +205,10 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           </div>
           <button
             onClick={handleCreateOrder}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+            disabled={createOrder.isPending}
+            className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
-            <ShoppingBag className="w-4 h-4" />
+            {createOrder.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingBag className="w-4 h-4" />}
             {t('cart.place_order')}
           </button>
         </div>
@@ -282,9 +287,10 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           </div>
           <button
             onClick={handleAddItemsToOrder}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 rounded-xl transition-colors"
+            disabled={addItemsOrder.isPending}
+            className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-300 text-white font-semibold py-2.5 rounded-xl transition-colors"
           >
-            {t('order.add_to_order')}
+            {addItemsOrder.isPending ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : t('order.add_to_order')}
           </button>
         </div>
       )}
@@ -301,13 +307,15 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           <CheckCircle className="w-12 h-12 mx-auto text-success-500 mb-3" />
           <p className="text-lg font-semibold text-text-primary">{t('table.is_empty')}</p>
           <p className="text-sm text-text-muted mt-1">{t('table.no_active_order')}</p>
-          <button
-            onClick={() => setShowNewOrder(true)}
-            className="mt-4 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 mx-auto"
-          >
-            <Plus className="w-4 h-4" />
-            {t('order.new_order')}
-          </button>
+          {hasPermission('order.create') && (
+            <button
+              onClick={() => setShowNewOrder(true)}
+              className="mt-4 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 mx-auto"
+            >
+              <Plus className="w-4 h-4" />
+              {t('order.new_order')}
+            </button>
+          )}
         </div>
       );
     }
@@ -318,66 +326,44 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           <UtensilsCrossed className="w-12 h-12 mx-auto text-text-muted mb-3 opacity-40" />
           <p className="text-lg font-semibold text-text-primary">{t('table.cleaning_detail')}</p>
           <p className="text-sm text-text-muted mt-1">{t('table.marked_clean')}</p>
-          <button
-            onClick={() => {
-              updateTableStatus.mutate(
-                { id: table.id, status: 'AVAILABLE' },
-                {
-                  onSuccess: () => { onClose(); addToast(t('tables.status_updated'), 'success'); },
-                  onError: (err) => { addToast(getOrderErrorMessage(err, t('tables.error.update_status'), t), 'error'); },
-                }
-              );
-            }}
-            className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
-          >
-            {t('table.status.available')}
-          </button>
+          {hasPermission('table.status') && (
+            <button
+              onClick={() => {
+                updateTableStatus.mutate(
+                  { id: table.id, status: 'AVAILABLE' },
+                  {
+                    onSuccess: () => { queryClient.invalidateQueries({ queryKey: waiterKeys.all }); onClose(); addToast(t('tables.status_updated'), 'success'); },
+                    onError: (err) => { addToast(getOrderErrorMessage(err, t('tables.error.update_status'), t), 'error'); },
+                  }
+                );
+              }}
+              className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('table.status.available')}
+            </button>
+          )}
         </div>
       );
     }
 
     if (table.status === 'RESERVED') {
-      const r = table.reservation;
       return (
         <div className="text-center py-8">
           <Clock className="w-12 h-12 mx-auto text-warning-500 mb-3" />
           <p className="text-lg font-semibold text-text-primary">{t('table.status.reserved')}</p>
-          {r ? (
-            <div className="mt-4 space-y-3">
-              <div className="bg-warning-50 rounded-xl p-4 border border-warning-200 text-left space-y-2">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-warning-600" />
-                  <span className="text-sm font-semibold text-text-primary">{r.guestName}</span>
-                </div>
-                {r.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-text-muted" />
-                    <span className="text-sm text-text-secondary">{r.phone}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-text-muted" />
-                  <span className="text-sm text-text-secondary">{r.time} • {r.guestCount} {t('table.guests')}</span>
-                </div>
-                {r.notes && (
-                  <p className="text-xs text-text-muted pt-2 border-t border-warning-200">{r.notes}</p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-text-muted mt-1">{t('table.reservation_info')}</p>
+          {hasPermission('table.reserve') && (
+            <button
+              onClick={() => {
+                removeReservation.mutate(table.id, {
+                  onSuccess: () => { queryClient.invalidateQueries({ queryKey: waiterKeys.all }); onClose(); addToast(t('tables.reservation_cancelled'), 'success'); },
+                  onError: (err) => { addToast(getOrderErrorMessage(err, t('tables.error.cancel_reservation'), t), 'error'); },
+                });
+              }}
+              className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('table.free_table')}
+            </button>
           )}
-          <button
-            onClick={() => {
-              removeReservation.mutate(table.id, {
-                onSuccess: () => { onClose(); addToast(t('tables.reservation_cancelled'), 'success'); },
-                onError: (err) => { addToast(getOrderErrorMessage(err, t('tables.error.cancel_reservation'), t), 'error'); },
-              });
-            }}
-            className="mt-4 bg-success-500 hover:bg-success-600 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors"
-          >
-            {t('table.free_table')}
-          </button>
         </div>
       );
     }
@@ -403,9 +389,8 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
               <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded font-medium">{t('order.customer')}</span>
             )}
           </div>
-          <span className="text-xs text-text-muted flex items-center gap-1">
-            <Timer className="w-3 h-3" />
-            {getElapsed(order.createdAt)}
+          <span className="text-xs text-text-muted">
+            {order.items.length} {t('order.items_suffix')}
           </span>
         </div>
 
@@ -441,7 +426,7 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           </div>
         </div>
 
-        {order.status !== 'SERVED' && order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+        {hasPermission('order.manage') && order.status !== 'SERVED' && order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
           <button
             onClick={() => setShowAddItems(true)}
             className="w-full bg-surface-secondary hover:bg-border text-text-secondary font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 border border-border"
@@ -465,7 +450,7 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           </div>
         )}
 
-        {order.status === 'READY' && !order.paymentRequested && (
+        {hasPermission('order.manage') && order.status === 'READY' && !order.paymentRequested && (
           <button
             onClick={handleMarkServed}
             className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -475,13 +460,12 @@ export default function WaiterTableDetailModal({ table, sectionName, onClose }: 
           </button>
         )}
 
-        {order.paymentRequested && order.paymentStatus === 'PENDING' && (
+        {hasPermission('order.payment') && order.paymentStatus !== 'PAID' && order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (order.paymentRequested || order.status === 'SERVED') && (
           <button
             onClick={() => {
               completePayment.mutate(order.id, {
                 onSuccess: () => {
-                  onClose();
-                  queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
+                  queryClient.invalidateQueries({ queryKey: waiterKeys.all });
                   addToast(t('toast.bill_closed', { number: table.tableNumber }), 'success');
                 },
                 onError: (err) => {

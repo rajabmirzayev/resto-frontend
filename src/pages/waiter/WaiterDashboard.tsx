@@ -5,109 +5,102 @@ import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { playOrderReadySound } from '../../lib/sounds';
-import { useTables, useTableSections, tableKeys } from '../../api/hooks/useTables';
-import { useOrders, useCompletePayment, useWaiterConfirmOrder, useCancelOrder } from '../../api/hooks/useOrders';
+import { useWaiterTables, useWaiterPendingConfirm, useWaiterPaymentRequests, waiterKeys } from '../../api/hooks/useWaiter';
+import { useCompletePayment, useWaiterConfirmOrder, useCancelOrder, useUpdateOrderStatus } from '../../api/hooks/useOrders';
 import { getOrderErrorMessage } from '../../lib/orderErrors';
-import type { RestaurantTableDto, OrderDto } from '../../api/types';
+import { getAccessToken, getUserIdFromToken } from '../../api/session';
+import type { OrderDto, WaiterOrderSummary, WaiterTableDto } from '../../api/types';
 import WaiterTableDetailModal from '../../components/waiter/WaiterTableDetailModal';
 import {
   ClipboardList, Users, ReceiptText, CheckCircle,
-  ChevronRight, Timer, UserCheck,
-  Banknote, Bell, CreditCard, Phone, User, Clock, Loader2,
+  Timer, UserCheck, Hand,
+  Banknote, Bell, CreditCard, Loader2,
 } from 'lucide-react';
 
 export default function WaiterDashboard() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUser = useStore((s) => s.currentUser);
+  const hasPermission = useStore((s) => s.hasPermission);
   const orderMode = useStore((s) => s.orderMode);
   const { addToast } = useToast();
   const orgId = currentUser?.orgId;
 
-  const tablesQuery = useTables(orgId);
-  const sectionsQuery = useTableSections(orgId);
-  const ordersQuery = useOrders(orgId, { refetchInterval: 10000 });
+  const tablesQuery = useWaiterTables(orgId);
+  const pendingConfirmQuery = useWaiterPendingConfirm(orgId);
+  const paymentRequestsQuery = useWaiterPaymentRequests(orgId);
   const completePayment = useCompletePayment(orgId);
   const waiterConfirm = useWaiterConfirmOrder(orgId);
   const cancelOrder = useCancelOrder(orgId);
+  const updateOrderStatus = useUpdateOrderStatus(orgId);
 
   const tables = tablesQuery.data ?? [];
-  const sections = sectionsQuery.data ?? [];
-  const orders = ordersQuery.data ?? [];
+  const pendingCustomerOrders = pendingConfirmQuery.data ?? [];
+  const paymentRequests = paymentRequestsQuery.data ?? [];
 
-  const [selectedTable, setSelectedTable] = useState<RestaurantTableDto | null>(null);
-  const [activeTab, setActiveTab] = useState<'tables' | 'pending' | 'payments'>('tables');
+  const [selectedTable, setSelectedTable] = useState<WaiterTableDto | null>(null);
+  const [activeTab, setActiveTab] = useState<'tables' | 'ready' | 'pending' | 'payments'>('tables');
   const prevReadyCount = useRef(0);
   const prevPaymentCount = useRef(0);
-
-  const sectionNameMap = new Map(sections.map((s) => [s.id, s.name]));
 
   const isConfirmMode = orderMode === 'customer-waiter-confirm';
 
   useEffect(() => {
-    const readyCount = (ordersQuery.data ?? []).filter((o) => o.status === 'READY').length;
+    const readyCount = (tablesQuery.data ?? []).filter((t) => t.orderSummary?.status === 'READY').length;
     if (prevReadyCount.current > 0 && readyCount > prevReadyCount.current) {
       playOrderReadySound();
       addToast(t('toast.order_ready'), 'success', 5000);
     }
     prevReadyCount.current = readyCount;
-  }, [ordersQuery.data, addToast, t]);
+  }, [tablesQuery.data, addToast, t]);
 
   useEffect(() => {
-    const paymentCount = (ordersQuery.data ?? []).filter((o) => o.paymentRequested && o.paymentStatus === 'PENDING').length;
-    if (paymentCount > prevPaymentCount.current) {
+    if (paymentRequests.length > prevPaymentCount.current) {
       playOrderReadySound();
     }
-    prevPaymentCount.current = paymentCount;
-  }, [ordersQuery.data]);
+    prevPaymentCount.current = paymentRequests.length;
+  }, [paymentRequests.length]);
 
-  const activeOrders = orders.filter((o) => !['COMPLETED', 'CANCELLED'].includes(o.status));
-  const pendingCustomerOrders = orders.filter((o) => o.status === 'PENDING' && o.orderSource === 'CUSTOMER' && !o.waiterConfirmed);
-  const paymentRequests = orders.filter((o) => o.paymentRequested && o.paymentStatus === 'PENDING' && !['COMPLETED', 'CANCELLED'].includes(o.status));
+  const activeOrders = tables.filter((t) => t.orderSummary !== null).length;
   const availableCount = tables.filter((t) => t.status === 'AVAILABLE').length;
   const occupiedCount = tables.filter((t) => t.status === 'OCCUPIED').length;
-  const totalRevenue = orders.filter((o) => o.paymentStatus === 'PAID').reduce((s, o) => s + o.totalAmount, 0);
+  const openAmount = tables.reduce((s, t) => s + (t.orderSummary?.totalAmount ?? 0), 0);
 
-  const getTableOrder = (table: RestaurantTableDto): OrderDto | undefined => {
-    if (!table.currentOrderId) return undefined;
-    return orders.find((o) => o.id === table.currentOrderId && !['COMPLETED', 'CANCELLED'].includes(o.status));
-  };
+  const readyTables = tables.filter((t) => t.orderSummary?.status === 'READY');
+  const paymentReqByOrder = new Set(paymentRequests.map((o) => o.id));
 
-  const getTableStatusLabel = (table: RestaurantTableDto, order?: OrderDto): string => {
+  const getTableStatusLabel = (table: WaiterTableDto, summary?: WaiterOrderSummary | null): string => {
     if (table.status === 'AVAILABLE') return t('table.status.available');
     if (table.status === 'CLEANING') return t('table.status.cleaning');
     if (table.status === 'RESERVED') return t('table.status.reserved');
-    if (!order) return t('table.status.occupied');
-    if (order.status === 'PENDING' && !order.waiterConfirmed) return t('table.status.waiting_confirmation');
-    if (order.status === 'PENDING') return t('table.status.waiting_order');
-    if (order.status === 'CONFIRMED' || order.status === 'PREPARING') return t('table.status.preparing');
-    if (order.status === 'READY') return t('table.status.ready');
-    if (order.status === 'SERVED') return t('table.status.served');
+    if (!summary) return t('table.status.occupied');
+    if (summary.status === 'PENDING') return t('table.status.waiting_confirmation');
+    if (summary.status === 'CONFIRMED' || summary.status === 'PREPARING') return t('table.status.preparing');
+    if (summary.status === 'READY') return t('table.status.ready');
+    if (summary.status === 'SERVED') return t('table.status.served');
     return t('table.status.occupied');
   };
 
-  const getTableStatusColor = (table: RestaurantTableDto, order?: OrderDto): string => {
+  const getTableStatusColor = (table: WaiterTableDto, summary?: WaiterOrderSummary | null): string => {
     if (table.status === 'AVAILABLE') return 'bg-success-50 border-success-200 hover:border-success-400';
     if (table.status === 'CLEANING') return 'bg-surface-secondary border-border opacity-60';
     if (table.status === 'RESERVED') return 'bg-warning-50 border-warning-200 hover:border-warning-400';
-    if (!order) return 'bg-danger-50 border-danger-200 hover:border-danger-400';
-    if (order.status === 'PENDING' && !order.waiterConfirmed) return 'bg-warning-50 border-warning-300 hover:border-warning-500 ring-1 ring-warning-200';
-    if (order.status === 'PENDING') return 'bg-warning-50 border-warning-300 hover:border-warning-500 ring-1 ring-warning-200';
-    if (order.status === 'CONFIRMED' || order.status === 'PREPARING') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
-    if (order.status === 'READY') return 'bg-success-50 border-success-300 hover:border-success-500 ring-1 ring-success-200';
-    if (order.status === 'SERVED') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
+    if (!summary) return 'bg-danger-50 border-danger-200 hover:border-danger-400';
+    if (summary.status === 'PENDING') return 'bg-warning-50 border-warning-300 hover:border-warning-500 ring-1 ring-warning-200';
+    if (summary.status === 'CONFIRMED' || summary.status === 'PREPARING') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
+    if (summary.status === 'READY') return 'bg-success-50 border-success-300 hover:border-success-500 ring-1 ring-success-200';
+    if (summary.status === 'SERVED') return 'bg-primary-50 border-primary-200 hover:border-primary-400';
     return 'bg-danger-50 border-danger-200';
   };
 
-  const getTableBadgeColor = (table: RestaurantTableDto, order?: OrderDto): string => {
+  const getTableBadgeColor = (table: WaiterTableDto, summary?: WaiterOrderSummary | null): string => {
     if (table.status === 'AVAILABLE') return 'bg-success-500 text-white';
     if (table.status === 'CLEANING') return 'bg-text-muted text-white';
     if (table.status === 'RESERVED') return 'bg-warning-500 text-white';
-    if (!order) return 'bg-danger-500 text-white';
-    if (order.status === 'PENDING' && !order.waiterConfirmed) return 'bg-warning-500 text-white animate-pulse';
-    if (order.status === 'PENDING') return 'bg-warning-500 text-white animate-pulse';
-    if (order.status === 'CONFIRMED' || order.status === 'PREPARING') return 'bg-primary-500 text-white';
-    if (order.status === 'READY') return 'bg-success-500 text-white animate-pulse';
+    if (!summary) return 'bg-danger-500 text-white';
+    if (summary.status === 'PENDING') return 'bg-warning-500 text-white animate-pulse';
+    if (summary.status === 'CONFIRMED' || summary.status === 'PREPARING') return 'bg-primary-500 text-white';
+    if (summary.status === 'READY') return 'bg-success-500 text-white animate-pulse';
     return 'bg-primary-500 text-white';
   };
 
@@ -117,13 +110,16 @@ export default function WaiterDashboard() {
     return `${m} ${t('time.minutes_abbreviation')}`;
   };
 
-  const sectionIds = [...new Set(tables.map((t) => t.sectionId).filter(Boolean))];
+  const sectionIds = [...new Set(tables.map((t) => t.section).filter(Boolean))];
 
   const handleConfirmCustomerOrder = (order: OrderDto) => {
+    const token = getAccessToken();
+    const waiterId = token ? (getUserIdFromToken(token) ?? currentUser?.id ?? '') : (currentUser?.id ?? '');
     waiterConfirm.mutate(
-      { id: order.id, waiterId: currentUser?.id || '', waiterName: currentUser?.name || '' },
+      { id: order.id, waiterId, waiterName: currentUser?.name || '' },
       {
         onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: waiterKeys.all });
           addToast(t('toast.table_order_confirmed', { number: order.tableNumber }), 'success');
         },
         onError: (err) => {
@@ -133,7 +129,23 @@ export default function WaiterDashboard() {
     );
   };
 
-  if ((tablesQuery.isLoading && !tablesQuery.data) || (ordersQuery.isLoading && !ordersQuery.data) || (sectionsQuery.isLoading && !sectionsQuery.data)) {
+  const handleMarkServed = (table: WaiterTableDto) => {
+    if (!table.currentOrderId) return;
+    updateOrderStatus.mutate(
+      { id: table.currentOrderId, status: 'SERVED' },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: waiterKeys.all });
+          addToast(t('toast.marked_served', { number: table.tableNumber }), 'success');
+        },
+        onError: (err) => {
+          addToast(getOrderErrorMessage(err, t('error.orders.invalid_status_transition'), t), 'error');
+        },
+      }
+    );
+  };
+
+  if ((tablesQuery.isLoading && !tablesQuery.data) || (pendingConfirmQuery.isLoading && !pendingConfirmQuery.data) || (paymentRequestsQuery.isLoading && !paymentRequestsQuery.data)) {
     return (
       <div>
         <Header title={t('waiter.title')} subtitle={isConfirmMode ? t('waiter.confirm_mode') : undefined} showUser showSidebarButton={false} />
@@ -152,11 +164,11 @@ export default function WaiterDashboard() {
       <Header title={t('waiter.title')} subtitle={isConfirmMode ? t('waiter.confirm_mode') : undefined} showUser showSidebarButton={false} />
 
       <div className="p-6">
-        {(tablesQuery.isError || ordersQuery.isError) && (
+        {(tablesQuery.isError || pendingConfirmQuery.isError || paymentRequestsQuery.isError) && (
           <div className="bg-danger-50 border border-danger-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
             <p className="text-sm text-danger-700">{t('error.unexpected')}</p>
             <button
-              onClick={() => { tablesQuery.refetch(); ordersQuery.refetch(); }}
+              onClick={() => { tablesQuery.refetch(); pendingConfirmQuery.refetch(); paymentRequestsQuery.refetch(); }}
               className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
             >
               {t('error.retry')}
@@ -164,9 +176,9 @@ export default function WaiterDashboard() {
           </div>
         )}
 
-        {(isConfirmMode || paymentRequests.length > 0) && (
+        {(isConfirmMode || paymentRequests.length > 0 || readyTables.length > 0) && (
           <div className="mb-6">
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-4 flex-wrap">
               <button
                 onClick={() => setActiveTab('tables')}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
@@ -175,6 +187,20 @@ export default function WaiterDashboard() {
               >
                 {t('waiter.tables_tab')}
               </button>
+              {readyTables.length > 0 && (
+                <button
+                  onClick={() => setActiveTab('ready')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors relative ${
+                    activeTab === 'ready' ? 'bg-success-600 text-white shadow-sm' : 'bg-surface-secondary text-text-secondary hover:bg-border'
+                  }`}
+                >
+                  <span className="flex items-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    {t('waiter.ready_orders')}
+                  </span>
+                  <span className="ml-1.5 bg-white/20 text-xs px-1.5 py-0.5 rounded-full">{readyTables.length}</span>
+                </button>
+              )}
               {isConfirmMode && (
                 <button
                   onClick={() => setActiveTab('pending')}
@@ -204,7 +230,37 @@ export default function WaiterDashboard() {
           </div>
         )}
 
-        {activeTab === 'payments' && paymentRequests.length > 0 ? (
+        {activeTab === 'ready' && readyTables.length > 0 ? (
+          <div className="space-y-4">
+            {readyTables.map((table) => (
+              <div key={table.id} className="bg-white dark:bg-surface rounded-2xl border-2 border-success-300 p-5 shadow-sm ring-2 ring-success-100">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-success-600" />
+                    <span className="font-bold text-text-primary">{t('table.number_prefix', { number: table.tableNumber })}</span>
+                  </div>
+                  <span className="flex items-center gap-1.5 bg-success-100 text-success-700 text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
+                    <Timer className="w-3 h-3" />
+                    {t('table.status.ready')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mb-3 p-3 bg-success-50 rounded-xl">
+                  <span className="text-sm font-semibold text-success-700">{t('order.total')}</span>
+                  <span className="text-lg font-bold text-success-700">{table.orderSummary?.totalAmount?.toFixed(2)} ₼</span>
+                </div>
+                {hasPermission('order.manage') && !(table.currentOrderId && paymentReqByOrder.has(table.currentOrderId)) && (
+                  <button
+                    onClick={() => handleMarkServed(table)}
+                    className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Hand className="w-5 h-5" />
+                    {t('order.mark_served')}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : activeTab === 'payments' && paymentRequests.length > 0 ? (
           <div className="space-y-4">
             {paymentRequests.map((order) => (
               <div key={order.id} className="bg-white dark:bg-surface rounded-2xl border-2 border-danger-300 p-5 shadow-sm ring-2 ring-danger-100">
@@ -243,23 +299,25 @@ export default function WaiterDashboard() {
                     </>
                   )}
                 </div>
-                <button
-                  onClick={() => {
-                    completePayment.mutate(order.id, {
-                      onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
-                        addToast(t('toast.bill_closed', { number: order.tableNumber }), 'success');
-                      },
-                      onError: (err) => {
-                        addToast(getOrderErrorMessage(err, t('error.unexpected'), t), 'error');
-                      },
-                    });
-                  }}
-                  className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  {t('order.close_bill')}
-                </button>
+                {hasPermission('order.payment') && (
+                  <button
+                    onClick={() => {
+                      completePayment.mutate(order.id, {
+                        onSuccess: () => {
+                          queryClient.invalidateQueries({ queryKey: waiterKeys.all });
+                          addToast(t('toast.bill_closed', { number: order.tableNumber }), 'success');
+                        },
+                        onError: (err) => {
+                          addToast(getOrderErrorMessage(err, t('error.unexpected'), t), 'error');
+                        },
+                      });
+                    }}
+                    className="w-full bg-success-500 hover:bg-success-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    {t('order.close_bill')}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -290,29 +348,33 @@ export default function WaiterDashboard() {
                   <span className="text-lg font-bold text-primary-700">{order.totalAmount} ₼</span>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      cancelOrder.mutate(order.id, {
-                        onSuccess: () => {
-                          queryClient.invalidateQueries({ queryKey: tableKeys.list(orgId) });
-                          addToast(t('toast.order_cancelled', { number: order.tableNumber }), 'warning');
-                        },
-                        onError: (err) => {
-                          addToast(getOrderErrorMessage(err, t('error.orders.not_cancellable'), t), 'error');
-                        },
-                      });
-                    }}
-                    className="flex-1 bg-danger-500 hover:bg-danger-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
-                  >
-                    {t('order.reject')}
-                  </button>
-                  <button
-                    onClick={() => handleConfirmCustomerOrder(order)}
-                    className="flex-1 bg-success-500 hover:bg-success-600 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    {t('common.confirm')}
-                  </button>
+                  {hasPermission('order.cancel') && (
+                    <button
+                      onClick={() => {
+                        cancelOrder.mutate(order.id, {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: waiterKeys.all });
+                            addToast(t('toast.order_cancelled', { number: order.tableNumber }), 'warning');
+                          },
+                          onError: (err) => {
+                            addToast(getOrderErrorMessage(err, t('error.orders.not_cancellable'), t), 'error');
+                          },
+                        });
+                      }}
+                      className="flex-1 bg-danger-500 hover:bg-danger-600 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                    >
+                      {t('order.reject')}
+                    </button>
+                  )}
+                  {hasPermission('order.manage') && (
+                    <button
+                      onClick={() => handleConfirmCustomerOrder(order)}
+                      className="flex-1 bg-success-500 hover:bg-success-600 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      {t('common.confirm')}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -326,7 +388,7 @@ export default function WaiterDashboard() {
                     <ClipboardList className="w-5 h-5 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-text-primary">{activeOrders.length}</p>
+                    <p className="text-2xl font-bold text-text-primary">{activeOrders}</p>
                     <p className="text-xs text-text-secondary">{t('waiter.active_orders')}</p>
                   </div>
                 </div>
@@ -359,99 +421,63 @@ export default function WaiterDashboard() {
                     <ReceiptText className="w-5 h-5 text-warning-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-text-primary">{totalRevenue} ₼</p>
-                    <p className="text-xs text-text-secondary">{t('waiter.revenue')}</p>
+                    <p className="text-2xl font-bold text-text-primary">{openAmount.toFixed(2)} ₼</p>
+                    <p className="text-xs text-text-secondary">{t('waiter.open_amount')}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {sectionIds.map((sectionId) => {
-              const section = sectionNameMap.get(sectionId) ?? sectionId;
-              return (
-                <div key={sectionId} className="mb-8">
-                  <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-4">{section}</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {tables.filter((t) => t.sectionId === sectionId).map((table) => {
-                      const order = getTableOrder(table);
-                      const label = getTableStatusLabel(table, order);
-                      const bg = getTableStatusColor(table, order);
-                      const badge = getTableBadgeColor(table, order);
-                      const isSelected = selectedTable?.id === table.id;
+            {sectionIds.map((section) => (
+              <div key={section} className="mb-8">
+                <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-4">{section}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {tables.filter((t) => t.section === section).map((table) => {
+                    const summary = table.orderSummary;
+                    const label = getTableStatusLabel(table, summary);
+                    const bg = getTableStatusColor(table, summary);
+                    const badge = getTableBadgeColor(table, summary);
+                    const isSelected = selectedTable?.id === table.id;
 
-                      return (
-                        <button
-                          key={table.id}
-                          onClick={() => setSelectedTable(isSelected ? null : table)}
-                          className={`rounded-2xl border-2 p-5 text-left transition-all hover:shadow-lg ${bg} ${
-                            isSelected ? 'ring-2 ring-primary-500 shadow-lg' : ''
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-2xl font-bold text-text-primary">#{table.tableNumber}</span>
-                            <span className="text-xs font-medium text-text-muted flex items-center gap-1">
-                              <Users className="w-3 h-3" />
-                              {table.capacity}
-                            </span>
-                          </div>
-                          <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
-                            {label}
+                    return (
+                      <button
+                        key={table.id}
+                        onClick={() => setSelectedTable(isSelected ? null : table)}
+                        className={`rounded-2xl border-2 p-5 text-left transition-all hover:shadow-lg ${bg} ${
+                          isSelected ? 'ring-2 ring-primary-500 shadow-lg' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl font-bold text-text-primary">#{table.tableNumber}</span>
+                          <span className="text-xs font-medium text-text-muted flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {table.capacity}
                           </span>
-                          {order && (
-                            <div className="mt-2 pt-2 border-t border-border/50">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-text-primary">{order.totalAmount} ₼</span>
-                                <span className="text-[10px] text-text-muted flex items-center gap-0.5">
-                                  <Timer className="w-2.5 h-2.5" />
-                                  {getElapsed(order.createdAt)}
-                                </span>
-                              </div>
-                              {order.orderSource === 'CUSTOMER' && (
-                                <span className="text-[10px] bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded mt-1 inline-block font-medium">
-                                  {t('order.customer_order')}
-                                </span>
-                              )}
-                              {order.paymentRequested && order.paymentStatus === 'PENDING' && (
-                                <span className="text-[10px] bg-danger-50 text-danger-600 px-1.5 py-0.5 rounded mt-1 inline-block font-medium animate-pulse">
-                                  {t('order.bill_requested')}
-                                </span>
-                              )}
-                              <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[10px] text-text-muted">
-                                  {order.items.length} {t('order.items_suffix')}
-                                </span>
-                                <ChevronRight className="w-3 h-3 text-text-muted" />
-                              </div>
+                        </div>
+                        <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
+                          {label}
+                        </span>
+                        {summary && (
+                          <div className="mt-2 pt-2 border-t border-border/50">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-bold text-text-primary">{summary.totalAmount.toFixed(2)} ₼</span>
+                              <span className="text-[10px] text-text-muted">
+                                {summary.itemCount} {t('order.items_suffix')}
+                              </span>
                             </div>
-                          )}
-                          {table.status === 'RESERVED' && table.reservation && (
-                            <div className="mt-2 pt-2 border-t border-border/50">
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <User className="w-2.5 h-2.5 text-warning-600" />
-                                <span className="text-[10px] font-semibold text-warning-700">{table.reservation.guestName}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-text-muted flex items-center gap-0.5">
-                                  <Clock className="w-2.5 h-2.5" />
-                                  {table.reservation.time}
-                                </span>
-                                <span className="text-[10px] text-text-muted">{table.reservation.guestCount} {t('table.guests')}</span>
-                              </div>
-                              {table.reservation.phone && (
-                                <div className="flex items-center gap-0.5 mt-0.5">
-                                  <Phone className="w-2.5 h-2.5 text-text-muted" />
-                                  <span className="text-[10px] text-text-muted">{table.reservation.phone}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                            {table.currentOrderId && paymentReqByOrder.has(table.currentOrderId) && (
+                              <span className="text-[10px] bg-danger-50 text-danger-600 px-1.5 py-0.5 rounded mt-1 inline-block font-medium animate-pulse">
+                                {t('order.bill_requested')}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </>
         )}
       </div>
@@ -459,7 +485,6 @@ export default function WaiterDashboard() {
       {selectedTable && (
         <WaiterTableDetailModal
           table={selectedTable}
-          sectionName={sectionNameMap.get(selectedTable.sectionId) ?? selectedTable.sectionId}
           onClose={() => setSelectedTable(null)}
         />
       )}

@@ -521,12 +521,14 @@ const ru: Record<string, string> = {
   'kitchen.start_preparing': 'Начать готовить',
   'kitchen.mark_all_ready': 'Отметить все как готовые',
   'kitchen.hand_off': 'Выдать',
+  'kitchen.waiting_confirmation': 'Ожидает подтверждения',
 
   // Waiter
   'waiter.title': 'Панель официанта',
   'waiter.confirm_mode': 'Режим подтверждения',
   'waiter.tables_tab': 'Столы',
   'waiter.pending_confirmations': 'Ожидают подтверждения',
+  'waiter.ready_orders': 'Готовы к подаче',
   'waiter.bill_requesters': 'Запросы счёта',
   'waiter.active_orders': 'Активные заказы',
   'waiter.available_tables': 'Свободные столы',

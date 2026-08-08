@@ -521,12 +521,14 @@ const az: Record<string, string> = {
   'kitchen.start_preparing': 'Hazırlamaya Başla',
   'kitchen.mark_all_ready': 'Hamısını Hazır Et',
   'kitchen.hand_off': 'Təhvil Ver',
+  'kitchen.waiting_confirmation': 'Təsdiq gözlənilir',
 
   // Waiter
   'waiter.title': 'Ofisant Paneli',
   'waiter.confirm_mode': 'Təsdiq Rejimi',
   'waiter.tables_tab': 'Masalar',
   'waiter.pending_confirmations': 'Təsdiq Gözləyənlər',
+  'waiter.ready_orders': 'Təhvil Gözləyənlər',
   'waiter.bill_requesters': 'Hesab İstəyənlər',
   'waiter.active_orders': 'Aktiv Sifariş',
   'waiter.available_tables': 'Boş Masa',

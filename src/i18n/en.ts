@@ -521,12 +521,14 @@ const en: Record<string, string> = {
   'kitchen.start_preparing': 'Start Preparing',
   'kitchen.mark_all_ready': 'Mark All Ready',
   'kitchen.hand_off': 'Hand Off',
+  'kitchen.waiting_confirmation': 'Awaiting confirmation',
 
   // Waiter
   'waiter.title': 'Waiter Panel',
   'waiter.confirm_mode': 'Confirmation Mode',
   'waiter.tables_tab': 'Tables',
   'waiter.pending_confirmations': 'Pending Confirmations',
+  'waiter.ready_orders': 'Ready to Serve',
   'waiter.bill_requesters': 'Bill Requests',
   'waiter.active_orders': 'Active Orders',
   'waiter.available_tables': 'Available Tables',
