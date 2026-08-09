@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
-import { getAccessToken, getOrgIdFromToken, getUiScope } from './api/session';
+import { getUiScope } from './api/session';
 import AppLayout from './components/layout/AppLayout';
 import ToastContainer from './components/ui/ToastContainer';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -41,15 +41,12 @@ function PermRoute({ children, permission }: { children: React.ReactNode; permis
 
 function OrgIdBackfill() {
   const currentUser = useStore((s) => s.currentUser);
+  const syncCurrentUser = useStore((s) => s.syncCurrentUser);
   useEffect(() => {
-    const token = getAccessToken();
-    if (currentUser && !currentUser.orgId && token) {
-      const orgId = getOrgIdFromToken(token);
-      if (orgId) {
-        useStore.setState({ currentUser: { ...currentUser, orgId } });
-      }
+    if (currentUser && !currentUser.orgId) {
+      syncCurrentUser();
     }
-  }, [currentUser]);
+  }, [currentUser, syncCurrentUser]);
   return null;
 }
 
