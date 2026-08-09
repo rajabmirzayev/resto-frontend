@@ -14,7 +14,7 @@ let session: Session = loadSession();
 
 function loadSession(): Session {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Session>;
       return {
@@ -33,7 +33,7 @@ function loadSession(): Session {
 
 function persist(): void {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } catch {
     // ignore storage quota/security errors
   }
@@ -82,7 +82,7 @@ export function setUiScope(uiScope: UiScope): void {
 export function clearSession(): void {
   session = { accessToken: null, refreshToken: null, expiresAt: null, permissions: [], uiScope: null };
   try {
-    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // ignore
   }
@@ -148,11 +148,4 @@ export function getTokenExpiryMs(accessToken?: string | null): number | null {
 export function isAccessTokenExpired(marginMs = 0): boolean {
   const exp = getTokenExpiryMs();
   return exp === null || Date.now() + marginMs >= exp;
-}
-
-if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-  window.addEventListener('storage', (event) => {
-    if (event.key !== SESSION_KEY) return;
-    session = loadSession();
-  });
 }

@@ -52,7 +52,7 @@ export default function Sidebar() {
                 <p className="text-xs text-text-muted">{currentRole?.name || t('sidebar.admin_panel')}</p>
               </div>
             </div>
-            <button onClick={close} className="p-2 rounded-xl hover:bg-surface-secondary transition-colors lg:hidden">
+            <button onClick={close} className="p-2 rounded-xl hover:bg-surface-secondary transition-colors lg:hidden" aria-label="Close sidebar">
               <X className="w-5 h-5 text-text-muted" />
             </button>
           </div>

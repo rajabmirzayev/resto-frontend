@@ -36,6 +36,7 @@ export default function ToastContainer() {
             <button
               onClick={() => removeToast(toast.id)}
               className="text-text-muted hover:text-text-primary text-xs flex-shrink-0 pt-1"
+              aria-label="Close"
             >
               ✕
             </button>
