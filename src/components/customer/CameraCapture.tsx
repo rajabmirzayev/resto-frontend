@@ -98,12 +98,14 @@ export default function CameraCapture({ onCapture, onClose }: Props) {
         <button
           onClick={toggleCamera}
           className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          aria-label="Switch camera"
         >
           <RotateCcw className="w-5 h-5" />
         </button>
         <button
           onClick={capturePhoto}
           className="w-16 h-16 rounded-full bg-white border-4 border-white/50 flex items-center justify-center hover:scale-105 transition-transform"
+          aria-label="Capture photo"
         >
           <div className="w-14 h-14 rounded-full border-2 border-gray-300 dark:border-slate-600" />
         </button>

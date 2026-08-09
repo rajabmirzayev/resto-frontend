@@ -155,12 +155,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-primary">
+              <label htmlFor="login-username" className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-primary">
                 {t('login.username')}
               </label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-primary dark:text-text-secondary" strokeWidth={2.5} />
                 <input
+                  id="login-username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -174,12 +175,13 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-primary">
+              <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-primary">
                 {t('login.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-primary dark:text-text-secondary" strokeWidth={2.5} />
                 <input
+                  id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

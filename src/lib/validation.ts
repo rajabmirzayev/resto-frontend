@@ -12,6 +12,7 @@ export function verifyPassword(password: string, hashed: string): boolean {
   return hashPassword(password) === hashed;
 }
 
+/** @deprecated Not used in components. React's JSX escaping handles XSS. Kept for reference. */
 export function sanitizeInput(input: string): string {
   return input
     .replace(/</g, '&lt;')

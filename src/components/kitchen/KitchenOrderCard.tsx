@@ -112,13 +112,18 @@ export default function KitchenOrderCard({ order, variant, getElapsed }: Props) 
             <Timer className="w-3 h-3" />
             <span className="font-mono font-semibold text-text-secondary">{elapsed}</span>
           </div>
-          <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-1000 ${
-                elapsedPercent > 80 ? 'bg-danger-500' : elapsedPercent > 50 ? 'bg-warning-500' : 'bg-primary-500'
-              }`}
-              style={{ width: `${elapsedPercent}%` }}
-            />
+            <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${
+                  elapsedPercent > 80 ? 'bg-danger-500' : elapsedPercent > 50 ? 'bg-warning-500' : 'bg-primary-500'
+                }`}
+                style={{ width: `${elapsedPercent}%` }}
+                role="progressbar"
+                aria-valuenow={Math.round(elapsedPercent)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${Math.round(elapsedPercent)}% elapsed`}
+              />
           </div>
           <span className="text-[10px]">~{prepTime} {t('time.minutes_abbreviation')}</span>
         </div>
