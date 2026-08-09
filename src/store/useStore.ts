@@ -4,7 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import type { AppState, CartItem, MenuCategory, MenuItem, Order, OrderItem, OrderMode, OrderStatus, PaymentMethod, PaymentTiming, Permission, Table, TableStatus, User, UserRole } from '../types';
 import { initialData } from '../data/mock';
 import { authApi } from '../api/auth';
-import { clearSession, getAccessToken, getOrgIdFromToken, getPermissions, getRefreshToken, getUserIdFromToken, setSession, setPermissions, setUiScope } from '../api/session';
+import { ensureFreshToken } from '../api/client';
+import { clearSession, getAccessToken, getOrgIdFromToken, getPermissions, getRefreshToken, getTokenClaims, getUserIdFromToken, isAccessTokenExpired, setSession, setPermissions, setUiScope } from '../api/session';
 
 function mapRolesToUserRole(roles: string[]): UserRole {
   if (roles.includes('SUPER_ADMIN')) return 'admin';
@@ -28,6 +29,8 @@ function buildUserFromLogin(username: string, roles: string[]): User {
 interface StoreActions {
   login: (username: string, password: string) => Promise<User | null>;
   logout: () => Promise<void>;
+  restoreSession: () => Promise<boolean>;
+  syncCurrentUser: () => void;
 
   addMenuItem: (item: Omit<MenuItem, 'id'>) => void;
   updateMenuItem: (id: string, item: Partial<MenuItem>) => void;
@@ -106,6 +109,35 @@ export const useStore = create<Store>()(
         }
         clearSession();
         set({ currentUser: null, cart: [] });
+      },
+
+      syncCurrentUser: () => {
+        const cu = get().currentUser;
+        if (!cu) return;
+        const claims = getTokenClaims();
+        const id = claims?.sub ?? cu.id;
+        const orgId = claims?.organizationId ?? cu.orgId;
+        if (id !== cu.id || orgId !== cu.orgId) {
+          set({ currentUser: { ...cu, id, orgId } });
+        }
+      },
+
+      restoreSession: async () => {
+        if (!getAccessToken()) {
+          if (get().currentUser) set({ currentUser: null });
+          return false;
+        }
+        if (!isAccessTokenExpired()) {
+          get().syncCurrentUser();
+          return true;
+        }
+        const fresh = await ensureFreshToken();
+        if (!fresh && !getAccessToken()) {
+          set({ currentUser: null });
+          return false;
+        }
+        get().syncCurrentUser();
+        return true;
       },
 
       addMenuItem: (item) => {
@@ -194,8 +226,9 @@ export const useStore = create<Store>()(
       hasPermission: (permission) => {
         if (!get().currentUser) return false;
         const sessionPerms = getPermissions();
-        if (sessionPerms.length === 0) return false;
-        return sessionPerms.includes(permission);
+        if (sessionPerms.length > 0) return sessionPerms.includes(permission);
+        const tokenPerms = getTokenClaims()?.permissions ?? [];
+        return tokenPerms.includes(permission);
       },
 
       addToCart: (item) => {

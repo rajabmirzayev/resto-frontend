@@ -1,4 +1,4 @@
-import { clearSession, getAccessToken, getRefreshToken, setSession } from './session';
+import { clearSession, getAccessToken, getRefreshToken, getTokenExpiryMs, setSession } from './session';
 
 const API_BASE_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8001';
 
@@ -48,7 +48,14 @@ interface RequestOptions {
   token?: string;
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+const REFRESH_MARGIN_MS = 60_000;
+
+interface RefreshOutcome {
+  accessToken: string | null;
+  definitiveFailure: boolean;
+}
+
+let refreshPromise: Promise<RefreshOutcome> | null = null;
 
 function redirectToLogin(): void {
   if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -56,11 +63,11 @@ function redirectToLogin(): void {
   }
 }
 
-async function performRefresh(): Promise<string | null> {
+async function performRefresh(): Promise<RefreshOutcome> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     clearSession();
-    return null;
+    return { accessToken: null, definitiveFailure: true };
   }
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth-ms/v1/auth/refresh`, {
@@ -69,25 +76,34 @@ async function performRefresh(): Promise<string | null> {
       body: JSON.stringify({ refreshToken }),
     });
     if (!response.ok) {
-      clearSession();
-      return null;
+      const definitive = response.status === 400 || response.status === 401;
+      if (definitive) clearSession();
+      return { accessToken: null, definitiveFailure: definitive };
     }
     const data = (await response.json()) as { accessToken: string; refreshToken: string; expiresIn: number };
     setSession(data.accessToken, data.refreshToken, data.expiresIn);
-    return data.accessToken;
+    return { accessToken: data.accessToken, definitiveFailure: false };
   } catch {
-    clearSession();
-    return null;
+    return { accessToken: null, definitiveFailure: false };
   }
 }
 
-function refreshAccessToken(): Promise<string | null> {
+function refreshAccessToken(): Promise<RefreshOutcome> {
   if (!refreshPromise) {
     refreshPromise = performRefresh().finally(() => {
       refreshPromise = null;
     });
   }
   return refreshPromise;
+}
+
+export async function ensureFreshToken(): Promise<string | null> {
+  const token = getAccessToken();
+  if (!token) return null;
+  const exp = getTokenExpiryMs(token);
+  if (exp !== null && exp > Date.now() + REFRESH_MARGIN_MS) return token;
+  const outcome = await refreshAccessToken();
+  return outcome.accessToken;
 }
 
 async function fetchRequest(path: string, options: RequestOptions, token: string | null, allowRefresh: boolean): Promise<Response> {
@@ -105,11 +121,13 @@ async function fetchRequest(path: string, options: RequestOptions, token: string
   });
 
   if (response.status === 401 && allowRefresh && token) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      return fetchRequest(path, options, newToken, false);
+    const outcome = await refreshAccessToken();
+    if (outcome.accessToken) {
+      return fetchRequest(path, options, outcome.accessToken, false);
     }
-    redirectToLogin();
+    if (outcome.definitiveFailure) {
+      redirectToLogin();
+    }
   }
 
   return response;

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { getAccessToken, getOrgIdFromToken, getUiScope } from './api/session';
@@ -53,6 +53,30 @@ function OrgIdBackfill() {
   return null;
 }
 
+function AuthBootstrap({ children }: { children: React.ReactNode }) {
+  const restoreSession = useStore((s) => s.restoreSession);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    restoreSession().finally(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [restoreSession]);
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-secondary">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-border border-t-primary-600" />
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <I18nProvider>
@@ -60,64 +84,66 @@ export default function App() {
         <OrgIdBackfill />
         <BrowserRouter>
           <ToastContainer />
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <AuthBootstrap>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
 
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute scope={['ADMIN_PANEL', 'SUPER_ADMIN_PANEL']}>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="menu" element={<PermRoute permission="menu.view"><AdminMenu /></PermRoute>} />
-            <Route path="tables" element={<PermRoute permission="table.view"><AdminTables /></PermRoute>} />
-            <Route path="orders" element={<PermRoute permission="order.view"><AdminOrders /></PermRoute>} />
-            <Route path="reports" element={<PermRoute permission="report.view"><AdminReports /></PermRoute>} />
-            <Route path="staff" element={<PermRoute permission="staff.view"><StaffManagement /></PermRoute>} />
-            <Route path="roles" element={<PermRoute permission="role.view"><RoleManagement /></PermRoute>} />
-            <Route path="settings" element={<PermRoute permission="settings.view"><AdminSettings /></PermRoute>} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute scope={['ADMIN_PANEL', 'SUPER_ADMIN_PANEL']}>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="menu" element={<PermRoute permission="menu.view"><AdminMenu /></PermRoute>} />
+                <Route path="tables" element={<PermRoute permission="table.view"><AdminTables /></PermRoute>} />
+                <Route path="orders" element={<PermRoute permission="order.view"><AdminOrders /></PermRoute>} />
+                <Route path="reports" element={<PermRoute permission="report.view"><AdminReports /></PermRoute>} />
+                <Route path="staff" element={<PermRoute permission="staff.view"><StaffManagement /></PermRoute>} />
+                <Route path="roles" element={<PermRoute permission="role.view"><RoleManagement /></PermRoute>} />
+                <Route path="settings" element={<PermRoute permission="settings.view"><AdminSettings /></PermRoute>} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
 
-          <Route
-            path="/waiter"
-            element={
-              <ProtectedRoute scope={['WAITER_PANEL']}>
-                <WaiterDashboard />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/waiter"
+                element={
+                  <ProtectedRoute scope={['WAITER_PANEL']}>
+                    <WaiterDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/kitchen"
-            element={
-              <ProtectedRoute scope={['KITCHEN_PANEL']}>
-                <KitchenDashboard />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/kitchen"
+                element={
+                  <ProtectedRoute scope={['KITCHEN_PANEL']}>
+                    <KitchenDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/super-admin"
-            element={
-              <ProtectedRoute scope={['SUPER_ADMIN_PANEL']}>
-                <AdminOrganizations />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/super-admin"
+                element={
+                  <ProtectedRoute scope={['SUPER_ADMIN_PANEL']}>
+                    <AdminOrganizations />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route path="/menu" element={<CustomerMenu />} />
-          <Route path="/menu/:tableId" element={<CustomerMenu />} />
-          <Route path="/org/:orgId/menu" element={<CustomerMenu />} />
-          <Route path="/org/:orgId/menu/:tableId" element={<CustomerMenu />} />
-          <Route path="/order" element={<CustomerOrder />} />
+              <Route path="/menu" element={<CustomerMenu />} />
+              <Route path="/menu/:tableId" element={<CustomerMenu />} />
+              <Route path="/org/:orgId/menu" element={<CustomerMenu />} />
+              <Route path="/org/:orgId/menu/:tableId" element={<CustomerMenu />} />
+              <Route path="/order" element={<CustomerOrder />} />
 
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </AuthBootstrap>
         </BrowserRouter>
       </ErrorBoundary>
     </I18nProvider>

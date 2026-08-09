@@ -111,3 +111,48 @@ export function getOrgIdFromToken(accessToken: string): string | null {
   const orgId = payload?.['organizationId'];
   return typeof orgId === 'string' && orgId ? orgId : null;
 }
+
+export interface TokenClaims {
+  sub?: string;
+  organizationId?: string;
+  roles?: string[];
+  permissions?: string[];
+  uiScope?: string;
+  exp?: number;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+}
+
+export function getTokenClaims(accessToken?: string | null): TokenClaims | null {
+  const token = accessToken ?? session.accessToken;
+  if (!token) return null;
+  const payload = decodeTokenPayload(token);
+  if (!payload) return null;
+  return {
+    sub: typeof payload['sub'] === 'string' ? payload['sub'] : undefined,
+    organizationId: typeof payload['organizationId'] === 'string' ? payload['organizationId'] : undefined,
+    roles: stringArray(payload['roles']),
+    permissions: stringArray(payload['permissions']),
+    uiScope: typeof payload['uiScope'] === 'string' ? payload['uiScope'] : undefined,
+    exp: typeof payload['exp'] === 'number' ? payload['exp'] : undefined,
+  };
+}
+
+export function getTokenExpiryMs(accessToken?: string | null): number | null {
+  const exp = getTokenClaims(accessToken)?.exp;
+  return typeof exp === 'number' ? exp * 1000 : null;
+}
+
+export function isAccessTokenExpired(marginMs = 0): boolean {
+  const exp = getTokenExpiryMs();
+  return exp === null || Date.now() + marginMs >= exp;
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== SESSION_KEY) return;
+    session = loadSession();
+  });
+}
