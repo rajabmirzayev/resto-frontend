@@ -1,5 +1,6 @@
 import { useTranslation } from '../../i18n';
 import { useStore } from '../../store/useStore';
+import { useToast } from '../../store/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMenuItems } from '../../api/hooks/useMenu';
 import { useUpdateOrderStatus, useUpdateOrderItemStatus, useStartPreparingOrder, useMarkAllReadyOrder } from '../../api/hooks/useOrders';
@@ -10,13 +11,15 @@ import { CheckCircle, ChefHat, Timer, ArrowRight } from 'lucide-react';
 interface Props {
   order: KitchenOrderDto;
   variant: 'new' | 'preparing' | 'ready';
+  getElapsed: (createdAt: string) => string;
 }
 
-export default function KitchenOrderCard({ order, variant }: Props) {
+export default function KitchenOrderCard({ order, variant, getElapsed }: Props) {
   const { t } = useTranslation();
   const currentUser = useStore((s) => s.currentUser);
   const orgId = currentUser?.orgId;
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const menuItemsQuery = useMenuItems(orgId);
   const updateOrderStatus = useUpdateOrderStatus(orgId);
   const updateOrderItemStatus = useUpdateOrderItemStatus(orgId);
@@ -33,13 +36,6 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   const totalCount = order.items.length;
   const allReady = readyCount === totalCount;
   const canStartPreparing = order.status === 'CONFIRMED';
-
-  const getElapsed = (createdAt: string) => {
-    const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
-    const m = Math.floor(diff / 60);
-    const s = diff % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
 
   const getPrepTime = () => {
     if (order.items.length === 0) return 15;
@@ -59,12 +55,14 @@ export default function KitchenOrderCard({ order, variant }: Props) {
   const handleStartPreparing = () => {
     startPreparing.mutate(order.id, {
       onSuccess: refreshKitchen,
+      onError: () => addToast(t('error.unexpected'), 'error'),
     });
   };
 
   const handleAllItemsReady = () => {
     markAllReady.mutate(order.id, {
       onSuccess: refreshKitchen,
+      onError: () => addToast(t('error.unexpected'), 'error'),
     });
   };
 
@@ -144,7 +142,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
                   <button
                     onClick={() => updateOrderItemStatus.mutate(
                       { orderId: order.id, itemId: item.id, status: 'PREPARING' },
-                      { onSuccess: refreshKitchen }
+                      { onSuccess: refreshKitchen, onError: () => addToast(t('error.unexpected'), 'error') }
                     )}
                     className="text-xs bg-primary-500 hover:bg-primary-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >
@@ -155,7 +153,7 @@ export default function KitchenOrderCard({ order, variant }: Props) {
                   <button
                     onClick={() => updateOrderItemStatus.mutate(
                       { orderId: order.id, itemId: item.id, status: 'READY' },
-                      { onSuccess: refreshKitchen }
+                      { onSuccess: refreshKitchen, onError: () => addToast(t('error.unexpected'), 'error') }
                     )}
                     className="text-xs bg-success-500 hover:bg-success-600 text-white px-2.5 py-1 rounded-lg transition-colors font-medium"
                   >

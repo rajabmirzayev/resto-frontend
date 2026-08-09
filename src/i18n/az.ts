@@ -533,6 +533,7 @@ const az: Record<string, string> = {
   'waiter.active_orders': 'Aktiv Sifariş',
   'waiter.available_tables': 'Boş Masa',
   'waiter.occupied_tables': 'Məşğul',
+  'waiter.open_amount': 'Açıq Məbləğ',
   'waiter.revenue': 'Gəlir',
 
   // Order

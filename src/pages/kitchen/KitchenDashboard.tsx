@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from '../../i18n';
 import Header from '../../components/layout/Header';
 import { useStore } from '../../store/useStore';
 import { useToast } from '../../store/useToast';
 import { playNewOrderSound } from '../../lib/sounds';
+import { useElapsedTime } from '../../lib/useElapsedTime';
 import { useKitchenOrders } from '../../api/hooks/useKitchen';
 import KitchenOrderCard from '../../components/kitchen/KitchenOrderCard';
 import { Clock, CheckCircle, ChefHat, AlertCircle, Loader2 } from 'lucide-react';
@@ -14,17 +15,9 @@ export default function KitchenDashboard() {
   const orgId = currentUser?.orgId;
   const { addToast } = useToast();
   const prevPendingCount = useRef(0);
-  const [, forceUpdate] = useState(0);
+  const getElapsed = useElapsedTime();
 
   const kitchenQuery = useKitchenOrders(orgId, { refetchInterval: 10000 });
-
-  // Force re-render every 2 seconds so elapsed timers in KitchenOrderCard update in real time.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate((n) => n + 1);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const pendingCount = (kitchenQuery.data?.newOrders ?? []).length;
@@ -116,7 +109,7 @@ export default function KitchenDashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {newOrders.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((order) => (
-                <KitchenOrderCard key={order.id} order={order} variant="new" />
+                <KitchenOrderCard key={order.id} order={order} variant="new" getElapsed={getElapsed} />
               ))}
             </div>
           </div>
@@ -131,7 +124,7 @@ export default function KitchenDashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {preparingOrders.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((order) => (
-                <KitchenOrderCard key={order.id} order={order} variant="preparing" />
+                <KitchenOrderCard key={order.id} order={order} variant="preparing" getElapsed={getElapsed} />
               ))}
             </div>
           </div>
@@ -146,7 +139,7 @@ export default function KitchenDashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {readyOrders.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((order) => (
-                <KitchenOrderCard key={order.id} order={order} variant="ready" />
+                <KitchenOrderCard key={order.id} order={order} variant="ready" getElapsed={getElapsed} />
               ))}
             </div>
           </div>

@@ -533,6 +533,7 @@ const en: Record<string, string> = {
   'waiter.active_orders': 'Active Orders',
   'waiter.available_tables': 'Available Tables',
   'waiter.occupied_tables': 'Occupied',
+  'waiter.open_amount': 'Open Amount',
   'waiter.revenue': 'Revenue',
 
   // Order

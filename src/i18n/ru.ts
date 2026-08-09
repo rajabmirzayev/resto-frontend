@@ -533,6 +533,7 @@ const ru: Record<string, string> = {
   'waiter.active_orders': 'Активные заказы',
   'waiter.available_tables': 'Свободные столы',
   'waiter.occupied_tables': 'Занятые',
+  'waiter.open_amount': 'Открытая сумма',
   'waiter.revenue': 'Выручка',
 
   // Order
