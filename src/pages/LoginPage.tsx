@@ -159,7 +159,7 @@ export default function LoginPage() {
                 {t('login.username')}
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-primary dark:text-text-secondary" strokeWidth={2.5} />
+                <User className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-600 dark:text-slate-400 z-1" strokeWidth={2.5} />
                 <input
                   id="login-username"
                   type="text"
@@ -167,7 +167,7 @@ export default function LoginPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
                   disabled={isLoading}
-                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-11 pr-4 text-text-primary placeholder:text-text-muted backdrop-blur transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-text-muted"
+                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-11 pr-4 text-text-primary placeholder:text-text-muted backdrop-blur transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500/40 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-text-muted"
                   placeholder={t('login.username_placeholder')}
                   required
                 />
@@ -179,7 +179,7 @@ export default function LoginPage() {
                 {t('login.password')}
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-primary dark:text-text-secondary" strokeWidth={2.5} />
+                <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-600 dark:text-slate-400 z-1" strokeWidth={2.5} />
                 <input
                   id="login-password"
                   type="password"
@@ -187,7 +187,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   disabled={isLoading}
-                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-11 pr-4 text-text-primary placeholder:text-text-muted backdrop-blur transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-text-muted"
+                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-11 pr-4 text-text-primary placeholder:text-text-muted backdrop-blur transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500/40 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-text-muted"
                   placeholder={t('login.password_placeholder')}
                   required
                 />
