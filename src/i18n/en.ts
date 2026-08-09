@@ -104,6 +104,7 @@ const en: Record<string, string> = {
 
   // Login
   'login.system_name': 'Restaurant Management System',
+  'login.slogan': 'From order to payment — everything in one place',
   'login.title': 'Sign In',
   'login.username': 'Username',
   'login.username_placeholder': 'username',

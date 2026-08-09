@@ -104,6 +104,7 @@ const az: Record<string, string> = {
 
   // Login
   'login.system_name': 'Restoran İdarəetmə Sistemi',
+  'login.slogan': 'Sifarişdən ödənişə — hər şey bir yerdə',
   'login.title': 'Giriş',
   'login.username': 'İstifadəçi adı',
   'login.username_placeholder': 'istifadəçi adı',

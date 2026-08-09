@@ -136,11 +136,9 @@ export default function LoginPage() {
 
       <div className="animate-float-card relative w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mb-5 inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-primary-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:shadow-none">
-            <img src="/favicon.svg" alt="RestoFlow" className="h-12 w-12 object-contain" />
-          </div>
+          <img src="/favicon.svg" alt="RestoFlow" className="mx-auto mb-5 h-24 w-24 object-contain" />
           <h1 className="text-3xl font-bold tracking-tight text-primary-800 dark:text-white">RestoFlow</h1>
-          <p className="mt-1 text-sm font-medium text-text-secondary dark:text-text-secondary">{t('login.system_name')}</p>
+          <p className="mt-1 text-sm font-medium text-text-secondary dark:text-text-secondary">{t('login.slogan')}</p>
         </div>
 
         <div className="rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl sm:p-10 dark:border-white/10 dark:bg-slate-900/70">

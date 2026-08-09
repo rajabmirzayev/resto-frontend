@@ -104,6 +104,7 @@ const ru: Record<string, string> = {
 
   // Login
   'login.system_name': 'Система управления рестораном',
+  'login.slogan': 'От заказа до оплаты — всё в одном месте',
   'login.title': 'Вход',
   'login.username': 'Имя пользователя',
   'login.username_placeholder': 'имя пользователя',
