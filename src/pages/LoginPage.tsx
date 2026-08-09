@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { useTranslation } from '../i18n';
+import { useTheme } from '../store/useTheme';
+import { useTranslation, type Locale } from '../i18n';
 import { ApiError } from '../api/client';
 import { getUiScope } from '../api/session';
 import type { UiScope } from '../api/types';
-import { LogIn, User, Lock, Loader2 } from 'lucide-react';
+import { LogIn, User, Lock, Loader2, AlertCircle, Globe, Sun, Moon } from 'lucide-react';
+import azFlag from '../assets/azerbaijan-flag.png';
+import enFlag from '../assets/united-kingdom-flag.png';
+import ruFlag from '../assets/russian-flag.png';
+
+const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
+  { code: 'az', label: 'Azərbaycanca', flag: azFlag },
+  { code: 'en', label: 'English', flag: enFlag },
+  { code: 'ru', label: 'Русский', flag: ruFlag },
+];
 
 function getRedirectPath(uiScope: UiScope): string {
   switch (uiScope) {
@@ -26,8 +36,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
   const login = useStore((s) => s.login);
   const navigate = useNavigate();
+  const { isDark, toggleDark } = useTheme();
+  const { locale, setLocale } = useTranslation();
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setShowLanguageMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,37 +84,89 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-primary-900/20 dark:via-surface dark:to-primary-900/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
-            <img src="/favicon.svg" alt="RestoFlow" className="w-full h-full object-contain" />
-          </div>
-          <h1 className="text-3xl font-bold text-text-primary">RestoFlow</h1>
-          <p className="text-text-secondary mt-1">{t('login.system_name')}</p>
+    <div className="animate-gradient relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-primary-100 via-white to-violet-100 p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="animate-blob-a pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-primary-300/60 blur-3xl dark:bg-primary-500/25" />
+      <div className="animate-blob-b pointer-events-none absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-violet-300/60 blur-3xl dark:bg-violet-600/25" />
+      <div className="animate-blob-c pointer-events-none absolute -bottom-28 left-1/4 h-80 w-80 rounded-full bg-rose-300/50 blur-3xl dark:bg-rose-500/20" />
+      <div className="animate-blob-d pointer-events-none absolute top-1/4 left-1/3 h-64 w-64 rounded-full bg-amber-300/50 blur-3xl dark:bg-amber-500/20" />
+      <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-56 w-56 rounded-full bg-fuchsia-300/50 blur-3xl dark:bg-fuchsia-500/20" />
+
+      <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+        <div className="relative" ref={langRef}>
+          <button
+            onClick={() => setShowLanguageMenu((v) => !v)}
+            className="flex items-center gap-1.5 rounded-xl border border-white/60 bg-white/60 p-2.5 text-text-secondary backdrop-blur-xl transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/10 dark:text-white"
+            title={t('header.language')}
+            aria-label={t('header.language')}
+          >
+            <Globe className="h-5 w-5" />
+          </button>
+          {showLanguageMenu && (
+            <div className="absolute right-0 top-full mt-2 w-44 overflow-hidden rounded-xl border border-border bg-white/95 py-1.5 shadow-xl shadow-slate-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/95">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    setLocale(lang.code);
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
+                    locale === lang.code
+                      ? 'bg-primary-50 font-semibold text-primary-700 dark:bg-primary-100 dark:text-primary-300'
+                      : 'text-text-secondary hover:bg-surface-secondary'
+                  }`}
+                >
+                  <img src={lang.flag} alt="" className="h-3.5 w-5 rounded-sm object-cover" />
+                  <span>{lang.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="bg-white dark:bg-surface rounded-2xl shadow-xl shadow-primary-100/50 p-8 border border-border">
-          <h2 className="text-xl font-semibold text-text-primary mb-6">{t('login.title')}</h2>
+        <button
+          onClick={toggleDark}
+          className="rounded-xl border border-white/60 bg-white/60 p-2.5 text-text-secondary backdrop-blur-xl transition-colors hover:bg-white/80 dark:border-white/10 dark:bg-white/10 dark:text-white"
+          title={isDark ? t('header.light_mode') : t('header.dark_mode')}
+          aria-label={isDark ? t('header.light_mode') : t('header.dark_mode')}
+        >
+          {isDark ? <Sun className="h-5 w-5 text-warning-500" /> : <Moon className="h-5 w-5" />}
+        </button>
+      </div>
+
+      <div className="animate-float-card relative w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mb-5 inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-primary-200/60 backdrop-blur-xl dark:border-white/10 dark:bg-white/10 dark:shadow-none">
+            <img src="/favicon.svg" alt="RestoFlow" className="h-12 w-12 object-contain" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-primary-800 dark:text-white">RestoFlow</h1>
+          <p className="mt-1 text-sm font-medium text-text-secondary dark:text-text-secondary">{t('login.system_name')}</p>
+        </div>
+
+        <div className="rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur-2xl sm:p-10 dark:border-white/10 dark:bg-slate-900/70">
+          <h2 className="mb-6 text-xl font-semibold text-text-primary dark:text-white">{t('login.title')}</h2>
 
           {error && (
-            <div className="bg-danger-50 text-danger-600 text-sm px-4 py-3 rounded-xl mb-4 border border-danger-500/20">
+            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-danger-500/20 bg-danger-50 px-4 py-3 text-sm text-danger-600 backdrop-blur dark:bg-danger-500/10 dark:text-danger-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">{t('login.username')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-primary">
+                {t('login.username')}
+              </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                <User className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-primary dark:text-text-secondary" strokeWidth={2.5} />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
                   disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2.5 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-text-primary disabled:opacity-60"
+                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-11 pr-4 text-text-primary placeholder:text-text-muted backdrop-blur transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-text-muted"
                   placeholder={t('login.username_placeholder')}
                   required
                 />
@@ -98,16 +174,18 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">{t('login.password')}</label>
+              <label className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-primary">
+                {t('login.password')}
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-primary dark:text-text-secondary" strokeWidth={2.5} />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2.5 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-text-primary disabled:opacity-60"
+                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-11 pr-4 text-text-primary placeholder:text-text-muted backdrop-blur transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder:text-text-muted"
                   placeholder={t('login.password_placeholder')}
                   required
                 />
@@ -117,13 +195,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-200 hover:shadow-primary-300 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-violet-600 py-3 font-semibold text-white shadow-lg shadow-primary-200 dark:shadow-black/30 transition-all hover:from-primary-500 hover:to-violet-500 hover:shadow-primary-300 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogIn className="w-5 h-5" />}
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
               {isLoading ? t('login.loading') : t('login.submit')}
             </button>
           </form>
         </div>
+
+        <p className="mt-6 text-center text-xs font-medium text-text-muted dark:text-text-muted">
+          © {new Date().getFullYear()} RestoFlow
+        </p>
       </div>
     </div>
   );
