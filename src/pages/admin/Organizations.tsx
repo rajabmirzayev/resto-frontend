@@ -255,8 +255,8 @@ export default function AdminOrganizations() {
                 </div>
 
                 {formError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-sm text-red-600">{formError}</p>
+                  <div className="p-3 bg-danger-50 border border-danger-200 rounded-xl">
+                    <p className="text-sm text-danger-600">{formError}</p>
                   </div>
                 )}
 

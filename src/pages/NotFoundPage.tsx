@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useTranslation } from '../i18n';
+import { getUiScope } from '../api/session';
 import { Home, ArrowLeft } from 'lucide-react';
 
 export default function NotFoundPage() {
@@ -13,14 +14,18 @@ export default function NotFoundPage() {
       navigate('/login');
       return;
     }
-    switch (currentUser.role) {
-      case 'admin':
+    const scope = getUiScope();
+    switch (scope) {
+      case 'SUPER_ADMIN_PANEL':
+        navigate('/super-admin');
+        break;
+      case 'ADMIN_PANEL':
         navigate('/admin');
         break;
-      case 'waiter':
+      case 'WAITER_PANEL':
         navigate('/waiter');
         break;
-      case 'chef':
+      case 'KITCHEN_PANEL':
         navigate('/kitchen');
         break;
       default:

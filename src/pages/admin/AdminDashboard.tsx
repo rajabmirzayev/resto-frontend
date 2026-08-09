@@ -156,7 +156,7 @@ export default function AdminDashboard() {
             ) : (
               <div className="space-y-3">
                 {topItems.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  <div key={item.menuItemId || i} className="flex items-center gap-3">
                     <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">
                       {i + 1}
                     </span>

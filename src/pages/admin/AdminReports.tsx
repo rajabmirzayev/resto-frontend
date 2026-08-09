@@ -245,7 +245,7 @@ export default function AdminReports() {
             <p className="text-xs text-text-muted mb-5">{t('reports.top_8_by_quantity')}</p>
             <div className="space-y-3">
               {topItems.map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
+                <div key={item.menuItemId || i} className="flex items-center gap-3">
                   <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                     {i + 1}
                   </span>
