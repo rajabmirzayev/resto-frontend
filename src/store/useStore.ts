@@ -262,107 +262,125 @@ export const useStore = create<Store>()(
       clearCart: () => set({ cart: [] }),
 
       createOrder: (tableId, waiterId, waiterName) => {
-        const { cart, tables } = get();
-        if (cart.length === 0) return null;
+        let result: Order | null = null;
+        set((state) => {
+          const { cart, tables } = state;
+          if (cart.length === 0) {
+            result = null;
+            return {};
+          }
 
-        const table = tables.find((t) => t.id === tableId);
-        if (!table || table.status === 'occupied') return null;
+          const table = tables.find((t) => t.id === tableId);
+          if (!table || table.status === OCCUPIED) {
+            result = null;
+            return {};
+          }
 
-        const orderItems: OrderItem[] = cart.map((item) => ({
-          id: uuidv4(),
-          menuItemId: item.menuItemId,
-          menuItemName: item.menuItemName,
-          quantity: item.quantity,
-          price: item.price,
-          notes: item.notes,
-          status: 'pending' as OrderStatus,
-        }));
+          const orderItems: OrderItem[] = cart.map((item) => ({
+            id: uuidv4(),
+            menuItemId: item.menuItemId,
+            menuItemName: item.menuItemName,
+            quantity: item.quantity,
+            price: item.price,
+            notes: item.notes,
+            status: 'pending' as OrderStatus,
+          }));
 
-        const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-        const newOrder: Order = {
-          id: uuidv4(),
-          tableId,
-          tableNumber: table.number,
-          items: orderItems,
-          status: 'pending',
-          paymentStatus: 'pending',
-          totalAmount,
-          waiterId,
-          waiterName,
-          orderSource: 'waiter',
-          waiterConfirmed: true,
-          confirmedBy: waiterName,
-          paymentMethod: null,
-          paymentRequested: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+          const newOrder: Order = {
+            id: uuidv4(),
+            tableId,
+            tableNumber: table.number,
+            items: orderItems,
+            status: 'pending',
+            paymentStatus: 'pending',
+            totalAmount,
+            waiterId,
+            waiterName,
+            orderSource: 'waiter',
+            waiterConfirmed: true,
+            confirmedBy: waiterName,
+            paymentMethod: null,
+            paymentRequested: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
 
-        set((state) => ({
-          orders: [...state.orders, newOrder],
-          tables: state.tables.map((t) =>
-            t.id === tableId ? { ...t, status: 'occupied' as TableStatus, currentOrderId: newOrder.id } : t
-          ),
-          cart: [],
-          currentOrderId: newOrder.id,
-        }));
-
-        return newOrder;
+          result = newOrder;
+          return {
+            orders: [...state.orders, newOrder],
+            tables: state.tables.map((t) =>
+              t.id === tableId ? { ...t, status: OCCUPIED as TableStatus, currentOrderId: newOrder.id } : t
+            ),
+            cart: [],
+            currentOrderId: newOrder.id,
+          };
+        });
+        return result;
       },
 
       createCustomerOrder: (tableId, customerPhoto) => {
-        const { cart, tables, orderMode } = get();
-        if (cart.length === 0) return null;
+        let result: Order | null = null;
+        set((state) => {
+          const { cart, tables, orderMode } = state;
+          if (cart.length === 0) {
+            result = null;
+            return {};
+          }
 
-        const table = tables.find((t) => t.id === tableId);
-        if (!table || table.status === 'occupied') return null;
+          const table = tables.find((t) => t.id === tableId);
+          if (!table || table.status === OCCUPIED) {
+            result = null;
+            return {};
+          }
 
-        const orderItems: OrderItem[] = cart.map((item) => ({
-          id: uuidv4(),
-          menuItemId: item.menuItemId,
-          menuItemName: item.menuItemName,
-          quantity: item.quantity,
-          price: item.price,
-          notes: item.notes,
-          status: 'pending' as OrderStatus,
-        }));
+          const orderItems: OrderItem[] = cart.map((item) => ({
+            id: uuidv4(),
+            menuItemId: item.menuItemId,
+            menuItemName: item.menuItemName,
+            quantity: item.quantity,
+            price: item.price,
+            notes: item.notes,
+            status: 'pending' as OrderStatus,
+          }));
 
-        const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-        const needsWaiterConfirm = orderMode === 'customer-waiter-confirm';
-        const initialStatus: OrderStatus = needsWaiterConfirm ? 'pending' : 'confirmed';
+          const needsWaiterConfirm = orderMode === 'customer-waiter-confirm';
+          const initialStatus: OrderStatus = needsWaiterConfirm ? 'pending' : 'confirmed';
 
-        const newOrder: Order = {
-          id: uuidv4(),
-          tableId,
-          tableNumber: table.number,
-          items: orderItems,
-          status: initialStatus,
-          paymentStatus: 'pending',
-          totalAmount,
-          waiterId: '',
-          waiterName: '',
-          orderSource: 'customer',
-          waiterConfirmed: !needsWaiterConfirm,
-          confirmedBy: needsWaiterConfirm ? '' : 'Avtomatik',
-          customerPhoto: customerPhoto || undefined,
-          paymentMethod: null,
-          paymentRequested: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+          const newOrder: Order = {
+            id: uuidv4(),
+            tableId,
+            tableNumber: table.number,
+            items: orderItems,
+            status: initialStatus,
+            paymentStatus: 'pending',
+            totalAmount,
+            waiterId: '',
+            waiterName: '',
+            orderSource: 'customer',
+            waiterConfirmed: !needsWaiterConfirm,
+            confirmedBy: needsWaiterConfirm ? '' : 'Avtomatik',
+            customerPhoto: customerPhoto || undefined,
+            paymentMethod: null,
+            paymentRequested: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
 
-        set((state) => ({
-          orders: [...state.orders, newOrder],
-          tables: state.tables.map((t) =>
-            t.id === tableId ? { ...t, status: 'occupied' as TableStatus, currentOrderId: newOrder.id } : t
-          ),
-          cart: [],
-          currentOrderId: newOrder.id,
-        }));
-
-        return newOrder;
+          result = newOrder;
+          return {
+            orders: [...state.orders, newOrder],
+            tables: state.tables.map((t) =>
+              t.id === tableId ? { ...t, status: OCCUPIED as TableStatus, currentOrderId: newOrder.id } : t
+            ),
+            cart: [],
+            currentOrderId: newOrder.id,
+          };
+        });
+        return result;
       },
 
       addItemsToOrder: (orderId, items) => {
@@ -421,7 +439,7 @@ export const useStore = create<Store>()(
             o.id === orderId ? { ...o, status: 'cancelled' as OrderStatus, updatedAt: new Date().toISOString() } : o
           ),
           tables: state.tables.map((t) =>
-            t.currentOrderId === orderId ? { ...t, status: 'cleaning' as TableStatus, currentOrderId: undefined } : t
+            t.currentOrderId === orderId ? { ...t, status: CLEANING as TableStatus, currentOrderId: undefined } : t
           ),
         }));
       },
@@ -435,7 +453,7 @@ export const useStore = create<Store>()(
             o.id === orderId ? { ...o, paymentStatus: 'paid' as const, status: 'completed' as OrderStatus, updatedAt: new Date().toISOString() } : o
           ),
           tables: state.tables.map((t) =>
-            t.currentOrderId === orderId ? { ...t, status: 'available' as TableStatus, currentOrderId: undefined } : t
+            t.currentOrderId === orderId ? { ...t, status: AVAILABLE as TableStatus, currentOrderId: undefined } : t
           ),
         }));
       },
