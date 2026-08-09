@@ -271,7 +271,7 @@ export const useStore = create<Store>()(
           }
 
           const table = tables.find((t) => t.id === tableId);
-          if (!table || table.status === OCCUPIED) {
+          if (!table || table.status === 'OCCUPIED') {
             result = null;
             return {};
           }
@@ -311,7 +311,7 @@ export const useStore = create<Store>()(
           return {
             orders: [...state.orders, newOrder],
             tables: state.tables.map((t) =>
-              t.id === tableId ? { ...t, status: OCCUPIED as TableStatus, currentOrderId: newOrder.id } : t
+              t.id === tableId ? { ...t, status: 'OCCUPIED' as TableStatus, currentOrderId: newOrder.id } : t
             ),
             cart: [],
             currentOrderId: newOrder.id,
@@ -330,7 +330,7 @@ export const useStore = create<Store>()(
           }
 
           const table = tables.find((t) => t.id === tableId);
-          if (!table || table.status === OCCUPIED) {
+          if (!table || table.status === 'OCCUPIED') {
             result = null;
             return {};
           }
@@ -374,7 +374,7 @@ export const useStore = create<Store>()(
           return {
             orders: [...state.orders, newOrder],
             tables: state.tables.map((t) =>
-              t.id === tableId ? { ...t, status: OCCUPIED as TableStatus, currentOrderId: newOrder.id } : t
+              t.id === tableId ? { ...t, status: 'OCCUPIED' as TableStatus, currentOrderId: newOrder.id } : t
             ),
             cart: [],
             currentOrderId: newOrder.id,
@@ -439,7 +439,7 @@ export const useStore = create<Store>()(
             o.id === orderId ? { ...o, status: 'cancelled' as OrderStatus, updatedAt: new Date().toISOString() } : o
           ),
           tables: state.tables.map((t) =>
-            t.currentOrderId === orderId ? { ...t, status: CLEANING as TableStatus, currentOrderId: undefined } : t
+            t.currentOrderId === orderId ? { ...t, status: 'CLEANING' as TableStatus, currentOrderId: undefined } : t
           ),
         }));
       },
@@ -453,7 +453,7 @@ export const useStore = create<Store>()(
             o.id === orderId ? { ...o, paymentStatus: 'paid' as const, status: 'completed' as OrderStatus, updatedAt: new Date().toISOString() } : o
           ),
           tables: state.tables.map((t) =>
-            t.currentOrderId === orderId ? { ...t, status: AVAILABLE as TableStatus, currentOrderId: undefined } : t
+            t.currentOrderId === orderId ? { ...t, status: 'AVAILABLE' as TableStatus, currentOrderId: undefined } : t
           ),
         }));
       },
