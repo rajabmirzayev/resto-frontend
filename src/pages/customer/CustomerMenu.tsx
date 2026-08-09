@@ -138,7 +138,7 @@ export default function CustomerMenu() {
       setShowOrderModal(false);
       setCustomerPhoto(null);
       setSelectedPaymentMethod(null);
-      navigate(`/order?id=${res.data.id}`);
+      navigate(`/order?id=${res.data.id}${res.data.accessToken ? `&token=${encodeURIComponent(res.data.accessToken)}` : ''}`);
     } catch (err) {
       setOrderError(err instanceof ApiError ? err.detail || t('error.unexpected') : t('error.network'));
     }

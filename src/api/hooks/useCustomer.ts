@@ -41,11 +41,11 @@ export function useCreateCustomerOrder() {
   });
 }
 
-export function useGetCustomerOrder(orderId: string | null, options?: { refetchInterval?: number }) {
+export function useGetCustomerOrder(orderId: string | null, token?: string, options?: { refetchInterval?: number }) {
   return useQuery({
     queryKey: customerKeys.order(orderId ?? ''),
     queryFn: async () => {
-      const res = await customerApi.getOrder(orderId as string);
+      const res = await customerApi.getOrder(orderId as string, token);
       return res.data;
     },
     enabled: !!orderId,
@@ -53,10 +53,10 @@ export function useGetCustomerOrder(orderId: string | null, options?: { refetchI
   });
 }
 
-export function useRequestCustomerBill(orderId?: string) {
+export function useRequestCustomerBill(orderId?: string, token?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: RequestBillRequest) => customerApi.requestBill(orderId as string, payload),
+    mutationFn: (payload: RequestBillRequest) => customerApi.requestBill(orderId as string, payload, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: customerKeys.order(orderId ?? '') });
     },

@@ -1,6 +1,6 @@
 import { request } from './client';
 import { getAccessToken } from './session';
-import type { ApiResponse, CreateCustomerOrderRequest, CustomerMenuDto, CustomerMenuItemDto, CustomerTableDto, OrderDto, RequestBillRequest } from './types';
+import type { ApiResponse, CreateCustomerOrderRequest, CustomerMenuDto, CustomerMenuItemDto, CustomerTableDto, CustomerOrderDto, RequestBillRequest } from './types';
 
 const BASE = '/api/customer-ms/v1';
 
@@ -16,8 +16,9 @@ export const customerApi = {
   },
   tables: (orgId: string) => request<ApiResponse<CustomerTableDto[]>>(`${BASE}/${orgId}/tables`),
   createOrder: (payload: CreateCustomerOrderRequest) =>
-    request<ApiResponse<OrderDto>>(`${BASE}/orders`, { method: 'POST', body: payload }),
-  getOrder: (orderId: string) => request<ApiResponse<OrderDto>>(`${BASE}/orders/${orderId}`, { token: getAccessToken() ?? undefined }),
-  requestBill: (orderId: string, payload: RequestBillRequest) =>
-    request<ApiResponse<null>>(`${BASE}/orders/${orderId}/request-bill`, { method: 'POST', body: payload }),
+    request<ApiResponse<CustomerOrderDto>>(`${BASE}/orders`, { method: 'POST', body: payload }),
+  getOrder: (orderId: string, token?: string) =>
+    request<ApiResponse<CustomerOrderDto>>(`${BASE}/orders/${orderId}${token ? `?token=${encodeURIComponent(token)}` : ''}`, { token: getAccessToken() ?? undefined }),
+  requestBill: (orderId: string, payload: RequestBillRequest, token?: string) =>
+    request<ApiResponse<null>>(`${BASE}/orders/${orderId}/request-bill${token ? `?token=${encodeURIComponent(token)}` : ''}`, { method: 'POST', body: payload }),
 };

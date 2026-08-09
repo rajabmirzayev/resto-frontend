@@ -59,10 +59,28 @@ export interface CreateOrganizationRequest {
   adminPassword: string;
 }
 
+export interface CreateOrganizationAdminUser {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: string;
+  roleId: string;
+  orgId: string;
+}
+
+export interface CreateOrganizationAdminRole {
+  id: string;
+  name: string;
+  permissions: string[];
+  isSystem: boolean;
+  orgId: string;
+}
+
 export interface CreateOrganizationResponse {
   organization: OrganizationDto;
-  adminUser: UserDto;
-  adminRole: RoleResponse;
+  adminUser: CreateOrganizationAdminUser;
+  adminRole: CreateOrganizationAdminRole;
 }
 
 export interface QrCodeDto {
@@ -161,6 +179,7 @@ export interface CreateRoleRequest {
   name: string;
   uiScope: UiScope;
   permissionIds: string[];
+  orgId?: string;
 }
 
 export interface UpdateRoleRequest {
@@ -226,7 +245,7 @@ export interface MenuItemPayload {
   description?: LocalizedString | null;
   price: number;
   categoryId: string;
-  preparationTime: number;
+  preparationTime?: number;
   isAvailable?: boolean;
   imageUrl?: string;
 }
@@ -244,15 +263,15 @@ export interface ImageUploadDto {
 export interface MenuCategoryDto {
   id: string;
   name: LocalizedString;
-  icon: string;
+  icon: string | null;
   sortOrder: number;
   orgId: string;
 }
 
 export interface CreateMenuCategoryRequest {
   name: LocalizedString;
-  icon: string;
-  sortOrder: number;
+  icon?: string;
+  sortOrder?: number;
   orgId: string;
 }
 
@@ -290,7 +309,7 @@ export interface RestaurantTableDto {
 export interface CreateTableRequest {
   tableNumber: number;
   capacity: number;
-  sectionId: string;
+  sectionId?: string;
   orgId: string;
 }
 
@@ -349,15 +368,35 @@ export interface OrderDto {
   status: OrderStatusEnum;
   paymentStatus: PaymentStatusEnum;
   totalAmount: number;
-  waiterId: string;
-  waiterName: string;
+  waiterId?: string;
+  waiterName?: string;
   orderSource: OrderSourceEnum;
   waiterConfirmed: boolean;
-  confirmedBy: string | null;
-  customerPhoto: string | null;
-  paymentMethod: PaymentMethodEnum | null;
+  confirmedBy?: string | null;
+  customerPhoto?: string | null;
+  paymentMethod?: PaymentMethodEnum | null;
   paymentRequested: boolean;
-  cancelReason: string | null;
+  cancelReason?: string | null;
+  accessToken?: string;
+  orgId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerOrderDto {
+  id: string;
+  tableId: string;
+  tableNumber: number;
+  items: OrderItemDto[];
+  status: OrderStatusEnum;
+  paymentStatus: PaymentStatusEnum;
+  totalAmount: number;
+  orderSource: OrderSourceEnum;
+  waiterConfirmed: boolean;
+  customerPhoto?: string | null;
+  paymentMethod?: PaymentMethodEnum | null;
+  paymentRequested: boolean;
+  accessToken?: string;
   orgId: string;
   createdAt: string;
   updatedAt: string;

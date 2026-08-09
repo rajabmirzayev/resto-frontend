@@ -23,14 +23,15 @@ export default function CustomerOrder() {
   const { addToast } = useToast();
 
   const orderId = searchParams.get('id');
+  const token = searchParams.get('token') ?? undefined;
 
-  const orderQuery = useGetCustomerOrder(orderId, { refetchInterval: 5000 });
+  const orderQuery = useGetCustomerOrder(orderId, token, { refetchInterval: 5000 });
   const order = orderQuery.data;
 
   const settingsQuery = useOrgSettings(order?.orgId);
   const settings = settingsQuery.data;
 
-  const requestBillMutation = useRequestCustomerBill(orderId ?? undefined);
+  const requestBillMutation = useRequestCustomerBill(orderId ?? undefined, token);
 
   const customerTheme: CustomerThemeId = settings?.customerTheme ? (settings.customerTheme.toLowerCase() as CustomerThemeId) : storeTheme;
   const effectivePaymentTiming: 'before' | 'after' = settings?.paymentTiming ? (settings.paymentTiming === 'BEFORE' ? 'before' : 'after') : paymentTiming;
