@@ -1,6 +1,6 @@
 import { clearSession, getAccessToken, getRefreshToken, getTokenExpiryMs, setSession } from './session';
 
-const API_BASE_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8001';
+const API_BASE_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? 'https://resto.flowix.az';
 
 export type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
