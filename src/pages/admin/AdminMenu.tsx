@@ -572,7 +572,7 @@ export default function AdminMenu() {
     setCatNameAz(cat.name.az);
     setCatNameEn(cat.name.en);
     setCatNameRu(cat.name.ru);
-    setCatIcon(cat.icon);
+    setCatIcon(cat.icon ?? 'utensils');
     setCatErrors({});
     setModalMode('edit-category');
   };

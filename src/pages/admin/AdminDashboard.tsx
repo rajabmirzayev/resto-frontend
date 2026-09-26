@@ -7,7 +7,7 @@ import {
   useDashboardStats, useDashboardTopItems, useDashboardRecentOrders, useDashboardStaff,
 } from '../../api/hooks/useDashboard';
 import { useTables } from '../../api/hooks/useTables';
-import type { OrderStatus, TableStatus } from '../../types';
+import type { OrderStatus } from '../../types';
 import type { UserRoleEnum } from '../../api/types';
 import {
   TrendingUp, ShoppingBag, Users, DollarSign, CheckCircle, Clock,
@@ -239,27 +239,27 @@ export default function AdminDashboard() {
             </h3>
             <div className="grid grid-cols-5 gap-2">
               {tables.map((table) => {
-                const status = table.status.toLowerCase() as TableStatus;
+                const status = table.status;
                 return (
                   <div
                     key={table.id}
                     className={`p-2.5 rounded-xl border text-center ${
-                      status === 'available' ? 'border-success-200 bg-success-50' :
-                      status === 'occupied' ? 'border-danger-200 bg-danger-50' :
-                      status === 'reserved' ? 'border-warning-200 bg-warning-50' :
+                      status === 'AVAILABLE' ? 'border-success-200 bg-success-50' :
+                      status === 'OCCUPIED' ? 'border-danger-200 bg-danger-50' :
+                      status === 'RESERVED' ? 'border-warning-200 bg-warning-50' :
                       'border-border bg-surface-secondary'
                     }`}
                   >
                     <p className="text-sm font-bold text-text-primary">#{table.tableNumber}</p>
                     <p className={`text-[10px] font-medium mt-0.5 ${
-                      status === 'available' ? 'text-success-600' :
-                      status === 'occupied' ? 'text-danger-600' :
-                      status === 'reserved' ? 'text-warning-600' :
+                      status === 'AVAILABLE' ? 'text-success-600' :
+                      status === 'OCCUPIED' ? 'text-danger-600' :
+                      status === 'RESERVED' ? 'text-warning-600' :
                       'text-text-muted'
                     }`}>
-                      {status === 'available' ? t('table.status.available') :
-                       status === 'occupied' ? t('table.status.occupied') :
-                       status === 'reserved' ? t('table.status.reserved') : t('table.status.cleaning')}
+                      {status === 'AVAILABLE' ? t('table.status.available') :
+                       status === 'OCCUPIED' ? t('table.status.occupied') :
+                       status === 'RESERVED' ? t('table.status.reserved') : t('table.status.cleaning')}
                     </p>
                   </div>
                 );
